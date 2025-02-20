@@ -2141,7 +2141,7 @@ include (
     external apply: ('theFunction, 'theContext, 'arguments) => 'returnTypeOfTheFunction = "apply"
 
     let createElementVariadic = (domClassName, ~props=?, children) => {
-      let variadicArguments = Js.Array.concat(children, [Obj.magic(domClassName), Obj.magic(props)])
+      let variadicArguments = Array.concat(children, [Obj.magic(domClassName), Obj.magic(props)])
       createElementInternalHack->apply(Js.Nullable.null, variadicArguments)
     }
   }: {

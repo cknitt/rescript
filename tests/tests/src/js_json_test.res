@@ -32,7 +32,7 @@ let () = {
         | J.JSONArray(x) =>
           /* compiler infer x : J.t array */
           (() => Mt.Ok(true))(
-            x->Js.Array2.forEach(x => {
+            x->Stdlib.Array.forEach(x => {
               let ty3 = J.classify(x)
               switch ty3 {
               | J.JSONNumber(_) => ()
