@@ -11,7 +11,7 @@ let eq = (loc, x, y) => {
 
 let f = x => {
   for i in 0 to 100 {
-    Js.log(".") /* prevent optimization */
+    Console.log(".") /* prevent optimization */
   }
   -x
 }

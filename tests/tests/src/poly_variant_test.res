@@ -90,8 +90,8 @@ external on: (
 ) => unit = "on"
 
 let register = readline => {
-  on(readline, #line(s => Js.log(s)))
-  on(readline, #close(() => Js.log("finished")))
+  on(readline, #line(s => Console.log(s)))
+  on(readline, #close(() => Console.log("finished")))
 }
 
 /* external on : */
@@ -121,13 +121,13 @@ module N = {
 /**
 let register readline = 
   readline 
-  |> on (`line begin fun [@bs] s -> Js.log s end)
-  |> on (`close begin fun [@bs] () -> Js.log \"finished\" end)
+  |> on (`line begin fun [@bs] s -> Console.log s end)
+  |> on (`close begin fun [@bs] () -> Console.log \"finished\" end)
 
 {[
 let register readline = 
-  on (`line begin fun [@bs] s -> Js.log s end) readline; 
-  on (`close begin fun [@bs] () -> Js.log \"finished\" end) readline
+  on (`line begin fun [@bs] s -> Console.log s end) readline; 
+  on (`close begin fun [@bs] () -> Console.log \"finished\" end) readline
 
 ]}
 */
@@ -136,13 +136,13 @@ let readN = N.read
 /**
 let register readline = 
   readline 
-  |> on (`line begin fun [@bs] s -> Js.log s end)
-  |> on (`close begin fun [@bs] () -> Js.log \"finished\" end)
+  |> on (`line begin fun [@bs] s -> Console.log s end)
+  |> on (`close begin fun [@bs] () -> Console.log \"finished\" end)
 
 {[
 let register readline = 
-  on (`line begin fun [@bs] s -> Js.log s end) readline; 
-  on (`close begin fun [@bs] () -> Js.log \"finished\" end) readline
+  on (`line begin fun [@bs] s -> Console.log s end) readline; 
+  on (`close begin fun [@bs] () -> Console.log \"finished\" end) readline
 
 ]}
 */
@@ -167,14 +167,14 @@ let hey = x =>
     | #b
     | #d
     | #c) as u =>
-    Js.log("u")
-    Js.log(u)
+    Console.log("u")
+    Console.log(u)
 
   | (#e
     | #f
     | #h) as v =>
-    Js.log("v")
-    Js.log(v)
+    Console.log("v")
+    Console.log(v)
   }
 
 let () = Mt.from_pair_suites(__MODULE__, suites.contents)

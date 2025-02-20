@@ -53,8 +53,8 @@ let rec tuplesToObjects = (l: ListWithTuples.t<_>): ListWithObjects.t<_> =>
 
 let l1 = ListWithTuples.Cons((1, Cons((2, Cons((3, Empty))))))
 let l2 = tuplesToObjects(l1)
-Js.log2("l1", l1)
-Js.log2("l2", l2)
+Console.log2("l1", l1)
+Console.log2("l2", l2)
 
 module Truthy = {
   @unboxed
@@ -88,7 +88,7 @@ module Unknown = {
     | A => "a"
     | B => "b"
     | Unknown(v) => {
-        Js.log(x)
+        Console.log(x)
         "Unknown"
       }
     }
@@ -335,8 +335,8 @@ module ComplexPattern = {
 
   let check = s =>
     switch s {
-    | Array([True, False, Array([String("My name is"), Number(10.)])]) => Js.log("yup")
-    | _ => Js.log("Nope...")
+    | Array([True, False, Array([String("My name is"), Number(10.)])]) => Console.log("yup")
+    | _ => Console.log("Nope...")
     }
 }
 
@@ -377,12 +377,12 @@ module Arr = {
 
   let classify = async (a: arr) =>
     switch a {
-    | Array(arr) => Js.log(arr->Belt.Array.joinWith("-", x => x))
-    | String(s) => Js.log(s)
-    | Promise(p) => Js.log(await p)
-    | Object({userName}) => Js.log(userName)
-    | Test => Js.log("testing")
-    | TestInt => Js.log(12)
+    | Array(arr) => Console.log(arr->Belt.Array.joinWith("-", x => x))
+    | String(s) => Console.log(s)
+    | Promise(p) => Console.log(await p)
+    | Object({userName}) => Console.log(userName)
+    | Test => Console.log("testing")
+    | TestInt => Console.log(12)
     }
 }
 
@@ -405,14 +405,14 @@ module AllInstanceofTypes = {
 
   let classifyAll = async (t: t) =>
     switch t {
-    | String(s) => Js.log(s)
-    | Promise(p) => Js.log(await p)
-    | Object({userName}) => Js.log(userName)
-    | Date(date) => Js.log(date->Js.Date.toString)
-    | RegExp(re) => Js.log(re->Js.Re.test_("test"))
-    | Array(arr) => Js.log(arr->Belt.Array.joinWith("-", x => x))
-    | File(file) => Js.log(file->fileName)
-    | Blob(blob) => Js.log(blob->blobSize)
+    | String(s) => Console.log(s)
+    | Promise(p) => Console.log(await p)
+    | Object({userName}) => Console.log(userName)
+    | Date(date) => Console.log(date->Js.Date.toString)
+    | RegExp(re) => Console.log(re->Js.Re.test_("test"))
+    | Array(arr) => Console.log(arr->Belt.Array.joinWith("-", x => x))
+    | File(file) => Console.log(file->fileName)
+    | Blob(blob) => Console.log(blob->blobSize)
     }
 }
 

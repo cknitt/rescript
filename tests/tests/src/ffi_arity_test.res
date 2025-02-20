@@ -22,8 +22,8 @@ let u = () => 3
 let vvv = ref(0)
 let fff = () => {
   /* No inline */
-  Js.log("x")
-  Js.log("x")
+  Console.log("x")
+  Console.log("x")
   incr(vvv)
 }
 
@@ -33,8 +33,8 @@ let g = () => fff()
   not {[ var g = fff ]}
 */
 let abc = (x, y, z) => {
-  Js.log("xx")
-  Js.log("yy")
+  Console.log("xx")
+  Console.log("yy")
   x + y + z
 }
 

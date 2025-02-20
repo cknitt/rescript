@@ -17,7 +17,7 @@ let y = switch failwith("boo") {
 let x = switch failwith("boo") {
 | exception Failure(msg) => Some(msg)
 | e =>
-  Js.log("ok")
+  Console.log("ok")
   None
 }
 

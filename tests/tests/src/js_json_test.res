@@ -57,7 +57,7 @@ let () = {
   switch ty {
   | J.JSONNull => true_(__LOC__)
   | _ =>
-    Js.log(ty)
+    Console.log(ty)
     false_(__LOC__)
   }
 }

@@ -36,17 +36,17 @@ let () = {
 
 let f = v => {
   switch Js.Array2.pop(v) {
-  | Some(x) => Js.log("hi")
-  | None => Js.log("hi2")
+  | Some(x) => Console.log("hi")
+  | None => Console.log("hi2")
   }
-  Js.log(ignore(Js.Array2.pop(v)))
+  Console.log(ignore(Js.Array2.pop(v)))
 }
 
 let fff = x => Array.length(x) >= 0
 
 let fff2 = x =>
   if Array.length(x) >= 10 {
-    Js.log("hi")
+    Console.log("hi")
   }
 
 let fff3 = x =>

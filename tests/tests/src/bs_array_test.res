@@ -23,7 +23,7 @@ let () =
   ->Js.Array2.filter(x => x > 2)
   ->Js.Array2.mapi((x, i) => x + i)
   ->Js.Array2.reduce((x, y) => x + y, 0)
-  ->Js.log
+  ->Console.log
 
 let () = {
   let v = [1, 2]
