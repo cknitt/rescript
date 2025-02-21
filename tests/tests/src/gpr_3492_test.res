@@ -6,7 +6,7 @@ let eq = (loc, x, y) => Mt.eq_suites(~test_id, ~suites, loc, x, y)
 
 @val("foo") external foo: (unit => int) => int = ""
 let fn = () => {
-  Js.log("hi")
+  Console.log("hi")
   1
 }
 

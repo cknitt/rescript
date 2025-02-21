@@ -79,19 +79,19 @@ type promise_suites = list<(string, Js.Promise.t<eq>)>
 let close_enough = (~threshold=0.0000001 /* epsilon_float */, a, b) => abs_float(a -. b) < threshold
 
 let node_from_pair_suites = (name: string, suites: pair_suites) => {
-  Js.log((name, "testing"))
+  Console.log((name, "testing"))
   suites->Belt.List.forEach(((name, code)) =>
     switch code() {
-    | Eq(a, b) => Js.log((name, a, "eq?", b))
-    | Neq(a, b) => Js.log((name, a, "neq?", b))
-    | StrictEq(a, b) => Js.log((name, a, "strict_eq?", b))
-    | StrictNeq(a, b) => Js.log((name, a, "strict_neq?", b))
-    | Approx(a, b) => Js.log((name, a, "~", b))
-    | ApproxThreshold(t, a, b) => Js.log((name, a, "~", b, " (", t, ")"))
+    | Eq(a, b) => Console.log((name, a, "eq?", b))
+    | Neq(a, b) => Console.log((name, a, "neq?", b))
+    | StrictEq(a, b) => Console.log((name, a, "strict_eq?", b))
+    | StrictNeq(a, b) => Console.log((name, a, "strict_neq?", b))
+    | Approx(a, b) => Console.log((name, a, "~", b))
+    | ApproxThreshold(t, a, b) => Console.log((name, a, "~", b, " (", t, ")"))
     | ThrowAny(fn) => ()
-    | Fail(_) => Js.log("failed")
-    | FailWith(msg) => Js.log("failed: " ++ msg)
-    | Ok(a) => Js.log((name, a, "ok?"))
+    | Fail(_) => Console.log("failed")
+    | FailWith(msg) => Console.log("failed: " ++ msg)
+    | Ok(a) => Console.log((name, a, "ok?"))
     }
   )
 }
@@ -262,7 +262,7 @@ let old_from_promise_suites_donotuse = (name, suites: list<(string, Js.Promise.t
         )
       )
     } else {
-      Js.log("promise suites")
+      Console.log("promise suites")
     } /* TODO */
   | _ => ()
   }

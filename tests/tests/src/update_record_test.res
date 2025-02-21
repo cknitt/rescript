@@ -1,7 +1,7 @@
 let suites: ref<Mt.pair_suites> = ref(list{})
 let test_id = ref(0)
 let eq = (loc, x, y) => {
-  Js.log((x, y))
+  Console.log((x, y))
   incr(test_id)
   suites :=
     list{

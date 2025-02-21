@@ -18,13 +18,13 @@ let test = dom => {
   switch elem {
   | None => 1
   | Some(ui) =>
-    Js.log(ui)
+    Console.log(ui)
     2
   }
 }
 
 let f = (x, y) => {
-  Js.log("no inline")
+  Console.log("no inline")
   Js.Nullable.return(x + y)
 }
 

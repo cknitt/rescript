@@ -3,6 +3,7 @@
 import * as Mt from "./mt.mjs";
 import * as Belt_List from "rescript/lib/es6/Belt_List.js";
 import * as Belt_Array from "rescript/lib/es6/Belt_Array.js";
+import * as Stdlib_Array from "rescript/lib/es6/Stdlib_Array.js";
 import * as Primitive_int from "rescript/lib/es6/Primitive_int.js";
 import * as Primitive_object from "rescript/lib/es6/Primitive_object.js";
 
@@ -45,12 +46,12 @@ function push(prim0, prim1) {
   prim0.push(prim1);
 }
 
-console.log([
+console.log(Stdlib_Array.reduce([
   1,
   2,
   3,
   4
-].filter(x => x > 2).map((x, i) => x + i | 0).reduce((x, y) => x + y | 0, 0));
+].filter(x => x > 2).map((x, i) => x + i | 0), 0, (x, y) => x + y | 0));
 
 let v = [
   1,

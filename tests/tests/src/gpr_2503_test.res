@@ -7,23 +7,23 @@ let b = (loc, b) => Mt.bool_suites(~suites, ~test_id, loc, b)
 
 @obj external make: (~foo: [#a | #b]=?, unit) => _ = ""
 
-let makeWrapper = (~foo=?, ()) => Js.log(make(~foo?, ()))
+let makeWrapper = (~foo=?, ()) => Console.log(make(~foo?, ()))
 
 @obj external make2: (~foo: [#a | #b], unit) => _ = ""
 
-let makeWrapper2 = (foo, ()) => Js.log(make2(~foo, ()))
+let makeWrapper2 = (foo, ()) => Console.log(make2(~foo, ()))
 
 let _ = makeWrapper2(#a, ())
 
 @obj external make3: (~foo: [#a | #b]=?, unit) => _ = ""
 
 let makeWrapper3 = (~foo=?, ()) => {
-  Js.log(2)
+  Console.log(2)
   make(~foo?, ())
 }
 
 let makeWrapper4 = (foo, ()) => {
-  Js.log(2)
+  Console.log(2)
   make(
     ~foo=?if foo > 100 {
       None

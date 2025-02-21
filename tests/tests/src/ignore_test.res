@@ -11,7 +11,7 @@ let eq = (loc, x, y) => {
 
 let f = x => ignore(x)
 
-let ff = x => ignore(Js.log(x))
+let ff = x => ignore(Console.log(x))
 
 let () = eq(__LOC__, f(3), ())
 

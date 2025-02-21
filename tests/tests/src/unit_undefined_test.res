@@ -15,7 +15,7 @@ let eq = (loc, x, y) => Mt.eq_suites(~test_id, ~suites, loc, x, y)
 let f_01 = () =>
   hi((() as x) =>
     if x == () {
-      Js.log("x")
+      Console.log("x")
     }
   ) /* FIXME: not inlined */
 

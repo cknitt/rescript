@@ -7,7 +7,7 @@ let {eq_suites} = module(Mt)
 let eq = (loc, x, y) => eq_suites(loc, x, y, ~test_id, ~suites)
 
 let then = (a, b) => {
-  Js.log("no inline")
+  Console.log("no inline")
   a * a + b * b
 }
 

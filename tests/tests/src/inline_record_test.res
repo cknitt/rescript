@@ -18,8 +18,8 @@ let f = (x: t0) =>
   }
 eq(__LOC__, f(v), 3)
 eq(__LOC__, f(v1), 3)
-Js.log(f(v))
-Js.log(f(v1))
+Console.log(f(v))
+Console.log(f(v1))
 
 /* let foo ?(bar= 1) baz = bar + baz */
 type t1 =
@@ -123,14 +123,14 @@ type emptyRecord = A | B({})
 let b = B({})
 
 let () = switch b {
-| A => Js.log("A!")
-| B({}) => Js.log("B")
+| A => Console.log("A!")
+| B({}) => Console.log("B")
 }
 
 type r = {y: int}
 let r = {y: 10}
 
 switch r {
-| {y: 10} => Js.log("10!")
-| {} => Js.log("Catch all?")
+| {y: 10} => Console.log("10!")
+| {} => Console.log("Catch all?")
 }

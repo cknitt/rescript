@@ -54,7 +54,7 @@ let f006: Lazy.t<unit => int> = Lazy.from_fun(() => {
 
 let f007 = Lazy.from_fun(() => raise(Not_found))
 let f008 = Lazy.from_fun(() => {
-  Js.log("hi")
+  Console.log("hi")
   raise(Not_found)
 })
 

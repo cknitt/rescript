@@ -65,7 +65,7 @@
   addTypeReference DeadExn.res:8:16 --> DeadExn.res:1:0
   addValueReference DeadExn.res:10:4 --> DeadExn.res:4:2
   addTypeReference DeadExn.res:10:14 --> DeadExn.res:4:2
-  addValueReference DeadExn.res:12:7 --> DeadExn.res:10:4
+  addValueReference DeadExn.res:12:12 --> DeadExn.res:10:4
   Scanning DeadExn.cmti Source:DeadExn.resi
   Scanning DeadRT.cmt Source:DeadRT.res
   addValueDeclaration +emitModuleAccessPath DeadRT.res:5:8 path:+DeadRT
@@ -73,7 +73,7 @@
   addVariantCaseDeclaration Kaboom DeadRT.res:3:2 path:+DeadRT.moduleAccessPath
   addValueReference DeadRT.res:5:8 --> DeadRT.res:7:9
   addValueReference DeadRT.res:5:8 --> DeadRT.res:5:31
-  addTypeReference DeadRT.res:11:16 --> DeadRT.res:3:2
+  addTypeReference DeadRT.res:11:21 --> DeadRT.res:3:2
   Scanning DeadRT.cmti Source:DeadRT.resi
   addVariantCaseDeclaration Root DeadRT.resi:2:2 path:DeadRT.moduleAccessPath
   extendTypeDependencies DeadRT.res:2:2 --> DeadRT.resi:2:2
@@ -118,7 +118,7 @@
   addValueDeclaration +funWithInnerVars DeadTest.res:145:4 path:+DeadTest
   addValueDeclaration +deadIncorrect DeadTest.res:154:4 path:+DeadTest
   addValueDeclaration +ira DeadTest.res:160:4 path:+DeadTest
-  addValueReference DeadTest.res:1:15 --> ImmutableArray.resi:9:0
+  addValueReference DeadTest.res:1:20 --> ImmutableArray.resi:9:0
   addValueReference DeadTest.res:8:7 --> DeadTest.res:7:4
   addValueReference DeadTest.res:11:7 --> DeadTest.res:10:4
   addValueReference DeadTest.res:12:7 --> DeadTest.res:10:4
@@ -149,8 +149,8 @@
   addValueDeclaration +x DeadTest.res:64:6 path:+DeadTest.MM
   addValueReference DeadTest.res:64:6 --> DeadTest.res:63:6
   addValueDeclaration +valueOnlyInImplementation DeadTest.res:65:6 path:+DeadTest.MM
-  addValueReference DeadTest.res:69:9 --> DeadTest.res:60:2
-  addValueReference DeadTest.res:73:16 --> DeadValueTest.resi:1:0
+  addValueReference DeadTest.res:69:14 --> DeadTest.res:60:2
+  addValueReference DeadTest.res:73:21 --> DeadValueTest.resi:1:0
   addValueReference DeadTest.res:75:8 --> DeadTest.res:75:8
   addValueReference DeadTest.res:77:8 --> DeadTest.res:77:20
   addValueReference DeadTest.res:77:8 --> DeadTest.res:77:8
@@ -166,22 +166,22 @@
   addValueReference DeadTest.res:96:4 --> DeadTest.res:96:42
   addValueReference DeadTest.res:96:4 --> DeadTest.res:96:24
   addValueReference DeadTest.res:96:4 --> DeadTest.res:96:45
-  addTypeReference DeadTest.res:98:16 --> DeadRT.resi:2:2
+  addTypeReference DeadTest.res:98:21 --> DeadRT.resi:2:2
   addValueDeclaration +a1 DeadTest.res:105:6 path:+DeadTest
   addValueDeclaration +a2 DeadTest.res:106:6 path:+DeadTest
   addValueDeclaration +a3 DeadTest.res:107:6 path:+DeadTest
-  addValueReference DeadTest.res:110:17 --> DynamicallyLoadedComponent.res:2:4
+  addValueReference DeadTest.res:110:22 --> DynamicallyLoadedComponent.res:2:4
   addRecordLabelDeclaration s DeadTest.res:117:12 path:+DeadTest.props
   addValueReference DeadTest.res:117:32 --> DeadTest.res:117:12
   addValueReference DeadTest.res:117:19 --> React.res:7:0
   addTypeReference _none_:1:-1 --> DeadTest.res:117:12
-  addValueReference DeadTest.res:119:16 --> DeadTest.res:117:4
+  addValueReference DeadTest.res:119:21 --> DeadTest.res:117:4
   addVariantCaseDeclaration A DeadTest.res:134:11 path:+DeadTest.WithInclude.t
   addVariantCaseDeclaration A DeadTest.res:137:13 path:+DeadTest.WithInclude.T.t
   addVariantCaseDeclaration A DeadTest.res:137:13 path:+DeadTest.WithInclude.t
   extendTypeDependencies DeadTest.res:137:13 --> DeadTest.res:134:11
   extendTypeDependencies DeadTest.res:134:11 --> DeadTest.res:137:13
-  addTypeReference DeadTest.res:142:7 --> DeadTest.res:134:11
+  addTypeReference DeadTest.res:142:12 --> DeadTest.res:134:11
   addValueDeclaration +x DeadTest.res:146:6 path:+DeadTest
   addValueDeclaration +y DeadTest.res:147:6 path:+DeadTest
   addValueReference DeadTest.res:145:4 --> DeadTest.res:146:6
@@ -1066,7 +1066,7 @@
   addValueDeclaration +ddjdj ModuleExceptionBug.res:7:4 path:+ModuleExceptionBug
   addValueReference ModuleExceptionBug.res:2:6 --> ModuleExceptionBug.res:2:21
   addExceptionDeclaration MyOtherException ModuleExceptionBug.res:5:0 path:+ModuleExceptionBug
-  addValueReference ModuleExceptionBug.res:8:7 --> ModuleExceptionBug.res:7:4
+  addValueReference ModuleExceptionBug.res:8:12 --> ModuleExceptionBug.res:7:4
   Scanning NestedModules.cmt Source:NestedModules.res
   addValueDeclaration +notNested NestedModules.res:2:4 path:+NestedModules
   addValueDeclaration +theAnswer NestedModules.res:6:6 path:+NestedModules.Universe
@@ -1168,9 +1168,9 @@
   addValueReference Newton.res:29:4 --> Newton.res:25:4
   addValueReference Newton.res:29:4 --> Newton.res:27:4
   addValueReference Newton.res:29:4 --> Newton.res:6:4
-  addValueReference Newton.res:31:8 --> Newton.res:29:4
-  addValueReference Newton.res:31:18 --> Newton.res:29:4
-  addValueReference Newton.res:31:16 --> Newton.res:25:4
+  addValueReference Newton.res:31:13 --> Newton.res:29:4
+  addValueReference Newton.res:31:23 --> Newton.res:29:4
+  addValueReference Newton.res:31:21 --> Newton.res:25:4
   Scanning Opaque.cmt Source:Opaque.res
   addValueDeclaration +noConversion Opaque.res:5:4 path:+Opaque
   addValueDeclaration +testConvertNestedRecordFromOtherFile Opaque.res:11:4 path:+Opaque
@@ -1195,10 +1195,10 @@
   addValueReference OptArg.res:1:4 --> OptArg.res:1:29
   addValueReference OptArg.res:3:4 --> OptArg.res:3:17
   addValueReference OptArg.res:3:4 --> OptArg.res:3:27
-  DeadOptionalArgs.addReferences foo called with optional argNames:x argNamesMaybe: OptArg.res:5:7
-  addValueReference OptArg.res:5:7 --> OptArg.res:1:4
-  DeadOptionalArgs.addReferences bar called with optional argNames: argNamesMaybe: OptArg.res:7:7
-  addValueReference OptArg.res:7:7 --> OptArg.res:3:4
+  DeadOptionalArgs.addReferences foo called with optional argNames:x argNamesMaybe: OptArg.res:5:12
+  addValueReference OptArg.res:5:12 --> OptArg.res:1:4
+  DeadOptionalArgs.addReferences bar called with optional argNames: argNamesMaybe: OptArg.res:7:12
+  addValueReference OptArg.res:7:12 --> OptArg.res:3:4
   addValueReference OptArg.res:9:4 --> OptArg.res:9:20
   addValueReference OptArg.res:9:4 --> OptArg.res:9:26
   addValueReference OptArg.res:9:4 --> OptArg.res:9:32
@@ -1206,17 +1206,17 @@
   addValueReference OptArg.res:9:4 --> OptArg.res:9:23
   addValueReference OptArg.res:9:4 --> OptArg.res:9:29
   addValueReference OptArg.res:9:4 --> OptArg.res:9:35
-  DeadOptionalArgs.addReferences threeArgs called with optional argNames:c, a argNamesMaybe: OptArg.res:11:7
-  addValueReference OptArg.res:11:7 --> OptArg.res:9:4
-  DeadOptionalArgs.addReferences threeArgs called with optional argNames:a argNamesMaybe: OptArg.res:12:7
-  addValueReference OptArg.res:12:7 --> OptArg.res:9:4
+  DeadOptionalArgs.addReferences threeArgs called with optional argNames:c, a argNamesMaybe: OptArg.res:11:12
+  addValueReference OptArg.res:11:12 --> OptArg.res:9:4
+  DeadOptionalArgs.addReferences threeArgs called with optional argNames:a argNamesMaybe: OptArg.res:12:12
+  addValueReference OptArg.res:12:12 --> OptArg.res:9:4
   addValueReference OptArg.res:14:4 --> OptArg.res:14:18
   addValueReference OptArg.res:14:4 --> OptArg.res:14:24
   addValueReference OptArg.res:14:4 --> OptArg.res:14:15
   addValueReference OptArg.res:14:4 --> OptArg.res:14:21
   addValueReference OptArg.res:14:4 --> OptArg.res:14:27
-  DeadOptionalArgs.addReferences twoArgs called with optional argNames: argNamesMaybe: OptArg.res:16:7
-  addValueReference OptArg.res:16:12 --> OptArg.res:14:4
+  DeadOptionalArgs.addReferences twoArgs called with optional argNames: argNamesMaybe: OptArg.res:16:12
+  addValueReference OptArg.res:16:17 --> OptArg.res:14:4
   addValueReference OptArg.res:18:4 --> OptArg.res:18:17
   addValueReference OptArg.res:18:4 --> OptArg.res:18:14
   addValueReference OptArg.res:18:4 --> OptArg.res:18:24
@@ -1224,8 +1224,8 @@
   addValueReference OptArg.res:20:4 --> OptArg.res:20:18
   addValueReference OptArg.res:20:4 --> OptArg.res:20:24
   addValueReference OptArg.res:20:4 --> OptArg.res:18:4
-  DeadOptionalArgs.addReferences wrapOneArg called with optional argNames:a argNamesMaybe: OptArg.res:22:7
-  addValueReference OptArg.res:22:7 --> OptArg.res:20:4
+  DeadOptionalArgs.addReferences wrapOneArg called with optional argNames:a argNamesMaybe: OptArg.res:22:12
+  addValueReference OptArg.res:22:12 --> OptArg.res:20:4
   addValueReference OptArg.res:24:4 --> OptArg.res:24:19
   addValueReference OptArg.res:24:4 --> OptArg.res:24:25
   addValueReference OptArg.res:24:4 --> OptArg.res:24:31
@@ -1241,10 +1241,10 @@
   addValueReference OptArg.res:26:4 --> OptArg.res:26:32
   addValueReference OptArg.res:26:4 --> OptArg.res:26:38
   addValueReference OptArg.res:26:4 --> OptArg.res:24:4
-  DeadOptionalArgs.addReferences wrapfourArgs called with optional argNames:c, a argNamesMaybe: OptArg.res:28:7
-  addValueReference OptArg.res:28:7 --> OptArg.res:26:4
-  DeadOptionalArgs.addReferences wrapfourArgs called with optional argNames:c, b argNamesMaybe: OptArg.res:29:7
-  addValueReference OptArg.res:29:7 --> OptArg.res:26:4
+  DeadOptionalArgs.addReferences wrapfourArgs called with optional argNames:c, a argNamesMaybe: OptArg.res:28:12
+  addValueReference OptArg.res:28:12 --> OptArg.res:26:4
+  DeadOptionalArgs.addReferences wrapfourArgs called with optional argNames:c, b argNamesMaybe: OptArg.res:29:12
+  addValueReference OptArg.res:29:12 --> OptArg.res:26:4
   addValueReference OptArg.resi:1:0 --> OptArg.res:1:4
   OptionalArgs.addFunctionReference OptArg.resi:1:0 OptArg.res:1:4
   addValueReference OptArg.resi:2:0 --> OptArg.res:3:4
@@ -1392,7 +1392,7 @@
   addValueReference RepeatedLabel.res:12:4 --> RepeatedLabel.res:12:20
   addTypeReference RepeatedLabel.res:12:16 --> RepeatedLabel.res:7:2
   addTypeReference RepeatedLabel.res:12:16 --> RepeatedLabel.res:8:2
-  addValueReference RepeatedLabel.res:14:7 --> RepeatedLabel.res:12:4
+  addValueReference RepeatedLabel.res:14:12 --> RepeatedLabel.res:12:4
   Scanning RequireCond.cmt Source:RequireCond.res
   Scanning Shadow.cmt Source:Shadow.res
   addValueDeclaration +test Shadow.res:2:4 path:+Shadow
@@ -1450,14 +1450,14 @@
   addValueDeclaration +bar TestOptArg.res:5:4 path:+TestOptArg
   addValueDeclaration +notSuppressesOptArgs TestOptArg.res:9:4 path:+TestOptArg
   addValueDeclaration +liveSuppressesOptArgs TestOptArg.res:14:4 path:+TestOptArg
-  DeadOptionalArgs.addReferences OptArg.bar called with optional argNames:z argNamesMaybe: TestOptArg.res:1:7
-  addValueReference TestOptArg.res:1:7 --> OptArg.resi:2:0
+  DeadOptionalArgs.addReferences OptArg.bar called with optional argNames:z argNamesMaybe: TestOptArg.res:1:12
+  addValueReference TestOptArg.res:1:12 --> OptArg.resi:2:0
   addValueReference TestOptArg.res:3:4 --> TestOptArg.res:3:14
   addValueReference TestOptArg.res:3:4 --> TestOptArg.res:3:11
   addValueReference TestOptArg.res:3:4 --> TestOptArg.res:3:17
   DeadOptionalArgs.addReferences foo called with optional argNames:x argNamesMaybe: TestOptArg.res:5:16
   addValueReference TestOptArg.res:5:4 --> TestOptArg.res:3:4
-  addValueReference TestOptArg.res:7:7 --> TestOptArg.res:5:4
+  addValueReference TestOptArg.res:7:12 --> TestOptArg.res:5:4
   addValueReference TestOptArg.res:9:4 --> TestOptArg.res:9:31
   addValueReference TestOptArg.res:9:4 --> TestOptArg.res:9:37
   addValueReference TestOptArg.res:9:4 --> TestOptArg.res:9:43
@@ -1749,18 +1749,18 @@
   addRecordLabelDeclaration x VariantsWithPayload.res:2:2 path:+VariantsWithPayload.payload
   addRecordLabelDeclaration y VariantsWithPayload.res:3:2 path:+VariantsWithPayload.payload
   addValueReference VariantsWithPayload.res:16:4 --> VariantsWithPayload.res:16:23
-  addTypeReference VariantsWithPayload.res:26:57 --> VariantsWithPayload.res:2:2
+  addTypeReference VariantsWithPayload.res:26:62 --> VariantsWithPayload.res:2:2
   addValueReference VariantsWithPayload.res:19:4 --> VariantsWithPayload.res:26:7
-  addTypeReference VariantsWithPayload.res:26:74 --> VariantsWithPayload.res:3:2
+  addTypeReference VariantsWithPayload.res:26:79 --> VariantsWithPayload.res:3:2
   addValueReference VariantsWithPayload.res:19:4 --> VariantsWithPayload.res:26:7
   addValueReference VariantsWithPayload.res:19:4 --> VariantsWithPayload.res:19:31
   addValueReference VariantsWithPayload.res:37:4 --> VariantsWithPayload.res:37:24
   addValueReference VariantsWithPayload.res:40:4 --> VariantsWithPayload.res:42:9
   addValueReference VariantsWithPayload.res:40:4 --> VariantsWithPayload.res:43:9
   addValueReference VariantsWithPayload.res:40:4 --> VariantsWithPayload.res:43:13
-  addTypeReference VariantsWithPayload.res:44:55 --> VariantsWithPayload.res:2:2
+  addTypeReference VariantsWithPayload.res:44:60 --> VariantsWithPayload.res:2:2
   addValueReference VariantsWithPayload.res:40:4 --> VariantsWithPayload.res:44:11
-  addTypeReference VariantsWithPayload.res:44:72 --> VariantsWithPayload.res:3:2
+  addTypeReference VariantsWithPayload.res:44:77 --> VariantsWithPayload.res:3:2
   addValueReference VariantsWithPayload.res:40:4 --> VariantsWithPayload.res:44:11
   addValueReference VariantsWithPayload.res:40:4 --> VariantsWithPayload.res:40:25
   addVariantCaseDeclaration A VariantsWithPayload.res:49:2 path:+VariantsWithPayload.simpleVariant
@@ -1789,7 +1789,7 @@
   Implementation 0
   Implementation 0
   Implementation 0
-  addValueReference TestDeadExn.res:1:7 --> DeadExn.res:1:0
+  addValueReference TestDeadExn.res:1:12 --> DeadExn.res:1:0
   
 File References
 
@@ -1893,8 +1893,8 @@ File References
   Live Value +CreateErrorHandler2.Error2.+notification: 1 references (ErrorHandler.resi:3:2) [0]
   Live Value +DeadCodeImplementation.M.+x: 1 references (DeadCodeInterface.res:2:2) [0]
   Dead Value +DeadRT.+emitModuleAccessPath: 0 references () [0]
-  Live VariantCase +DeadRT.moduleAccessPath.Kaboom: 1 references (DeadRT.res:11:16) [0]
-  Live VariantCase DeadRT.moduleAccessPath.Root: 1 references (DeadTest.res:98:16) [1]
+  Live VariantCase +DeadRT.moduleAccessPath.Kaboom: 1 references (DeadRT.res:11:21) [0]
+  Live VariantCase DeadRT.moduleAccessPath.Root: 1 references (DeadTest.res:98:21) [1]
   Live VariantCase +DeadRT.moduleAccessPath.Root: 1 references (DeadRT.resi:2:2) [0]
   Live VariantCase DeadRT.moduleAccessPath.Kaboom: 1 references (DeadRT.res:3:2) [0]
   Dead RecordLabel +DeadTest.inlineRecord3.IR3.b: 0 references () [0]
@@ -1917,7 +1917,7 @@ File References
   Dead Value +DeadTest.+funWithInnerVars: 0 references () [1]
   Dead Value +DeadTest.+y: 0 references () [0]
   Dead Value +DeadTest.+x: 0 references () [0]
-  Live VariantCase +DeadTest.WithInclude.t.A: 1 references (DeadTest.res:142:7) [1]
+  Live VariantCase +DeadTest.WithInclude.t.A: 1 references (DeadTest.res:142:12) [1]
   Live VariantCase +DeadTest.WithInclude.t.A: 1 references (DeadTest.res:134:11) [0]
   Live Value +DeadTest.GloobLive.+globallyLive3: 0 references () [0]
   Live Value +DeadTest.GloobLive.+globallyLive2: 0 references () [0]
@@ -1925,7 +1925,7 @@ File References
   Dead Value +DeadTest.+stringLengthNoSideEffects: 0 references () [0]
   Dead Value +DeadTest.+theSideEffectIsLogging: 0 references () [0]
   Live RecordLabel +DeadTest.props.s: 1 references (_none_:1:-1) [0]
-  Live Value +DeadTest.+make: 1 references (DeadTest.res:119:16) [0]
+  Live Value +DeadTest.+make: 1 references (DeadTest.res:119:21) [0]
   Dead Value +DeadTest.+deadRef: 0 references () [0]
   Dead Value +DeadTest.+second: 0 references () [0]
   Dead Value +DeadTest.+a3: 0 references () [0]
@@ -1943,7 +1943,7 @@ File References
   Dead Value +DeadTest.+split_map: 0 references () [0]
   Dead Value +DeadTest.+unusedRec: 0 references () [0]
   Dead Value +DeadTest.MM.+valueOnlyInImplementation: 0 references () [0]
-  Live Value +DeadTest.MM.+x: 1 references (DeadTest.res:69:9) [1]
+  Live Value +DeadTest.MM.+x: 1 references (DeadTest.res:69:14) [1]
   Live Value +DeadTest.MM.+x: 1 references (DeadTest.res:60:2) [0]
   Dead Value +DeadTest.MM.+y: 0 references () [1]
   Live Value +DeadTest.MM.+y: 1 references (DeadTest.res:64:6) [0]
@@ -2052,7 +2052,7 @@ File References
   Dead RecordLabel +ModuleAliases2.Outer.outer.outer: 0 references () [0]
   Dead RecordLabel +ModuleAliases2.record.y: 0 references () [0]
   Dead RecordLabel +ModuleAliases2.record.x: 0 references () [0]
-  Live Value +ModuleExceptionBug.+ddjdj: 1 references (ModuleExceptionBug.res:8:7) [0]
+  Live Value +ModuleExceptionBug.+ddjdj: 1 references (ModuleExceptionBug.res:8:12) [0]
   Dead Exception +ModuleExceptionBug.MyOtherException: 0 references () [0]
   Dead Value +ModuleExceptionBug.Dep.+customDouble: 0 references () [0]
   Live Value +NestedModules.Universe.+someString: 0 references () [0]
@@ -2081,9 +2081,9 @@ File References
   Dead RecordLabel +Newsyntax.record.xxx: 0 references () [0]
   Dead Value +Newsyntax.+y: 0 references () [0]
   Dead Value +Newsyntax.+x: 0 references () [0]
-  Live Value +Newton.+result: 2 references (Newton.res:31:8, Newton.res:31:18) [0]
+  Live Value +Newton.+result: 2 references (Newton.res:31:13, Newton.res:31:23) [0]
   Live Value +Newton.+fPrimed: 1 references (Newton.res:29:4) [0]
-  Live Value +Newton.+f: 2 references (Newton.res:29:4, Newton.res:31:16) [0]
+  Live Value +Newton.+f: 2 references (Newton.res:29:4, Newton.res:31:21) [0]
   Live Value +Newton.+newton: 1 references (Newton.res:29:4) [2]
   Live Value +Newton.+loop: 1 references (Newton.res:6:4) [1]
   Live Value +Newton.+next: 1 references (Newton.res:14:10) [0]
@@ -2153,7 +2153,7 @@ File References
   Live Value +References.+update: 0 references () [0]
   Live Value +References.+access: 0 references () [0]
   Live Value +References.+create: 0 references () [0]
-  Live Value +RepeatedLabel.+userData: 1 references (RepeatedLabel.res:14:7) [0]
+  Live Value +RepeatedLabel.+userData: 1 references (RepeatedLabel.res:14:12) [0]
   Dead RecordLabel +RepeatedLabel.tabState.f: 0 references () [0]
   Live RecordLabel +RepeatedLabel.tabState.b: 1 references (RepeatedLabel.res:12:16) [0]
   Live RecordLabel +RepeatedLabel.tabState.a: 1 references (RepeatedLabel.res:12:16) [0]
@@ -2189,7 +2189,7 @@ File References
   Live Value +TestModuleAliases.+testInner1: 0 references () [0]
   Live Value +TestOptArg.+liveSuppressesOptArgs: 1 references (TestOptArg.res:16:8) [0]
   Live Value +TestOptArg.+notSuppressesOptArgs: 1 references (TestOptArg.res:11:8) [0]
-  Live Value +TestOptArg.+bar: 1 references (TestOptArg.res:7:7) [0]
+  Live Value +TestOptArg.+bar: 1 references (TestOptArg.res:7:12) [0]
   Live Value +TestOptArg.+foo: 1 references (TestOptArg.res:5:4) [0]
   Live Value +TestPromise.+convert: 0 references () [0]
   Dead RecordLabel +TestPromise.toPayload.result: 0 references () [0]
@@ -2318,9 +2318,9 @@ File References
   Live Value +VariantsWithPayload.+testManyPayloads: 0 references () [0]
   Live Value +VariantsWithPayload.+printVariantWithPayload: 0 references () [0]
   Live Value +VariantsWithPayload.+testWithPayload: 0 references () [0]
-  Live RecordLabel +VariantsWithPayload.payload.y: 2 references (VariantsWithPayload.res:26:74, VariantsWithPayload.res:44:72) [0]
-  Live RecordLabel +VariantsWithPayload.payload.x: 2 references (VariantsWithPayload.res:26:57, VariantsWithPayload.res:44:55) [0]
-  Live Value +DeadExn.+eInside: 1 references (DeadExn.res:12:7) [0]
+  Live RecordLabel +VariantsWithPayload.payload.y: 2 references (VariantsWithPayload.res:26:79, VariantsWithPayload.res:44:77) [0]
+  Live RecordLabel +VariantsWithPayload.payload.x: 2 references (VariantsWithPayload.res:26:62, VariantsWithPayload.res:44:60) [0]
+  Live Value +DeadExn.+eInside: 1 references (DeadExn.res:12:12) [0]
   Dead Value +DeadExn.+eToplevel: 0 references () [0]
   Dead Exception +DeadExn.DeadE: 0 references () [0]
   Live Exception +DeadExn.Inside.Einside: 1 references (DeadExn.res:10:14) [0]
@@ -2335,9 +2335,9 @@ File References
   Dead Value +DeadTypeTest.+a: 0 references () [0]
   Dead VariantCase +DeadTypeTest.t.B: 0 references () [0]
   Dead Value DeadValueTest.+valueDead: 0 references () [0]
-  Live Value DeadValueTest.+valueAlive: 1 references (DeadTest.res:73:16) [0]
+  Live Value DeadValueTest.+valueAlive: 1 references (DeadTest.res:73:21) [0]
   Live RecordLabel +DynamicallyLoadedComponent.props.s: 1 references (_none_:1:-1) [0]
-  Live Value +DynamicallyLoadedComponent.+make: 1 references (DeadTest.res:110:17) [0]
+  Live Value +DynamicallyLoadedComponent.+make: 1 references (DeadTest.res:110:22) [0]
   Dead Value ErrorHandler.+x: 0 references () [0]
   Live Value ErrorHandler.Make.+notify: 1 references (CreateErrorHandler1.res:8:0) [0]
   Dead Value +FirstClassModulesInterface.+r: 0 references () [0]
@@ -2402,7 +2402,7 @@ File References
   Dead Value ImmutableArray.+size: 0 references () [0]
   Dead Value ImmutableArray.+length: 0 references () [0]
   Dead Value ImmutableArray.+toArray: 0 references () [0]
-  Live Value ImmutableArray.+fromArray: 1 references (DeadTest.res:1:15) [0]
+  Live Value ImmutableArray.+fromArray: 1 references (DeadTest.res:1:20) [0]
   Live Value ImmutableArray.Array.+get: 1 references (TestImmutableArray.res:2:4) [0]
   Live RecordLabel +ImportHookDefault.props.renderMe: 0 references () [0]
   Live RecordLabel +ImportHookDefault.props.children: 0 references () [0]
@@ -2437,7 +2437,7 @@ File References
   Dead RecordLabel +ImportJsValue.point.x: 0 references () [0]
   Live Value +ImportJsValue.+round: 1 references (ImportJsValue.res:27:4) [0]
   Live Value +NestedModulesInSignature.Universe.+theAnswer: 1 references (NestedModulesInSignature.resi:2:2) [0]
-  Live Value OptArg.+bar: 1 references (TestOptArg.res:1:7) [0]
+  Live Value OptArg.+bar: 1 references (TestOptArg.res:1:12) [0]
   Dead Value OptArg.+foo: 0 references () [0]
   Dead Value +DeadValueTest.+tail: 0 references () [0]
   Dead Value +DeadValueTest.+subList: 0 references () [0]
@@ -2506,14 +2506,14 @@ File References
   Dead Value +ImmutableArray.+length: 0 references () [0]
   Dead Value +ImmutableArray.+toArray: 0 references () [0]
   Live Value +ImmutableArray.+fromArray: 1 references (ImmutableArray.resi:9:0) [0]
-  Live Value +OptArg.+wrapfourArgs: 2 references (OptArg.res:28:7, OptArg.res:29:7) [0]
+  Live Value +OptArg.+wrapfourArgs: 2 references (OptArg.res:28:12, OptArg.res:29:12) [0]
   Live Value +OptArg.+fourArgs: 1 references (OptArg.res:26:4) [0]
-  Live Value +OptArg.+wrapOneArg: 1 references (OptArg.res:22:7) [0]
+  Live Value +OptArg.+wrapOneArg: 1 references (OptArg.res:22:12) [0]
   Live Value +OptArg.+oneArg: 1 references (OptArg.res:20:4) [0]
-  Live Value +OptArg.+twoArgs: 1 references (OptArg.res:16:12) [0]
-  Live Value +OptArg.+threeArgs: 2 references (OptArg.res:11:7, OptArg.res:12:7) [0]
-  Live Value +OptArg.+bar: 2 references (OptArg.res:7:7, OptArg.resi:2:0) [0]
-  Live Value +OptArg.+foo: 1 references (OptArg.res:5:7) [0]
+  Live Value +OptArg.+twoArgs: 1 references (OptArg.res:16:17) [0]
+  Live Value +OptArg.+threeArgs: 2 references (OptArg.res:11:12, OptArg.res:12:12) [0]
+  Live Value +OptArg.+bar: 2 references (OptArg.res:7:12, OptArg.resi:2:0) [0]
+  Live Value +OptArg.+foo: 1 references (OptArg.res:5:12) [0]
 
   Incorrect Dead Annotation
   DeadTest.res:153:1-28
@@ -2752,7 +2752,7 @@ File References
   @dead("deadRef") let deadRef = ref(12)
 
   Warning Dead Value With Side Effects
-  DeadTest.res:121:1-40
+  DeadTest.res:121:1-45
   theSideEffectIsLogging is never used and could have side effects
 
   Warning Dead Value With Side Effects

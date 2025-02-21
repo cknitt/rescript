@@ -9,7 +9,7 @@ let eq = (loc, x, y) => {
     }
 }
 
-let foo = f => Js.log(f(~a1="a1", ()))
+let foo = f => Console.log(f(~a1="a1", ()))
 
 let _ = foo(Gpr_1423_nav.busted(~a2="a2", ...))
 

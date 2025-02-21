@@ -1,1 +1,1 @@
-let main = () => Js.log("hello")
+let main = () => Console.log("hello")

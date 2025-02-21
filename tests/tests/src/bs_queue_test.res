@@ -189,7 +189,7 @@ let () = {
   assert(Q.reduce(q2, 0, (x, y) => x - y) == Belt.Array.reduce(v, 0, (x, y) => x - y))
 }
 
-let () = Js.log("OK")
+let () = Console.log("OK")
 
 let () = {
   let q = Q.fromArray([1, 2, 3, 4])

@@ -30,7 +30,7 @@ external cloneElement: (reactElement, ~props: {..}=?, array<reactElement>) => re
 external createElementVerbatim: 'a = "createElement"
 
 let createDomElement = (s, ~props, children) => {
-  let vararg = Js.Array.concat(children, [Obj.magic(s), Obj.magic(props)])
+  let vararg = Array.concat(children, [Obj.magic(s), Obj.magic(props)])
   /* Use varargs to avoid warnings on duplicate keys in children */
   Obj.magic(createElementVerbatim)["apply"](Js.Nullable.null, vararg)
 }
@@ -288,7 +288,7 @@ module WrapProps = {
       Js.Obj.assign(Js.Obj.empty(), Obj.magic(props)),
       {"ref": ref, "key": key},
     )
-    let varargs = Js.Array.concat(Obj.magic(children), [Obj.magic(reactClass), Obj.magic(props)])
+    let varargs = Array.concat(Obj.magic(children), [Obj.magic(reactClass), Obj.magic(props)])
     /* Use varargs under the hood */
     Obj.magic(createElementVerbatim)["apply"](Js.Nullable.null, varargs)
   }
