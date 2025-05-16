@@ -326,7 +326,11 @@ fn generate_ast(
 
     // generate the dir of the ast_path (it mirrors the source file dir)
     let build_path = PathBuf::from(package.get_build_path());
-    let ast_dir_path = build_path.join(ast_path.parent().unwrap());
+    print!("build_path: {}", build_path.display());
+    print!("ast_path: {}", ast_path.display());
+    let parent_path = ast_path.parent();
+    print!("ast_path.parent: {:?}", parent_path);
+    let ast_dir_path = build_path.join(parent_path.unwrap());
     helpers::create_path(&ast_dir_path.to_string_lossy());
 
     /* Create .ast */
