@@ -96,8 +96,13 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           # See https://github.com/ocaml/setup-ocaml/blob/b2105f9/packages/setup-ocaml/src/unix.ts#L9
-          packages: bubblewrap darcs g++-multilib gcc-multilib mercurial musl-tools rsync
+          # linux-libc-dev required for eio / liburing
+          packages: bubblewrap darcs g++-multilib gcc-multilib liburing-dev linux-libc-dev mercurial musl-tools rsync
           version: v3
+
+      - name: Install kernel headers
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y linux-headers-$(uname -r)
 
       - name: Restore rewatch build cache
         id: rewatch-build-cache
