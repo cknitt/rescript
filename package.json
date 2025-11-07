@@ -85,6 +85,7 @@
     "@rescript/darwin-x64": "workspace:packages/@rescript/darwin-x64",
     "@rescript/linux-arm64": "workspace:packages/@rescript/linux-arm64",
     "@rescript/linux-x64": "workspace:packages/@rescript/linux-x64",
+    "@rescript/win32-arm64": "workspace:packages/@rescript/win32-arm64",
     "@rescript/win32-x64": "workspace:packages/@rescript/win32-x64"
   },
   "devDependencies": {

@@ -58,6 +58,12 @@ jobs:
             node-target: win32-x64
             rust-target: x86_64-pc-windows-msvc
             exe-suffix: ".exe"
+          - os: windows-11-arm
+            ocaml_compiler: 5.3.0
+            upload_binaries: true
+            node-target: win32-arm64
+            rust-target: aarch64-pc-windows-msvc
+            exe-suffix: ".exe"
 
           # Verify that the compiler still builds with the oldest OCaml version we support.
           - os: ubuntu-24.04
@@ -549,6 +555,7 @@ jobs:
           - os: ubuntu-24.04
           - os: ubuntu-24.04-arm
           - os: windows-2022
+          - os: windows-11-arm
     runs-on: ${{ matrix.os }}
     env:
       RUST_BACKTRACE: "1"
@@ -600,6 +607,7 @@ jobs:
           - os: ubuntu-24.04
           - os: ubuntu-24.04-arm
           - os: windows-2022
+          - os: windows-11-arm
     runs-on: ${{ matrix.os }}
     env:
       RUST_BACKTRACE: "1"
@@ -655,6 +663,7 @@ jobs:
           - os: ubuntu-24.04
           - os: ubuntu-24.04-arm
           - os: windows-2022
+          - os: windows-11-arm
     runs-on: ${{ matrix.os }}
     env:
       RUST_BACKTRACE: "1"

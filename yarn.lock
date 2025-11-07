@@ -454,6 +454,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@rescript/win32-arm64@workspace:packages/@rescript/win32-arm64":
+  version: 0.0.0-use.local
+  resolution: "@rescript/win32-arm64@workspace:packages/@rescript/win32-arm64"
+  languageName: unknown
+  linkType: soft
+
 "@rescript/win32-x64@workspace:packages/@rescript/win32-x64":
   version: 0.0.0-use.local
   resolution: "@rescript/win32-x64@workspace:packages/@rescript/win32-x64"
@@ -2556,6 +2562,7 @@ __metadata:
     "@rescript/linux-arm64": "workspace:packages/@rescript/linux-arm64"
     "@rescript/linux-x64": "workspace:packages/@rescript/linux-x64"
     "@rescript/runtime": "workspace:packages/@rescript/runtime"
+    "@rescript/win32-arm64": "workspace:packages/@rescript/win32-arm64"
     "@rescript/win32-x64": "workspace:packages/@rescript/win32-x64"
     "@types/node": "npm:^20.14.9"
     "@types/semver": "npm:^7.7.0"
@@ -2572,6 +2579,8 @@ __metadata:
     "@rescript/linux-arm64":
       optional: true
     "@rescript/linux-x64":
+      optional: true
+    "@rescript/win32-arm64":
       optional: true
     "@rescript/win32-x64":
       optional: true
