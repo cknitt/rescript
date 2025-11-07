@@ -155,21 +155,21 @@ jobs:
         shell: bash
         run: echo "opam_cache_key=opam-env-v8-${{ matrix.os }}-${{ matrix.ocaml_compiler }}-${{ hashFiles('*.opam') }}" | sed 's/,/-/g' >> $GITHUB_ENV
 
-      - name: Restore OPAM environment
-        id: cache-opam-env
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ${{ runner.tool_cache }}/opam
-            ~/.opam
-            _opam
-            .opam-path
-            D:\cygwin
-            D:\.opam
-          key: ${{ env.opam_cache_key }}
+      # - name: Restore OPAM environment
+      #   id: cache-opam-env
+      #   uses: actions/cache/restore@v4
+      #   with:
+      #     path: |
+      #       ${{ runner.tool_cache }}/opam
+      #       ~/.opam
+      #       _opam
+      #       .opam-path
+      #       D:\cygwin
+      #       D:\.opam
+      #     key: ${{ env.opam_cache_key }}
 
       - name: Use OCaml ${{matrix.ocaml_compiler}}
-        uses: ocaml/setup-ocaml@v3.3.2
+        uses: ocaml/setup-ocaml@v3.4.5
         if: steps.cache-opam-env.outputs.cache-hit != 'true'
         with:
           ocaml-compiler: ${{matrix.ocaml_compiler}}
@@ -253,16 +253,16 @@ jobs:
           echo "value=compiler-build-state-v1-${{ matrix.os }}-${{ matrix.ocaml_compiler }}-${{ hashFiles('*.opam') }}" \
             | sed 's/,/-/g' >> "$GITHUB_OUTPUT"
 
-      - name: Restore compiler build state
-        if: github.base_ref == 'master' || github.ref == 'refs/heads/master'
-        id: compiler-build-state
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            D:\.cache\dune
-            ~/.cache/dune
-            _build
-          key: ${{ steps.compiler-build-state-key.outputs.value }}
+      # - name: Restore compiler build state
+      #   if: github.base_ref == 'master' || github.ref == 'refs/heads/master'
+      #   id: compiler-build-state
+      #   uses: actions/cache/restore@v4
+      #   with:
+      #     path: |
+      #       D:\.cache\dune
+      #       ~/.cache/dune
+      #       _build
+      #     key: ${{ steps.compiler-build-state-key.outputs.value }}
 
       - name: Build compiler
         if: runner.os != 'Linux'
