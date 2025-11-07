@@ -56,7 +56,7 @@ jobs:
             ocaml_compiler: 5.3.0
             upload_binaries: true
             node-target: win32-x64
-            rust-target: x86_64-pc-windows-gnu
+            rust-target: x86_64-pc-windows-msvc
             exe-suffix: ".exe"
 
           # Verify that the compiler still builds with the oldest OCaml version we support.
