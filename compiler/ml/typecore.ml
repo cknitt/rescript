@@ -944,18 +944,21 @@ module Label = NameChoice (struct
     (* [dict] This is used in dicts and shouldn't be used anywhere else.
        It adds a new field to an existing record type, to "fool" the pattern
        matching into thinking the label exists. *)
-    let l =
-      {
-        lbl with
-        lbl_name = name;
-        lbl_pos = Array.length lbl.lbl_all;
-        lbl_repres = Record_regular;
-      }
-    in
-    let lbl_all_list = Array.to_list lbl.lbl_all @ [l] in
-    let lbl_all = Array.of_list lbl_all_list in
-    Ext_array.iter lbl_all (fun lbl -> lbl.lbl_all <- lbl_all);
-    l
+    match Array.find_opt (fun l -> l.lbl_name = name) lbl.lbl_all with
+    | Some existing -> existing
+    | None ->
+      let l =
+        {
+          lbl with
+          lbl_name = name;
+          lbl_pos = Array.length lbl.lbl_all;
+          lbl_repres = Record_regular;
+        }
+      in
+      let lbl_all_list = Array.to_list lbl.lbl_all @ [l] in
+      let lbl_all = Array.of_list lbl_all_list in
+      Ext_array.iter lbl_all (fun lbl -> lbl.lbl_all <- lbl_all);
+      l
   let get_type lbl = lbl.lbl_res
   let get_descrs = snd
   let unbound_name_error = Typetexp.unbound_label_error
