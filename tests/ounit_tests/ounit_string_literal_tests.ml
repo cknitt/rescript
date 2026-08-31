@@ -53,7 +53,7 @@ let assert_code_point_at string index expected =
   OUnit.assert_equal ~printer:Ext_obj.dump expected
     (String_literal.code_point_at_utf16_index string index)
 
-let semantic_string s = Lam.const (Lam_constant.Const_string {s; delim = None})
+let semantic_string s = Lam.const (Lam_constant.Const_string s)
 
 let lam_int i = Lam.const (Lam_constant.Const_int (Int32.of_int i))
 
@@ -66,6 +66,17 @@ let assert_lam_char expected = function
   | Lam.Lconst (Lam_constant.Const_char actual) ->
     assert_int_equal expected actual
   | _ -> OUnit.assert_failure "expected a folded Lambda character"
+
+let convert_lambda_string s delim =
+  Lam_constant_convert.convert_constant
+    (Lambda.const_of_typed (Asttypes.Const_string (s, delim)))
+
+let assert_js_string ~expected ~delim constant =
+  match (Lam_compile_const.translate constant).J.expression_desc with
+  | Str {txt; delim = actual_delim} ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected txt;
+    OUnit.assert_equal ~printer:Ext_obj.dump delim actual_delim
+  | _ -> OUnit.assert_failure "expected a JavaScript string expression"
 
 let suites =
   __FILE__
@@ -149,6 +160,27 @@ let suites =
            in
            OUnit.assert_equal ~printer:Ext_obj.dump pattern.ppat_desc
              transformed.ppat_desc );
+         ( "Lambda separates strings from template segments" >:: fun _ ->
+           let semantic = convert_lambda_string "a\n😀" None in
+           let template =
+             convert_lambda_string {|a\n\uD83D\uDE00|} (Some "bq")
+           in
+           let json = convert_lambda_string {|{"answer":42}|} (Some "json") in
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (Lam_constant.Const_string "a\n😀") semantic;
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (Lam_constant.Const_template_segment {|a\n\uD83D\uDE00|}) template;
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (Lam_constant.Const_string {|{"answer":42}|}) json;
+           OUnit.assert_bool "semantic and template strings stay distinct"
+             (not
+                (Lam_constant.eq_approx (Lam_constant.Const_string {|a\n|})
+                   (Lam_constant.Const_template_segment {|a\n|}))) );
+         ( "Lambda string kinds lower differently" >:: fun _ ->
+           assert_js_string ~expected:"a\n😀" ~delim:J.DNone
+             (Lam_constant.Const_string "a\n😀");
+           assert_js_string ~expected:{|a\n\uD83D\uDE00|} ~delim:J.DBackQuotes
+             (Lam_constant.Const_template_segment {|a\n\uD83D\uDE00|}) );
          ( "UTF-16 length" >:: fun _ ->
            assert_int_equal 0 (String_literal.utf16_length "");
            assert_int_equal 3 (String_literal.utf16_length "abc");

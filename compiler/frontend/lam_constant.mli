@@ -33,7 +33,9 @@ type t =
     (* Constant constructor of a nominal variant, emitted from its
          canonical runtime descriptor rather than an ordinal *)
   | Const_char of int
-  | Const_string of {s: string; delim: External_arg_spec.delim option}
+  | Const_string of string (* A decoded string value. *)
+  | Const_template_segment of string
+    (* The encoded source text of one template-literal segment. *)
   | Const_float of string
   | Const_bigint of bool * string
   | Const_pointer of string

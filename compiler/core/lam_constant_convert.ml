@@ -26,7 +26,10 @@ let rec convert_constant (const : Lambda.structured_constant) : Lam_constant.t =
   match const with
   | Const_int i -> Const_int i
   | Const_char i -> Const_char i
-  | Const_string {s; delim} -> Const_string {s; delim}
+  | Const_string {s; delim} -> (
+    match delim with
+    | Some DBackQuotes -> Const_template_segment s
+    | None | Some (DNone | DNoQuotes) -> Const_string s)
   | Const_float i -> Const_float i
   | Const_bigint (sign, i) -> Const_bigint (sign, i)
   | Const_pointer (Pt_constructor {name = "()"}) ->
@@ -62,7 +65,7 @@ let rec convert_constant (const : Lambda.structured_constant) : Lam_constant.t =
         let tag_val : Lam_constant.t =
           if Ext_string.is_valid_hash_number s then
             Const_int (Ext_string.hash_number_as_i32_exn s)
-          else Const_string {s; delim = None}
+          else Const_string s
         in
         Const_block (t, [tag_val; convert_constant value])
       | _ -> assert false))

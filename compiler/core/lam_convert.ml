@@ -51,7 +51,7 @@ let lam_prim ~primitive:(p : Lambda.primitive) ~args loc : Lam.t =
         let tag_val : Lam_constant.t =
           if Ext_string.is_valid_hash_number s then
             Const_int (Ext_string.hash_number_as_i32_exn s)
-          else Const_string {s; delim = None}
+          else Const_string s
         in
         prim
           ~primitive:(Pmakeblock (info, mutable_flag))
@@ -221,8 +221,7 @@ let convert (lam : Lambda.lambda) : Lam.t * Lam_module_ident.Hash_set.t =
       Lam.letrec (Ext_list.map_snd bindings convert_aux) (convert_aux body)
     | Lprim (Pgetglobal id, args, _) ->
       let args = Ext_list.map args convert_aux in
-      if Ident.is_predef_exn id then
-        Lam.const (Const_string {s = id.name; delim = None})
+      if Ident.is_predef_exn id then Lam.const (Const_string id.name)
       else (
         may_depend may_depends (Lam_module_ident.of_ml id);
         assert (args = []);

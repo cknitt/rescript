@@ -196,7 +196,7 @@ and size_constant x =
   | Const_js_undefined _ | Const_module_alias | Const_js_true | Const_js_false
     ->
     1
-  | Const_string _ -> 1
+  | Const_string _ | Const_template_segment _ -> 1
   | Const_some s -> size_constant s
   | Const_block (_, str) ->
     Ext_list.fold_left str 0 (fun acc x -> acc + size_constant x)

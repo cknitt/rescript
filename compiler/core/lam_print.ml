@@ -23,7 +23,8 @@ let rec struct_const ppf (cst : Lam_constant.t) =
   | Const_int i -> fprintf ppf "%ld" i
   | Const_assertfalse -> fprintf ppf "assertfalse"
   | Const_char i -> fprintf ppf "%s" (Ext_util.string_of_int_as_char i)
-  | Const_string {s} -> fprintf ppf "%S" s
+  | Const_string s -> fprintf ppf "%S" s
+  | Const_template_segment s -> fprintf ppf "template(%S)" s
   | Const_float f -> fprintf ppf "%s" f
   | Const_bigint (sign, i) -> fprintf ppf "%sn" (Bigint_utils.to_string sign i)
   | Const_pointer name -> fprintf ppf "`%s" name

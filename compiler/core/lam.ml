@@ -323,8 +323,7 @@ let switch lam (lam_switch : lambda_switch) : t =
 
 let stringswitch (lam : t) cases default : t =
   match lam with
-  | Lconst (Const_string {s; delim = None | Some DNoQuotes}) ->
-    Ext_list.assoc_by_string cases s default
+  | Lconst (Const_string s) -> Ext_list.assoc_by_string cases s default
   | _ -> Lstringswitch (lam, cases, default)
 
 let true_ : t = Lconst Const_js_true
@@ -364,7 +363,7 @@ module Lift = struct
 
   let bool b = if b then true_ else false_
 
-  let string s : t = Lconst (Const_string {s; delim = None})
+  let string s : t = Lconst (Const_string s)
 
   let char b : t = Lconst (Const_char b)
 end
@@ -380,7 +379,7 @@ let prim ~primitive:(prim : Lam_primitive.t) ~args loc : t =
     | Pintoffloat, Const_float a ->
       Lift.int (Int32.of_float (float_of_string a))
     (* | Pnegfloat -> Lift.float (-. a) *)
-    | Pstringlength, Const_string {s; delim = None} ->
+    | Pstringlength, Const_string s ->
       Lift.int (Int32.of_int (String_literal.utf16_length s))
     (* | Pnegbint Pnativeint, ( (Const_nativeint i)) *)
     (*   ->   *)
@@ -437,13 +436,8 @@ let prim ~primitive:(prim : Lam_primitive.t) ~args loc : t =
     | Psequor, Const_js_true, (Const_js_true | Const_js_false) -> true_
     | Psequor, Const_js_false, Const_js_true -> true_
     | Psequor, Const_js_false, Const_js_false -> false_
-    | ( Pstringadd,
-        Const_string {s = a; delim = None},
-        Const_string {s = b; delim = None} ) ->
-      Lift.string (a ^ b)
-    | ( (Pstringrefs | Pstringrefu),
-        Const_string {s = a; delim = None},
-        Const_int b ) -> (
+    | Pstringadd, Const_string a, Const_string b -> Lift.string (a ^ b)
+    | (Pstringrefs | Pstringrefu), Const_string a, Const_int b -> (
       match String_literal.code_point_at_utf16_index a (Int32.to_int b) with
       | Some codepoint -> Lift.char codepoint
       | None -> default ())
@@ -522,8 +516,8 @@ let rec eval_const_as_bool (v : Lam_constant.t) : bool option =
   | Const_js_false | Const_js_null | Const_module_alias | Const_js_undefined _
     ->
     Some false
-  | Const_js_true | Const_string _ | Const_pointer _ | Const_float _
-  | Const_bigint _ | Const_block _ ->
+  | Const_js_true | Const_string _ | Const_template_segment _ | Const_pointer _
+  | Const_float _ | Const_bigint _ | Const_block _ ->
     Some true
   | Const_some b -> eval_const_as_bool b
   | Const_constructor {name; tag_type} -> (
