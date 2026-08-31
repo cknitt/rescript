@@ -297,7 +297,7 @@ let new_hover ~state ~full:{file; package} ~supports_markdown_links loc_item =
          (match t with
          | Const_int _ -> "int"
          | Const_char _ -> "char"
-         | Const_string _ -> "string"
+         | Const_string _ | Const_template_segment _ -> "string"
          | Const_float _ -> "float"
          | Const_bigint _ -> "bigint"))
   | Typed (_, t, loc_kind) -> (

@@ -451,7 +451,8 @@ let warn_polymorphic_comparison loc prim args =
 let lambda_of_inline_const (c : External_ffi_types.inline_const) :
     Lambda.structured_constant =
   match c with
-  | Const_str {s; delim} -> Const_string {s; delim}
+  | Const_str {s; delim = Some DBackQuotes} -> Const_template_segment s
+  | Const_str {s; delim = None | Some (DNone | DNoQuotes)} -> Const_string s
   | Const_bool true -> Const_true
   | Const_bool false -> Const_false
   | Const_int i -> Const_int i
@@ -1130,11 +1131,11 @@ and transl_exp0 (e : Typedtree.expression) : Lambda.lambda =
           (* an external: expand its FFI spec here; %raw parses and classifies
          its snippet *)
           match (p.prim_name, argl) with
-          | "#raw_expr", [Lconst (Const_string {s = code})] ->
+          | "#raw_expr", [Lconst (Const_string code)] ->
             let kind = Classify_function.classify code in
             wrap
               (Lprim (Praw_js_code {code; code_info = Exp kind}, [], e.exp_loc))
-          | "#raw_stmt", [Lconst (Const_string {s = code})] ->
+          | "#raw_stmt", [Lconst (Const_string code)] ->
             let kind = Classify_function.classify_stmt code in
             wrap
               (Lprim (Praw_js_code {code; code_info = Stmt kind}, [], e.exp_loc))

@@ -263,7 +263,7 @@ let all_idents_cases el =
 let type_constant = function
   | Const_int _ -> instance_def Predef.type_int
   | Const_char _ -> instance_def Predef.type_char
-  | Const_string _ -> instance_def Predef.type_string
+  | Const_string _ | Const_template_segment _ -> instance_def Predef.type_string
   | Const_float _ -> instance_def Predef.type_float
   | Const_bigint _ -> instance_def Predef.type_bigint
 
@@ -277,7 +277,8 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
     Ok (Const_bigint (sign, i))
   | Pconst_integer (i, Some c) -> Error (Unknown_literal (i, c))
   | Pconst_char c -> Ok (Const_char c)
-  | Pconst_string (s, d) -> Ok (Const_string (s, d))
+  | Pconst_string (s, Some "bq") -> Ok (Const_template_segment s)
+  | Pconst_string (s, _) -> Ok (Const_string s)
   | Pconst_float (f, None) -> Ok (Const_float f)
   | Pconst_float (f, Some c) -> Error (Unknown_literal (f, c))
 

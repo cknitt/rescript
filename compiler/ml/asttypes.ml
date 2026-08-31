@@ -18,7 +18,8 @@
 type constant =
   | Const_int of int
   | Const_char of int
-  | Const_string of string * string option
+  | Const_string of string
+  | Const_template_segment of string
   | Const_float of string
   | Const_bigint of bool * string
 

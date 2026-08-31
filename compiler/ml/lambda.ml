@@ -326,7 +326,8 @@ type pointer_info =
 type structured_constant =
   | Const_int of int32
   | Const_char of int
-  | Const_string of {s: string; delim: External_arg_spec.delim option}
+  | Const_string of string
+  | Const_template_segment of string
   | Const_float of string
   | Const_bigint of bool * string
   | Const_pointer of pointer_info
@@ -414,13 +415,16 @@ and lambda_switch = lambda switch
 let const_int (i : int) = Const_int (Int32.of_int i)
 
 let const_string s delim =
-  Const_string {s; delim = External_arg_spec.parse_processed_delim delim}
+  match External_arg_spec.parse_processed_delim delim with
+  | Some DBackQuotes -> Const_template_segment s
+  | None | Some (DNone | DNoQuotes) -> Const_string s
 
 let const_of_typed (c : Asttypes.constant) : structured_constant =
   match c with
   | Asttypes.Const_int i -> Const_int (Int32.of_int i)
   | Asttypes.Const_char i -> Const_char i
-  | Asttypes.Const_string (s, d) -> const_string s d
+  | Asttypes.Const_string s -> Const_string s
+  | Asttypes.Const_template_segment s -> Const_template_segment s
   | Asttypes.Const_float f -> Const_float f
   | Asttypes.Const_bigint (sign, i) -> Const_bigint (sign, i)
 

@@ -67,9 +67,13 @@ let assert_lam_char expected = function
     assert_int_equal expected actual
   | _ -> OUnit.assert_failure "expected a folded Lambda character"
 
-let convert_lambda_string s delim =
-  Lam_constant_convert.convert_constant
-    (Lambda.const_of_typed (Asttypes.Const_string (s, delim)))
+let typed_string s delim =
+  match Typecore.constant (Parsetree.Pconst_string (s, delim)) with
+  | Ok constant -> constant
+  | Error _ -> OUnit.assert_failure "expected a typed string constant"
+
+let convert_typed_constant constant =
+  Lam_constant_convert.convert_constant (Lambda.const_of_typed constant)
 
 let assert_js_string ~expected ~delim constant =
   match (Lam_compile_const.translate constant).J.expression_desc with
@@ -167,6 +171,22 @@ let suites =
            in
            OUnit.assert_equal ~printer:Ext_obj.dump pattern.ppat_desc
              transformed.ppat_desc );
+         ( "typed tree separates strings from template segments" >:: fun _ ->
+           let semantic = typed_string "a\n😀" None in
+           let template = typed_string {|a\n\uD83D\uDE00|} (Some "bq") in
+           let json = typed_string {|{"answer":42}|} (Some "json") in
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (Asttypes.Const_string "a\n😀") semantic;
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (Asttypes.Const_template_segment {|a\n\uD83D\uDE00|}) template;
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (Asttypes.Const_string {|{"answer":42}|}) json;
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (Parsetree.Pconst_string ("a\n😀", None))
+             (Untypeast.constant semantic);
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (Parsetree.Pconst_string ({|a\n\uD83D\uDE00|}, Some "bq"))
+             (Untypeast.constant template) );
          ( "constant backquoted attribute strings become semantic" >:: fun _ ->
            OUnit.assert_equal ~printer:Ext_obj.dump (Some "a\n😀")
              (Ast_payload.is_single_semantic_string
@@ -181,17 +201,17 @@ let suites =
            | _ -> OUnit.assert_failure "expected an invalid string escape"
            | exception Location.Error _ -> () );
          ( "Lambda separates strings from template segments" >:: fun _ ->
-           let semantic = convert_lambda_string "a\n😀" None in
-           let template =
-             convert_lambda_string {|a\n\uD83D\uDE00|} (Some "bq")
+           let semantic =
+             convert_typed_constant (Asttypes.Const_string "a\n😀")
            in
-           let json = convert_lambda_string {|{"answer":42}|} (Some "json") in
+           let template =
+             convert_typed_constant
+               (Asttypes.Const_template_segment {|a\n\uD83D\uDE00|})
+           in
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Lam_constant.Const_string "a\n😀") semantic;
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Lam_constant.Const_template_segment {|a\n\uD83D\uDE00|}) template;
-           OUnit.assert_equal ~printer:Ext_obj.dump
-             (Lam_constant.Const_string {|{"answer":42}|}) json;
            OUnit.assert_bool "semantic and template strings stay distinct"
              (not
                 (Lam_constant.eq_approx (Lam_constant.Const_string {|a\n|})

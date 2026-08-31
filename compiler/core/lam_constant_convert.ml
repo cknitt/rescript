@@ -26,10 +26,8 @@ let rec convert_constant (const : Lambda.structured_constant) : Lam_constant.t =
   match const with
   | Const_int i -> Const_int i
   | Const_char i -> Const_char i
-  | Const_string {s; delim} -> (
-    match delim with
-    | Some DBackQuotes -> Const_template_segment s
-    | None | Some (DNone | DNoQuotes) -> Const_string s)
+  | Const_string s -> Const_string s
+  | Const_template_segment s -> Const_template_segment s
   | Const_float i -> Const_float i
   | Const_bigint (sign, i) -> Const_bigint (sign, i)
   | Const_pointer (Pt_constructor {name = "()"}) ->

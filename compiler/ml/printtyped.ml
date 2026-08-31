@@ -51,9 +51,8 @@ let fmt_constant f x =
   match x with
   | Const_int i -> fprintf f "Const_int %d" i
   | Const_char c -> fprintf f "Const_char %02x" c
-  | Const_string (s, None) -> fprintf f "Const_string(%S,None)" s
-  | Const_string (s, Some delim) ->
-    fprintf f "Const_string (%S,Some %S)" s delim
+  | Const_string s -> fprintf f "Const_string(%S)" s
+  | Const_template_segment s -> fprintf f "Const_template_segment(%S)" s
   | Const_float s -> fprintf f "Const_float %s" s
   | Const_bigint (sign, i) ->
     fprintf f "Const_bigint %s" (Bigint_utils.to_string sign i)

@@ -292,7 +292,8 @@ and value_kind = Pgenval
 type structured_constant =
   | Const_int of int32
   | Const_char of int
-  | Const_string of {s: string; delim: External_arg_spec.delim option}
+  | Const_string of string
+  | Const_template_segment of string
   | Const_float of string
   | Const_bigint of bool * string
   | Const_pointer of pointer_info
