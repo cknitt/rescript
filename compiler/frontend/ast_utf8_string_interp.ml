@@ -269,18 +269,3 @@ let transform_test s =
   in
   check_and_transform 0 s 0 cxt;
   List.rev cxt.segments
-
-(* Scanner string payloads still contain JavaScript escape spelling. Decode an
-   ordinary string exactly once here, before it reaches typing and matching. *)
-let semantic_string loc s =
-  match String_literal.decode_js_escapes s with
-  | Some decoded -> decoded
-  | None -> Location.raise_errorf ~loc "Invalid string escape sequence"
-
-let transform_exp (e : Parsetree.expression) source : Parsetree.expression =
-  let semantic = semantic_string e.pexp_loc source in
-  {e with pexp_desc = Pexp_constant (Pconst_string semantic)}
-
-let transform_pat (p : Parsetree.pattern) source : Parsetree.pattern =
-  let semantic = semantic_string p.ppat_loc source in
-  {p with ppat_desc = Ppat_constant (Pconst_string semantic)}

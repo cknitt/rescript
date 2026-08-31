@@ -93,18 +93,23 @@ let decode_js_string ~loc s =
   | Some s -> s
   | None -> Location.raise_errorf ~loc "Invalid string escape sequence"
 
+let semantic_string semantic =
+  Pt.Pconst_string {source = String_literal.encode_js_string semantic; semantic}
+
+let source_string ~loc source =
+  Pt.Pconst_string {source; semantic = decode_js_string ~loc source}
+
 let map_constant ~loc ~is_template = function
   | Pconst_integer (s, suffix) -> Pt.Pconst_integer (s, suffix)
   | Pconst_char c -> Pconst_char c
   | Pconst_string (s, Some "js") when is_template -> Pconst_template s
-  | Pconst_string (s, Some ("js" | "*j")) ->
-    Pconst_string (decode_js_string ~loc s)
-  | Pconst_string (s, None) -> Pconst_string s
+  | Pconst_string (s, Some ("js" | "*j")) -> source_string ~loc s
+  | Pconst_string (s, None) -> semantic_string s
   | Pconst_string (s, Some "json") -> Pconst_json s
   | Pconst_string (s, Some "INTERNAL_RES_CHAR_CONTENTS") -> Pconst_char_source s
   (* Other v0 quotation delimiters are syntax, not part of the string value.
      Tagged ReScript templates are represented as applications before PPX. *)
-  | Pconst_string (source, Some _) -> Pconst_string source
+  | Pconst_string (semantic, Some _) -> semantic_string semantic
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
 
 let map_pattern_constant ~loc = function

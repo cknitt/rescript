@@ -21,4 +21,4 @@
 ;;et
 ;;foo =
     (fun [arity:1]x ->
-       match x with | (("")[@res.template ]) -> [%rescript.exprhole ])
+       match x with | (({js||js})[@res.template ]) -> [%rescript.exprhole ])

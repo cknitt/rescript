@@ -4,35 +4,45 @@ let assert_decoded ~encoded ~expected =
   OUnit.assert_equal ~printer:Ext_obj.dump (Some expected)
     (String_literal.decode_js_escapes encoded)
 
+let assert_encoded ~semantic ~expected =
+  let encoded = String_literal.encode_js_string semantic in
+  OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected encoded;
+  assert_decoded ~encoded ~expected:semantic
+
 let assert_invalid_backquoted_pattern encoded =
-  let template_attribute =
-    (Location.mknoloc "res.template", Parsetree.PStr [])
+  let source = "let f = value => switch value { | `" ^ encoded ^ "` => 1 }" in
+  let result =
+    Res_driver.parse_implementation_from_source ~for_printer:false
+      ~display_filename:"StringLiteralTest.res" ~source
   in
-  let pattern =
-    Ast_helper.Pat.constant ~attrs:[template_attribute]
-      (Parsetree.Pconst_unprocessed_string encoded)
-  in
-  match Ast_utf8_string_interp.transform_pat pattern encoded with
-  | _ -> OUnit.assert_failure "expected an invalid string escape"
-  | exception Location.Error _ -> ()
+  OUnit.assert_bool "expected an invalid string escape" result.invalid
 
-let assert_transformed_expression ~encoded ~expected () =
-  let expression =
-    Ast_helper.Exp.constant (Parsetree.Pconst_unprocessed_string encoded)
+let assert_invalid_string encoded =
+  let result =
+    Res_driver.parse_implementation_from_source ~for_printer:false
+      ~display_filename:"StringLiteralTest.res"
+      ~source:("let value = \"" ^ encoded ^ "\"")
   in
-  match (Ast_utf8_string_interp.transform_exp expression encoded).pexp_desc with
-  | Pexp_constant (Pconst_string actual) ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
-  | _ -> OUnit.assert_failure "expected a semantic string expression"
+  OUnit.assert_bool "expected an invalid string escape" result.invalid
 
-let assert_transformed_pattern ~encoded ~expected () =
-  let pattern =
-    Ast_helper.Pat.constant (Parsetree.Pconst_unprocessed_string encoded)
+let assert_parsed_string ~source ~expected_semantic =
+  let result =
+    Res_driver.parse_implementation_from_source ~for_printer:false
+      ~display_filename:"StringLiteralTest.res"
+      ~source:("let value = \"" ^ source ^ "\"")
   in
-  match (Ast_utf8_string_interp.transform_pat pattern encoded).ppat_desc with
-  | Ppat_constant (Pconst_string actual) ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
-  | _ -> OUnit.assert_failure "expected a semantic string pattern"
+  match result.parsetree with
+  | [
+   {
+     pstr_desc =
+       Pstr_value
+         (_, [{pvb_expr = {pexp_desc = Pexp_constant (Pconst_string actual)}}]);
+   };
+  ] ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") source actual.source;
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_semantic
+      actual.semantic
+  | _ -> OUnit.assert_failure "expected a parsed string literal"
 
 let assert_int_equal expected actual =
   OUnit.assert_equal ~printer:string_of_int expected actual
@@ -56,7 +66,7 @@ let assert_lam_char expected = function
   | _ -> OUnit.assert_failure "expected a folded Lambda character"
 
 let typed_string s =
-  match Typecore.constant (Parsetree.Pconst_string s) with
+  match Typecore.constant (Ast_helper.Const.string s) with
   | Ok constant -> constant
   | Error _ -> OUnit.assert_failure "expected a typed string constant"
 
@@ -136,6 +146,9 @@ let suites =
          ( "named escapes" >:: fun _ ->
            assert_decoded ~encoded:{|\b\f\n\r\t\v\0|}
              ~expected:"\b\012\n\r\t\011\000" );
+         ( "semantic strings get canonical source spelling" >:: fun _ ->
+           assert_encoded ~semantic:"\b\012\n\r\t\011\000\"\\😀"
+             ~expected:{|\b\f\n\r\t\v\x00\"\\😀|} );
          ( "escaped punctuation and non-escapes" >:: fun _ ->
            assert_decoded ~encoded:{|\\\"\'\ \$\`\a|} ~expected:{|\"' $`a|};
            assert_decoded ~encoded:"\\é" ~expected:"é" );
@@ -150,10 +163,8 @@ let suites =
            assert_decoded ~encoded:"a\\\rb" ~expected:"ab";
            assert_decoded ~encoded:"a\\\r\nb" ~expected:"ab" );
          ( "ordinary literals become semantic strings" >:: fun _ ->
-           assert_transformed_expression ~encoded:{|\x61\n\uD83D\uDE00|}
-             ~expected:"a\n😀" ();
-           assert_transformed_pattern ~encoded:{|\x61\n\uD83D\uDE00|}
-             ~expected:"a\n😀" () );
+           assert_parsed_string ~source:{|\x61\n\uD83D\uDE00|}
+             ~expected_semantic:"a\n😀" );
          ( "template literals remain raw" >:: fun _ ->
            let encoded = {|\x61|} in
            let template_attribute =
@@ -191,6 +202,9 @@ let suites =
                "\195A";
                "\\\195";
              ] );
+         ( "scanner rejects invalid braced Unicode escapes" >:: fun _ ->
+           assert_invalid_string {|\u{}|};
+           assert_invalid_string {|\u{110000}|} );
          ( "backquoted patterns reject lone surrogate escapes" >:: fun _ ->
            assert_invalid_backquoted_pattern {|\uD800|};
            assert_invalid_backquoted_pattern {|\uDC00|} );
@@ -216,7 +230,7 @@ let suites =
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Asttypes.Const_string {|{"answer":42}|}) json;
            OUnit.assert_equal ~printer:Ext_obj.dump
-             (Parsetree.Pconst_string "a\n😀")
+             (Ast_helper.Const.string "a\n😀")
              (Untypeast.constant semantic);
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Parsetree.Pconst_template {|a\n\uD83D\uDE00|})

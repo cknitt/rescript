@@ -94,8 +94,6 @@ let pat_mapper (self : mapper) (p : Parsetree.pattern) =
   match p.ppat_desc with
   | Ppat_constant (Pconst_integer (s, Some 'l')) ->
     {p with ppat_desc = Ppat_constant (Pconst_integer (s, None))}
-  | Ppat_constant (Pconst_unprocessed_string source) ->
-    Ast_utf8_string_interp.transform_pat p source
   | Ppat_constant (Pconst_char_source _) -> p
   | Ppat_constant (Pconst_json _) ->
     Location.raise_errorf ~loc:p.ppat_loc
@@ -117,8 +115,6 @@ let expr_mapper ~async_context ~in_function_def (self : mapper)
   (* Its output should not be rewritten anymore *)
   | Pexp_extension extension ->
     Ast_exp_extension.handle_extension e self extension
-  | Pexp_constant (Pconst_unprocessed_string source) ->
-    Ast_utf8_string_interp.transform_exp e source
   | Pexp_constant (Pconst_integer (s, Some 'l')) ->
     {e with pexp_desc = Pexp_constant (Pconst_integer (s, None))}
   (* End rewriting *)

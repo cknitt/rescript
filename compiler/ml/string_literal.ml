@@ -124,6 +124,24 @@ let decode_js_escapes s =
   in
   loop 0
 
+let encode_js_string s =
+  let buf = Buffer.create (String.length s) in
+  String.iter
+    (function
+      | '\b' -> Buffer.add_string buf {e|\b|e}
+      | '\012' -> Buffer.add_string buf {e|\f|e}
+      | '\n' -> Buffer.add_string buf {e|\n|e}
+      | '\r' -> Buffer.add_string buf {e|\r|e}
+      | '\t' -> Buffer.add_string buf {e|\t|e}
+      | '\011' -> Buffer.add_string buf {e|\v|e}
+      | '"' -> Buffer.add_string buf {e|\"|e}
+      | '\\' -> Buffer.add_string buf {e|\\|e}
+      | ('\000' .. '\031' | '\127') as c ->
+        Buffer.add_string buf (Printf.sprintf {e|\x%02X|e} (Char.code c))
+      | c -> Buffer.add_char buf c)
+    s;
+  Buffer.contents buf
+
 let utf16_length s =
   Ext_utf8.decode_utf8_string s
   |> List.fold_left

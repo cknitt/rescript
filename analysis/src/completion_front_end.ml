@@ -210,8 +210,8 @@ let rec expr_to_context_path_inner ~(in_jsx_context : bool)
     (e : Parsetree.expression) =
   match e.pexp_desc with
   | Pexp_constant
-      ( Pconst_string _ | Pconst_unprocessed_string _ | Pconst_template _
-      | Pconst_json _ | Pconst_raw_source _ ) ->
+      (Pconst_string _ | Pconst_template _ | Pconst_json _ | Pconst_raw_source _)
+    ->
     Some Completable.CPString
   | Pexp_constant (Pconst_integer _) -> Some CPInt
   | Pexp_constant (Pconst_float _) -> Some CPFloat
@@ -939,9 +939,7 @@ let completion_with_parser1 ~debug ~offset ~pos_cursor ~kind_file
                  Pstr_eval
                    ( {
                        pexp_loc;
-                       pexp_desc =
-                         Pexp_constant
-                           (Pconst_string s | Pconst_unprocessed_string s);
+                       pexp_desc = Pexp_constant (Pconst_string {semantic = s});
                      },
                      _ );
              };
@@ -979,10 +977,7 @@ let completion_with_parser1 ~debug ~offset ~pos_cursor ~kind_file
          | ( true,
              _,
              _,
-             {
-               pexp_desc =
-                 Pexp_constant (Pconst_string s | Pconst_unprocessed_string s);
-             } ) ->
+             {pexp_desc = Pexp_constant (Pconst_string {semantic = s})} ) ->
            if Debug.verbose () then
              print_endline
                "[decoratorCompletion] @module `from` payload was string";

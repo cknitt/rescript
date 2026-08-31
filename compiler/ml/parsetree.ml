@@ -26,10 +26,13 @@ type constant =
   *)
   | Pconst_char of int
   (* 'c' *)
-  | Pconst_string of string
-  (* A decoded semantic string value. *)
-  | Pconst_unprocessed_string of string
-  (* Scanner source spelling awaiting ordinary-string normalization. *)
+  | Pconst_string of {source: string; semantic: string}
+  (* An ordinary quoted string literal. [source] is the encoded body retained
+     for printing, including escape sequences; the scanner may normalize
+     legacy decimal escapes before storing it. [semantic] is the decoded
+     runtime string used by typing, matching, and optimizations.
+     Compiler-generated strings use a canonical [source] spelling derived
+     from [semantic]. *)
   | Pconst_template of string
   (* Source spelling of a backquoted template segment. Semantic decoding is
      deferred until the segment is known to belong to an ordinary template. *)

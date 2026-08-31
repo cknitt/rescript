@@ -252,8 +252,7 @@ let print_quoted_string_with_byte_width f s =
 
 let constant f = function
   | Pconst_char i -> pp f "%s" (string_of_int_as_char i)
-  | Pconst_string i -> print_quoted_string_with_byte_width f i
-  | Pconst_unprocessed_string source ->
+  | Pconst_string {source} ->
     pp f "{js|%a|js}" print_string_with_byte_width source
   | Pconst_template source ->
     pp f "{js|%a|js}" print_string_with_byte_width source

@@ -36,6 +36,6 @@
 
 let zeroCoord = {js|0.0|js}
 ;;match l with
-  | (("")[@res.template ]) -> ()
-  | (("")[@res.template ]) -> ()
+  | (({js||js})[@res.template ]) -> ()
+  | (({js||js})[@res.template ]) -> ()
   | _ -> ()

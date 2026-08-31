@@ -272,9 +272,8 @@ let is_huggable_expression expr =
     true
   | _ when is_block_expr expr -> true
   | _ when is_braced_expr expr -> true
-  | Pexp_constant (Pconst_string txt) when is_multiline_text txt -> true
-  | Pexp_constant (Pconst_unprocessed_string source)
-    when is_multiline_text source ->
+  | Pexp_constant (Pconst_string {source}) when is_multiline_text source -> true
+  | Pexp_constant (Pconst_raw_source source) when is_multiline_text source ->
     true
   | _ -> false
 
@@ -398,7 +397,12 @@ let has_attributes attrs =
             [
               {
                 pstr_desc =
-                  Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string "-4")}, _);
+                  Pstr_eval
+                    ( {
+                        pexp_desc =
+                          Pexp_constant (Pconst_string {semantic = "-4"});
+                      },
+                      _ );
               };
             ] ) ->
         not (has_if_let_attribute attrs)
@@ -511,7 +515,12 @@ let filter_fragile_match_attributes attrs =
             [
               {
                 pstr_desc =
-                  Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string "-4")}, _);
+                  Pstr_eval
+                    ( {
+                        pexp_desc =
+                          Pexp_constant (Pconst_string {semantic = "-4"});
+                      },
+                      _ );
               };
             ] ) ->
         false
@@ -585,13 +594,7 @@ let partition_doc_comment_attributes attrs =
             [
               {
                 pstr_desc =
-                  Pstr_eval
-                    ( {
-                        pexp_desc =
-                          Pexp_constant
-                            (Pconst_string _ | Pconst_unprocessed_string _);
-                      },
-                      _ );
+                  Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string _)}, _);
               };
             ] ) ->
         true

@@ -47,7 +47,7 @@ let handle_extension e (_self : Ast_mapper.mapper)
       [
         ( Nolabel,
           Exp.constant ~loc
-            (Pconst_string
+            (Ast_helper.Const.string
                (pretext
                ^
                match todo_message with

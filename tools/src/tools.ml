@@ -638,9 +638,7 @@ let extract_embedded ~extension_points ~filename =
                   ( {
                       pexp_loc;
                       pexp_desc =
-                        Pexp_constant
-                          ( Pconst_string contents
-                          | Pconst_unprocessed_string contents );
+                        Pexp_constant (Pconst_string {semantic = contents});
                     },
                     _ );
             };
@@ -890,7 +888,7 @@ module Format_codeblocks = struct
                     [
                       Ast_helper.Str.eval
                         (Ast_helper.Exp.constant
-                           (Pconst_string formatted_contents));
+                           (Ast_helper.Const.string formatted_contents));
                     ] )
               else attr
             | _ -> Ast_mapper.default_mapper.attribute mapper attr);

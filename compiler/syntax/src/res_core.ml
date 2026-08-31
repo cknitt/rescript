@@ -272,7 +272,10 @@ let make_await_attr loc = (Location.mkloc "res.await" loc, Parsetree.PStr [])
 let suppress_fragile_match_warning_attr =
   ( Location.mknoloc "warning",
     Parsetree.PStr
-      [Ast_helper.Str.eval (Ast_helper.Exp.constant (Pconst_string "-4"))] )
+      [
+        Ast_helper.Str.eval
+          (Ast_helper.Exp.constant (Ast_helper.Const.string "-4"));
+      ] )
 let make_braces_attr loc = (Location.mkloc "res.braces" loc, Parsetree.PStr [])
 let template_literal_attr = (Location.mknoloc "res.template", Parsetree.PStr [])
 let make_pat_variant_spread_attr =
@@ -1001,6 +1004,15 @@ let parse_open_description ~attrs p =
 (* constant	::=	integer-literal   *)
 (* ∣	 float-literal   *)
 (* ∣	 string-literal   *)
+let parse_string_constant (p : Parser.t) ~start_pos ~end_pos source =
+  match String_literal.decode_js_escapes source with
+  | Some semantic -> Parsetree.Pconst_string {source; semantic}
+  | None ->
+    if p.diagnostics = [] then
+      Parser.err ~start_pos ~end_pos p
+        (Diagnostics.message "Invalid string escape sequence");
+    Parsetree.Pconst_string {source; semantic = ""}
+
 let parse_constant p =
   let is_negative =
     match p.Parser.token with
@@ -1026,7 +1038,8 @@ let parse_constant p =
     | Float {f; suffix} ->
       let float_txt = if is_negative then "-" ^ f else f in
       Parsetree.Pconst_float (float_txt, suffix)
-    | String s -> Pconst_unprocessed_string s
+    | String source ->
+      parse_string_constant p ~start_pos:p.start_pos ~end_pos:p.end_pos source
     | Codepoint {c; original} ->
       if p.mode = ParseForTypeChecker then Pconst_char c
       else
@@ -1036,7 +1049,7 @@ let parse_constant p =
         Pconst_char_source original
     | token ->
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      Pconst_string ""
+      Ast_helper.Const.string ""
   in
   Parser.next_unsafe p;
   constant
@@ -1048,11 +1061,12 @@ let parse_template_constant ~start_pos ~prefix (p : Parser.t) =
   | TemplateTail (txt, _) -> (
     Parser.next p;
     match prefix with
-    | None | Some "js" -> Parsetree.Pconst_unprocessed_string txt
+    | None | Some "js" ->
+      parse_string_constant p ~start_pos ~end_pos:p.prev_end_pos txt
     | Some _ ->
       Parser.err ~start_pos ~end_pos:p.prev_end_pos p
         (Diagnostics.message Error_messages.tagged_template_in_pattern);
-      Pconst_unprocessed_string txt)
+      Ast_helper.Const.string txt)
   | _ ->
     let rec skip_tokens () =
       if p.token <> Eof then (
@@ -1066,7 +1080,7 @@ let parse_template_constant ~start_pos ~prefix (p : Parser.t) =
     skip_tokens ();
     Parser.err ~start_pos ~end_pos:p.prev_end_pos p
       (Diagnostics.message Error_messages.string_interpolation_in_pattern);
-    Pconst_string ""
+    Ast_helper.Const.string ""
 
 let parse_comma_delimited_region p ~grammar ~closing ~f =
   Parser.leave_breadcrumb p grammar;
@@ -2581,7 +2595,7 @@ and parse_template_expr ?prefix p =
     in
     match expr_option with
     | Some expr -> expr
-    | None -> Ast_helper.Exp.constant (Pconst_string "")
+    | None -> Ast_helper.Exp.constant (Ast_helper.Const.string "")
   in
 
   match prefix with
@@ -3175,7 +3189,8 @@ and parse_braced_or_record_expr p =
     | _ -> (
       let constant =
         Ast_helper.Exp.constant ~loc:field.loc
-          (Parsetree.Pconst_unprocessed_string s)
+          (parse_string_constant p ~start_pos:field.loc.loc_start
+             ~end_pos:field.loc.loc_end s)
       in
       let a = parse_primary_expr ~operand:constant p in
       let e = parse_binary_expr ~a p 1 in
@@ -4411,7 +4426,8 @@ and parse_dict_expr ~start_pos p =
         (Ast_helper.Exp.tuple
            ~loc:(mk_loc key_loc.loc_start value_loc.loc_end)
            [
-             Ast_helper.Exp.constant ~loc:key_loc (Pconst_string key); value_expr;
+             Ast_helper.Exp.constant ~loc:key_loc (Ast_helper.Const.string key);
+             value_expr;
            ])
     | _ -> None
   in
@@ -6722,7 +6738,7 @@ and parse_structure_item_region pending_structure_items p =
              PStr
                [
                  Ast_helper.Str.eval ~loc
-                   (Ast_helper.Exp.constant ~loc (Pconst_string s));
+                   (Ast_helper.Exp.constant ~loc (Ast_helper.Const.string s));
                ] ))
     | AtAt ->
       let attr = parse_standalone_attribute p in
@@ -7408,7 +7424,7 @@ and parse_signature_item_region pending_signature_items p =
              PStr
                [
                  Ast_helper.Str.eval ~loc
-                   (Ast_helper.Exp.constant ~loc (Pconst_string s));
+                   (Ast_helper.Exp.constant ~loc (Ast_helper.Const.string s));
                ] ))
     | PercentPercent ->
       let extension = parse_extension ~module_language:true p in
@@ -7634,7 +7650,8 @@ and doc_comment_to_attribute loc s : Parsetree.attribute =
   ( {txt = "res.doc"; loc},
     PStr
       [
-        Ast_helper.Str.eval ~loc (Ast_helper.Exp.constant ~loc (Pconst_string s));
+        Ast_helper.Str.eval ~loc
+          (Ast_helper.Exp.constant ~loc (Ast_helper.Const.string s));
       ] )
 
 and parse_attributes p =
@@ -7691,6 +7708,34 @@ and parse_extension ?(module_language = false) p =
   else Parser.expect Percent p;
   let attr_id = parse_attribute_id ~start_pos p in
   let payload = parse_payload p in
+  let payload =
+    match (attr_id.txt, payload) with
+    | ( ("raw" | "ffi" | "re"),
+        Parsetree.PStr
+          [
+            ({
+               pstr_desc =
+                 Pstr_eval
+                   ( ({pexp_desc = Pexp_constant (Pconst_string {source})} as
+                      expression),
+                     eval_attrs );
+             } as item);
+          ] ) ->
+      Parsetree.PStr
+        [
+          {
+            item with
+            pstr_desc =
+              Pstr_eval
+                ( {
+                    expression with
+                    pexp_desc = Pexp_constant (Pconst_raw_source source);
+                  },
+                  eval_attrs );
+          };
+        ]
+    | _ -> payload
+  in
   (attr_id, payload)
 
 (* module signature on the file level *)

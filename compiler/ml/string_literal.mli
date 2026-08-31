@@ -3,6 +3,10 @@ val decode_js_escapes : string -> string option
     semantic UTF-8 value. Returns [None] for malformed input or unpaired
     UTF-16 surrogates. *)
 
+val encode_js_string : string -> string
+(** Encode a semantic UTF-8 string as a canonical JavaScript string-literal
+    body. *)
+
 val utf16_length : string -> int
 (** Return the number of UTF-16 code units in a semantic UTF-8 string, matching
     JavaScript's [String.length]. *)

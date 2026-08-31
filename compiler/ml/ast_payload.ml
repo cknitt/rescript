@@ -31,16 +31,16 @@ let is_single_string (x : t) =
       [
         {
           pstr_desc =
-            Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string name); _}, _);
+            Pstr_eval
+              ({pexp_desc = Pexp_constant (Pconst_string {source}); _}, _);
           _;
         };
       ] ->
-    Some (name, None)
+    Some (source, None)
   | PStr
       [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant constant; _}, _); _}]
     -> (
     match constant with
-    | Pconst_unprocessed_string name -> Some (name, None)
     | Pconst_raw_source name -> Some (name, Some "js")
     | Pconst_json name -> Some (name, Some "json")
     | Pconst_template name -> Some (name, Some "js")
@@ -53,29 +53,12 @@ let is_single_semantic_string (x : t) =
       [
         {
           pstr_desc =
-            Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string s); _}, _);
+            Pstr_eval
+              ({pexp_desc = Pexp_constant (Pconst_string {semantic}); _}, _);
           _;
         };
       ] ->
-    Some s
-  | PStr
-      [
-        {
-          pstr_desc =
-            Pstr_eval
-              ( {
-                  pexp_desc = Pexp_constant (Pconst_unprocessed_string s);
-                  pexp_loc;
-                  _;
-                },
-                _ );
-          _;
-        };
-      ] -> (
-    match String_literal.decode_js_escapes s with
-    | Some s -> Some s
-    | None ->
-      Location.raise_errorf ~loc:pexp_loc "Invalid string escape sequence")
+    Some semantic
   | PStr
       [
         {
@@ -178,11 +161,9 @@ let raw_as_string_exp_exn ~(kind : Js_raw_info.raw_kind) ?is_function (x : t) :
           };
         ] -> (
       match constant with
-      | Pconst_unprocessed_string source
-      | Pconst_template source
-      | Pconst_raw_source source ->
+      | Pconst_template source | Pconst_raw_source source ->
         Some (source, Bs_flow_ast_utils.flow_deli_offset (Some "js"), expression)
-      | Pconst_string source -> Some (source, 0, expression)
+      | Pconst_string {semantic} -> Some (semantic, 0, expression)
       | _ -> None)
     | _ -> None
   in
@@ -282,31 +263,20 @@ let assert_strings loc (x : t) : string list =
     try
       Ext_list.map strs (fun e ->
           match (e : Parsetree.expression) with
-          | {pexp_desc = Pexp_constant (Pconst_string name); _}
-          | {pexp_desc = Pexp_constant (Pconst_unprocessed_string name); _} ->
-            name
+          | {pexp_desc = Pexp_constant (Pconst_string {semantic}); _} ->
+            semantic
           | _ -> raise Not_str)
     with Not_str -> Location.raise_errorf ~loc "expect string tuple list")
   | PStr
       [
         {
           pstr_desc =
-            Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string name); _}, _);
-          _;
-        };
-      ] ->
-    [name]
-  | PStr
-      [
-        {
-          pstr_desc =
             Pstr_eval
-              ( {pexp_desc = Pexp_constant (Pconst_unprocessed_string name); _},
-                _ );
+              ({pexp_desc = Pexp_constant (Pconst_string {semantic}); _}, _);
           _;
         };
       ] ->
-    [name]
+    [semantic]
   | PStr [] -> []
   | PSig _ | PStr _ | PTyp _ | PPat _ ->
     Location.raise_errorf ~loc "expect string tuple list"

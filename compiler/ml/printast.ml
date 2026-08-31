@@ -61,9 +61,8 @@ let fmt_constant f x =
   match x with
   | Pconst_integer (i, m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m
   | Pconst_char c -> fprintf f "PConst_char %02x" c
-  | Pconst_string s -> fprintf f "PConst_string %S" s
-  | Pconst_unprocessed_string source ->
-    fprintf f "PConst_unprocessed_string %S" source
+  | Pconst_string {source; semantic} ->
+    fprintf f "PConst_string (source=%S, semantic=%S)" source semantic
   | Pconst_template source -> fprintf f "PConst_template %S" source
   | Pconst_json source -> fprintf f "PConst_json %S" source
   | Pconst_raw_source source -> fprintf f "PConst_raw_source %S" source

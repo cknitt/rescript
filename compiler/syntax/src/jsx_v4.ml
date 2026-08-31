@@ -29,7 +29,8 @@ let get_label str =
   | Optional {txt = str} | Labelled {txt = str} -> str
   | Nolabel -> ""
 
-let constant_string ~loc str = Ast_helper.Exp.constant ~loc (Pconst_string str)
+let constant_string ~loc str =
+  Ast_helper.Exp.constant ~loc (Ast_helper.Const.string str)
 
 let unit_expr ~loc = Exp.construct ~loc (Location.mkloc (Lident "()") loc) None
 

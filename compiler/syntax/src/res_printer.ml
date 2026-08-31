@@ -570,9 +570,7 @@ let print_constant ?(template_literal = false) c =
     match suffix with
     | Some c -> Doc.text (s ^ Char.escaped c)
     | None -> Doc.text s)
-  | Pconst_string txt ->
-    Doc.concat [Doc.text "\""; print_string_contents txt; Doc.text "\""]
-  | Pconst_unprocessed_string source ->
+  | Pconst_string {source} ->
     let lquote, rquote =
       if template_literal then ("`", "`") else ("\"", "\"")
     in
@@ -1638,7 +1636,13 @@ and collect_literal_dict_rows (e : Parsetree.expression) =
     | {
      pexp_desc =
        Pexp_tuple
-         [{pexp_desc = Pexp_constant (Pconst_string name); pexp_loc}; value];
+         [
+           {
+             pexp_desc = Pexp_constant (Pconst_string {semantic = name});
+             pexp_loc;
+           };
+           value;
+         ];
     } ->
       Some ((Location.mkloc (Longident.Lident name) pexp_loc, value), e)
     | _ -> None
@@ -2618,9 +2622,9 @@ and print_pattern ~state (p : Parsetree.pattern) cmt_tbl =
         Parsetree_viewer.has_template_literal_attr p.ppat_attributes
         ||
         match c with
-        | Pconst_string _ | Pconst_unprocessed_string _ | Pconst_template _
-        | Pconst_json _ | Pconst_raw_source _ | Pconst_char_source _
-        | Pconst_integer _ | Pconst_char _ | Pconst_float _ ->
+        | Pconst_string _ | Pconst_template _ | Pconst_json _
+        | Pconst_raw_source _ | Pconst_char_source _ | Pconst_integer _
+        | Pconst_char _ | Pconst_float _ ->
           false
       in
       print_constant ~template_literal c
@@ -6126,12 +6130,7 @@ and print_attribute ?(standalone = false) ~state
           {
             pstr_desc =
               Pstr_eval
-                ( {
-                    pexp_desc =
-                      Pexp_constant
-                        (Pconst_string txt | Pconst_unprocessed_string txt);
-                  },
-                  _ );
+                ({pexp_desc = Pexp_constant (Pconst_string {semantic = txt})}, _);
           };
         ] ) ->
     ( Doc.concat

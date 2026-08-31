@@ -180,16 +180,18 @@ let map_expr_to0 e =
 
 let attr_names attrs = List.map (fun ({Location.txt}, _) -> txt) attrs
 
-let assert_string_expr ~expected expr =
+let assert_string_expr ~expected_source ~expected_semantic expr =
   match expr.Parsetree.pexp_desc with
-  | Pexp_constant (Pconst_string actual) ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
+  | Pexp_constant (Pconst_string {source; semantic}) ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_source source;
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_semantic semantic
   | _ -> assert_failure "Expected a string expression"
 
-let assert_string_pat ~expected pat =
+let assert_string_pat ~expected_source ~expected_semantic pat =
   match pat.Parsetree.ppat_desc with
-  | Ppat_constant (Pconst_string actual) ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
+  | Ppat_constant (Pconst_string {source; semantic}) ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_source source;
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_semantic semantic
   | _ -> assert_failure "Expected a string pattern"
 
 let assert_template_expr ~expected expr =
@@ -204,19 +206,22 @@ let test_ast0_strings_convert_to_internal_representation _ =
     Ast_helper0.Exp.constant ~loc
       (Parsetree0.Pconst_string (encoded, Some "js"))
   in
-  assert_string_expr ~expected:"a\n😀" (map_expr0 expr0);
+  assert_string_expr ~expected_source:encoded ~expected_semantic:"a\n😀"
+    (map_expr0 expr0);
   let pat0 =
     Ast_helper0.Pat.constant ~loc
       (Parsetree0.Pconst_string (encoded, Some "js"))
   in
-  assert_string_pat ~expected:"a\n😀" (map_pat0 pat0);
+  assert_string_pat ~expected_source:encoded ~expected_semantic:"a\n😀"
+    (map_pat0 pat0);
   (* Older compiler-produced ast0 files can contain the processed [*j]
      delimiter. Decode those directly instead of interpreting them as source
      text again. *)
   let legacy_expr0 =
     Ast_helper0.Exp.constant ~loc (Parsetree0.Pconst_string ({|\"|}, Some "*j"))
   in
-  assert_string_expr ~expected:"\"" (map_expr0 legacy_expr0);
+  assert_string_expr ~expected_source:{|\"|} ~expected_semantic:"\""
+    (map_expr0 legacy_expr0);
   let template_expr0 =
     Ast_helper0.Exp.constant ~loc
       ~attrs:[attr "res.template" (Parsetree0.PStr [])]
@@ -227,7 +232,8 @@ let test_ast0_strings_convert_to_internal_representation _ =
     Ast_helper0.Exp.constant ~loc
       (Parsetree0.Pconst_string ({|\x61|}, Some "custom"))
   in
-  assert_string_expr ~expected:{|\x61|} (map_expr0 quoted_expr0);
+  assert_string_expr ~expected_source:{|\\x61|} ~expected_semantic:{|\x61|}
+    (map_expr0 quoted_expr0);
   (* A tagged pattern cannot invoke its tag. Treating its raw contents as a
      string made json`\x61` collide with the ordinary "\\x61" pattern during
      string-switch sorting. Reject both known and arbitrary PPX delimiters. *)
@@ -251,8 +257,9 @@ let test_ast0_strings_convert_to_internal_representation _ =
 
 let test_string_literals_roundtrip_through_ast0 _ =
   let semantic = "a\n😀" in
-  let expr = Ast_helper.Exp.constant ~loc (Parsetree.Pconst_string semantic) in
-  assert_string_expr ~expected:semantic (map_expr0 (map_expr_to0 expr));
+  let expr = Ast_helper.Exp.constant ~loc (Ast_helper.Const.string semantic) in
+  assert_string_expr ~expected_source:{|a\n😀|} ~expected_semantic:semantic
+    (map_expr0 (map_expr_to0 expr));
   let encoded = {|a\n\uD83D\uDE00|} in
   let template_expr =
     Ast_helper.Exp.constant ~loc (Parsetree.Pconst_template encoded)
@@ -284,10 +291,12 @@ let test_string_literals_roundtrip_through_ast0 _ =
   | Ppat_constant (Pconst_char_source actual) ->
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") {|\u{61}|} actual
   | _ -> assert_failure "Expected printer character source");
-  let unprocessed =
-    Ast_helper.Exp.constant ~loc (Parsetree.Pconst_unprocessed_string {|\x61|})
+  let source_string =
+    Ast_helper.Exp.constant ~loc
+      (Parsetree.Pconst_string {source = {|\x61|}; semantic = "a"})
   in
-  assert_string_expr ~expected:"a" (map_expr0 (map_expr_to0 unprocessed))
+  assert_string_expr ~expected_source:{|\x61|} ~expected_semantic:"a"
+    (map_expr0 (map_expr_to0 source_string))
 
 let assert_raw_extension_payload ~name ~expected expression =
   match expression.Parsetree.pexp_desc with

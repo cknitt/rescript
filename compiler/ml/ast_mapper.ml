@@ -558,8 +558,8 @@ let rec extension_of_error {loc; msg; if_highlight; sub} =
   ( {loc; txt = "ocaml.error"},
     PStr
       ([
-         Str.eval (Exp.constant (Pconst_string msg));
-         Str.eval (Exp.constant (Pconst_string if_highlight));
+         Str.eval (Exp.constant (Const.string msg));
+         Str.eval (Exp.constant (Const.string if_highlight));
        ]
       @ List.map (fun ext -> Str.extension (extension_of_error ext)) sub) )
 
@@ -581,7 +581,7 @@ module Ppx_context = struct
 
   let lid name = {txt = Lident name; loc = Location.none}
 
-  let make_string x = Exp.constant (Pconst_string x)
+  let make_string x = Exp.constant (Const.string x)
 
   let make_bool x =
     if x then Exp.construct (lid "true") None
@@ -644,7 +644,7 @@ module Ppx_context = struct
   let restore fields =
     let field name payload =
       let rec get_string = function
-        | {pexp_desc = Pexp_constant (Pconst_string str)} -> str
+        | {pexp_desc = Pexp_constant (Pconst_string {semantic})} -> semantic
         | _ ->
           raise_errorf
             "Internal error: invalid [@@@ocaml.ppx.context { %s }] string \

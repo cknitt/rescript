@@ -57,7 +57,7 @@ let inline_string ~loc = function
     in
     inline_const (Const_string semantic)
   | Pconst_json source -> inline_const (External_ffi_types.Const_json source)
-  | Pconst_string s -> inline_const (Const_string s)
+  | Pconst_string {semantic} -> inline_const (Const_string semantic)
   | _ -> invalid_arg "Ast_external_mk.inline_string"
 
 let inline_bool b = inline_const (Const_bool b)

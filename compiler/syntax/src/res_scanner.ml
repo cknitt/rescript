@@ -394,18 +394,26 @@ let scan_string_escape_sequence ~start_pos scanner =
       (* unicode code point escape sequence: '\u{7A}', one or more hex digits *)
       next scanner;
       let x = ref 0 in
+      let has_digit = ref false in
       while
         match scanner.ch with
         | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' -> true
         | _ -> false
       do
-        x := (!x * 16) + digit_value scanner.ch;
+        has_digit := true;
+        let digit = digit_value scanner.ch in
+        x :=
+          if !x > (Res_utf8.max - digit) / 16 then Res_utf8.max + 1
+          else (!x * 16) + digit;
         next scanner
       done;
       (* consume '}' in '\u{7A}' *)
       match scanner.ch with
-      | '}' -> next scanner
-      | _ -> ())
+      | '}' ->
+        if (not !has_digit) || !x > Res_utf8.max || (0xD800 <= !x && !x < 0xE000)
+        then invalid_unicode_code_point ();
+        next scanner
+      | _ -> invalid_unicode_code_point ())
     | _ ->
       let high = scan_digits ~n:4 ~base:16 in
       if 0xD800 <= high && high <= 0xDBFF then

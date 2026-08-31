@@ -128,10 +128,8 @@ module Sexp_ast = struct
         Sexp.list [Sexp.atom "Pconst_integer"; string txt; opt_char tag]
       | Pconst_char _ -> Sexp.list [Sexp.atom "Pconst_char"]
       | Pconst_char_source _ -> Sexp.list [Sexp.atom "Pconst_char"]
-      | Pconst_string txt ->
-        Sexp.list [Sexp.atom "Pconst_string"; string txt; Sexp.atom "None"]
-      | Pconst_unprocessed_string txt ->
-        Sexp.list [Sexp.atom "Pconst_unprocessed_string"; string txt]
+      | Pconst_string {source; semantic} ->
+        Sexp.list [Sexp.atom "Pconst_string"; string source; string semantic]
       | Pconst_template source ->
         Sexp.list [Sexp.atom "Pconst_template"; string source]
       | Pconst_json source -> Sexp.list [Sexp.atom "Pconst_json"; string source]

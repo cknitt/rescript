@@ -43,9 +43,8 @@ let print_constant const =
   match const with
   | Parsetree.Pconst_integer (s, _) -> "Pconst_integer(" ^ s ^ ")"
   | Pconst_char c -> "Pconst_char(" ^ String.make 1 (Char.chr c) ^ ")"
-  | Pconst_string s -> "Pconst_string(" ^ s ^ ")"
-  | Pconst_unprocessed_string source ->
-    "Pconst_unprocessed_string(" ^ source ^ ")"
+  | Pconst_string {source; semantic} ->
+    "Pconst_string(source=" ^ source ^ ", semantic=" ^ semantic ^ ")"
   | Pconst_template source -> "Pconst_template(" ^ source ^ ")"
   | Pconst_json source -> "Pconst_json(" ^ source ^ ")"
   | Pconst_raw_source source -> "Pconst_raw_source(" ^ source ^ ")"

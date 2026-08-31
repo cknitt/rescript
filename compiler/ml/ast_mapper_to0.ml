@@ -82,9 +82,8 @@ let map_constant = function
   (* The PPX bridge uses parser-form ast0, where template segments are [js]
      strings distinguished by a template attribute. *)
   | Pconst_template s -> Pconst_string (s, Some "js")
-  | Pconst_string s -> Pconst_string (s, None)
-  | Pconst_unprocessed_string s | Pconst_raw_source s ->
-    Pconst_string (s, Some "js")
+  | Pconst_string {source} -> Pconst_string (source, Some "js")
+  | Pconst_raw_source s -> Pconst_string (s, Some "js")
   | Pconst_json s -> Pconst_string (s, Some "json")
   | Pconst_char_source s -> Pconst_string (s, Some "INTERNAL_RES_CHAR_CONTENTS")
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
