@@ -27,7 +27,8 @@ let rec convert_constant (const : Lambda.structured_constant) : Lam_constant.t =
   | Const_int i -> Const_int i
   | Const_char i -> Const_char i
   | Const_string s -> Const_string s
-  | Const_template_segment s -> Const_template_segment s
+  | Const_template_literal {source; semantic} ->
+    Const_template_literal {source; semantic}
   | Const_float i -> Const_float i
   | Const_bigint (sign, i) -> Const_bigint (sign, i)
   | Const_pointer (Pt_constructor {name = "()"}) ->

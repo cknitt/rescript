@@ -34,7 +34,7 @@ type t =
          canonical runtime descriptor rather than an ordinal *)
   | Const_char of int
   | Const_string of string (* A decoded string value. *)
-  | Const_template_segment of string
+  | Const_template_literal of {source: string; semantic: string}
     (* The encoded source text of one template-literal segment. *)
   | Const_float of string
   | Const_bigint of bool * string

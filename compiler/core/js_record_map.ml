@@ -157,7 +157,7 @@ let expression_desc : expression_desc fn =
     let body = _self.block _self body in
     Fun {fun_ with params; body}
   | Str _ as v -> v
-  | Template_segment _ as v -> v
+  | Template_literal _ as v -> v
   | Json_literal _ as v -> v
   | Raw_js_code _ as v -> v
   | Array _x0 ->

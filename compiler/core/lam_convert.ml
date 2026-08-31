@@ -72,7 +72,8 @@ let lam_prim ~primitive:(p : Lambda.primitive) ~args loc : Lam.t =
   | Pfield (id, info) -> prim ~primitive:(Pfield (id, info)) ~args loc
   | Psetfield (id, info) -> prim ~primitive:(Psetfield (id, info)) ~args loc
   | Pduprecord -> prim ~primitive:Pduprecord ~args loc
-  | Ptagged_template -> prim ~primitive:Ptagged_template ~args loc
+  | Ptagged_template sources ->
+    prim ~primitive:(Ptagged_template sources) ~args loc
   | Precord_rest excluded -> prim ~primitive:(Precord_rest excluded) ~args loc
   | Praise -> prim ~primitive:Praise ~args loc
   | Pobjcomp x -> prim ~primitive:(Pobjcomp x) ~args loc

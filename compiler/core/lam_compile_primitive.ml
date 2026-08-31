@@ -86,24 +86,11 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
     match args with
     | fn :: rest -> E.call ~info:call_info fn rest
     | _ -> assert false)
-  | Ptagged_template -> (
-    (* [tag; strings_array; values_array] -> tag`...` *)
+  | Ptagged_template strings -> (
+    (* [tag; value0; ...] plus raw source segments -> tag`...` *)
     match args with
-    | [
-     fn;
-     {expression_desc = Array strings; _};
-     {expression_desc = Array values; _};
-    ] ->
-      let strings =
-        List.map
-          (fun (segment : J.expression) ->
-            match segment.expression_desc with
-            | Template_segment source -> source
-            | _ -> assert false)
-          strings
-      in
-      E.tagged_template fn strings values
-    | _ -> assert false)
+    | fn :: values -> E.tagged_template fn strings values
+    | [] -> assert false)
   | Pnull_to_opt -> (
     match args with
     | [e] -> (
@@ -191,7 +178,7 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
     let arg = Ext_list.singleton_exn args in
     match arg.expression_desc with
     | Null | Object _ | Number _ | Caml_block _ | Array _ | Str _
-    | Template_segment _ ->
+    | Template_literal _ ->
       (* This makes sense when type info
          is not available at the definition
          site, and inline recovered it
@@ -561,8 +548,8 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
   | Pstringmin -> (
     match args with
     | [
-     ({expression_desc = Str _ | Template_segment _} as a);
-     ({expression_desc = Str _ | Template_segment _} as b);
+     ({expression_desc = Str _ | Template_literal _} as a);
+     ({expression_desc = Str _ | Template_literal _} as b);
     ]
       when Js_analyzer.is_okay_to_duplicate a
            && Js_analyzer.is_okay_to_duplicate b ->
@@ -572,8 +559,8 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
   | Pstringmax -> (
     match args with
     | [
-     ({expression_desc = Str _ | Template_segment _} as a);
-     ({expression_desc = Str _ | Template_segment _} as b);
+     ({expression_desc = Str _ | Template_literal _} as a);
+     ({expression_desc = Str _ | Template_literal _} as b);
     ]
       when Js_analyzer.is_okay_to_duplicate a
            && Js_analyzer.is_okay_to_duplicate b ->

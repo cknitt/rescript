@@ -81,7 +81,7 @@ val runtime_call :
 
 val str : ?comment:string -> string -> t
 
-val template_segment : ?comment:string -> string -> t
+val template_literal : ?comment:string -> semantic:string -> string -> t
 
 val json_literal : ?comment:string -> string -> t
 

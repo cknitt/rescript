@@ -309,8 +309,9 @@ type primitive =
   | Pis_poly_var_block
   | Praw_js_code of Js_raw_info.t
   | Pjs_fn_method
-  (* Tagged template literal: [tag; strings_array; values_array] *)
-  | Ptagged_template
+  (* Tagged template literal. The payload contains the raw source text of each
+     segment; the arguments are the tag followed by the interpolated values. *)
+  | Ptagged_template of string list
 
 and comparison = Ceq | Cneq | Clt | Cgt | Cle | Cge
 
@@ -327,7 +328,9 @@ type structured_constant =
   | Const_int of int32
   | Const_char of int
   | Const_string of string
-  | Const_template_segment of string
+  | Const_template_literal of {source: string; semantic: string}
+    (* Ordinary backquoted literal: preserve [source] for output and carry its
+       decoded [semantic] value through the optimization pipeline. *)
   | Const_float of string
   | Const_bigint of bool * string
   | Const_pointer of pointer_info
@@ -414,17 +417,14 @@ and lambda_switch = lambda switch
 *)
 let const_int (i : int) = Const_int (Int32.of_int i)
 
-let const_string s delim =
-  match delim with
-  | Some "bq" -> Const_template_segment s
-  | None | Some _ -> Const_string s
+let const_string s _delim = Const_string s
 
 let const_of_typed (c : Asttypes.constant) : structured_constant =
   match c with
   | Asttypes.Const_int i -> Const_int (Int32.of_int i)
   | Asttypes.Const_char i -> Const_char i
   | Asttypes.Const_string s -> Const_string s
-  | Asttypes.Const_template_segment s -> Const_template_segment s
+  | Asttypes.Const_template_segment _ -> assert false
   | Asttypes.Const_float f -> Const_float f
   | Asttypes.Const_bigint (sign, i) -> Const_bigint (sign, i)
 

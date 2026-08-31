@@ -516,7 +516,7 @@ let rec eval_const_as_bool (v : Lam_constant.t) : bool option =
   | Const_js_false | Const_js_null | Const_module_alias | Const_js_undefined _
     ->
     Some false
-  | Const_js_true | Const_string _ | Const_template_segment _ | Const_pointer _
+  | Const_js_true | Const_string _ | Const_template_literal _ | Const_pointer _
   | Const_float _ | Const_bigint _ | Const_block _ ->
     Some true
   | Const_some b -> eval_const_as_bool b

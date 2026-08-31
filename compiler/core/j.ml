@@ -132,8 +132,14 @@ and expression_desc =
       directive: string option;
     }
   | Str of string  (** A decoded semantic string value. *)
-  | Template_segment of string
-      (** The encoded source text of one template-literal segment. *)
+  | Template_literal of {source: string; semantic: string}
+      (** An ordinary backquoted literal. [source] preserves the spelling used
+          when emitting JavaScript, including escape sequences. [semantic] is
+          the decoded runtime string used for comparisons and optimizations.
+          Both are required because equivalent runtime strings can have
+          different source spellings, and preserving backquotes is an output
+          design goal. Tagged-template segments are represented separately by
+          [Tagged_template] because their escapes need not be decodable. *)
   | Json_literal of string
       (** Validated JavaScript literal source from a [json`...`] payload. *)
   | Raw_js_code of Js_raw_info.t

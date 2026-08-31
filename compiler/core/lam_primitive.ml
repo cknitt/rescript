@@ -34,8 +34,9 @@ type t =
   | Psetfield of int * Lam_compat.set_field_dbg_info
   (* could have field info at least for record *)
   | Pduprecord
-  (* Tagged template literal: [tag; strings_array; values_array] *)
-  | Ptagged_template
+  (* Tagged template literal. The payload contains raw segment source; the
+     arguments are the tag followed by the interpolated values. *)
+  | Ptagged_template of string list
   | Precord_rest of string list
   (* External call *)
   | Pjs_call of {
@@ -225,7 +226,7 @@ let eq_primitive_approx (lhs : t) (rhs : t) =
     rhs = lhs
   (* Reachable only via the optimizer's term-equality comparison, which the
      test suite doesn't exercise for tagged templates. *)
-  | Ptagged_template -> ( ((rhs = lhs) [@coverage off]))
+  | Ptagged_template _ -> ( ((rhs = lhs) [@coverage off]))
   | Pcreate_extension a -> (
     match rhs with
     | Pcreate_extension b -> a = (b : string)

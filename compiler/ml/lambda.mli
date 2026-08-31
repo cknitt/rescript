@@ -283,7 +283,7 @@ type primitive =
   | Pis_poly_var_block
   | Praw_js_code of Js_raw_info.t
   | Pjs_fn_method
-  | Ptagged_template
+  | Ptagged_template of string list
 
 and comparison = Ceq | Cneq | Clt | Cgt | Cle | Cge
 
@@ -293,7 +293,9 @@ type structured_constant =
   | Const_int of int32
   | Const_char of int
   | Const_string of string
-  | Const_template_segment of string
+  | Const_template_literal of {source: string; semantic: string}
+    (* Ordinary backquoted literal: [source] preserves output spelling and
+       [semantic] is the decoded runtime string. *)
   | Const_float of string
   | Const_bigint of bool * string
   | Const_pointer of pointer_info

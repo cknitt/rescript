@@ -141,4 +141,9 @@ describe("tagged templates", () => {
   test("a regular string interpolation should continue working", () =>
     eq(__LOC__, `some random ${"string"} interpolation`, "some random string interpolation")
   )
+
+  test("invalid escapes remain valid in tagged-template segments", () => {
+    let result = rawTag`\unicode`
+    eq(__LOC__, result.raw, ["\\unicode"])
+  })
 })

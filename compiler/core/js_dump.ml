@@ -164,7 +164,7 @@ let rec exp_need_paren ?(arrow = false) (e : J.expression) =
   | Raw_js_code {code_info = Stmt _}
   | Length _ | Call _ | Caml_block_tag _ | Seq _ | Static_index _ | Cond _
   | Bin _ | Is_null_or_undefined _ | String_index _ | Array_index _
-  | String_append _ | Var _ | Undefined _ | Null | Str _ | Template_segment _
+  | String_append _ | Var _ | Undefined _ | Null | Str _ | Template_literal _
   | Array _ | Caml_block _ | Typeof _ | Number _ | Js_not _ | Js_bnot _ | In _
   | Bool _ | New _ ->
     false
@@ -769,7 +769,7 @@ and expression_desc cxt ~(level : int) f x : cxt =
   | Str txt ->
     Js_dump_string.pp_string f txt;
     cxt
-  | Template_segment source ->
+  | Template_literal {source} ->
     P.string f ("`" ^ source ^ "`");
     cxt
   | Json_literal source ->
@@ -1399,7 +1399,7 @@ and statement_desc top cxt f (s : J.statement_desc) : cxt =
       | Some s -> P.string f s
       | None -> ());
       cxt
-    | Str _ | Template_segment _ | Json_literal _ -> cxt
+    | Str _ | Template_literal _ | Json_literal _ -> cxt
     | _ ->
       let cxt =
         (if exp_need_paren e then P.paren_group f 1 else P.group f 0) (fun _ ->

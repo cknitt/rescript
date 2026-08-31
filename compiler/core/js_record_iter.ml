@@ -122,7 +122,7 @@ let expression_desc : expression_desc fn =
     list _self.ident _self params;
     _self.block _self body
   | Str _ -> ()
-  | Template_segment _ -> ()
+  | Template_literal _ -> ()
   | Json_literal _ -> ()
   | Raw_js_code _ -> ()
   | Array _x0 -> list _self.expression _self _x0

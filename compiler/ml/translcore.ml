@@ -1032,6 +1032,16 @@ and transl_exp0 (e : Typedtree.expression) : Lambda.lambda =
     transl_primitive e.exp_loc p e.exp_env e.exp_type ~val_type:vd.val_type
   | Texp_ident (path, _, {val_kind = Val_reg}) ->
     transl_value_path ~loc:e.exp_loc e.exp_env path
+  | Texp_constant (Const_template_segment source) -> (
+    (* Tagged-template segments are handled by the enclosing
+       [Texp_apply] case below and never reach this branch. An ordinary
+       template literal must have a semantic string value in addition to its
+       preserved source spelling. Establish that invariant while the source
+       location is still available. *)
+    match String_literal.decode_js_escapes source with
+    | Some semantic -> Lconst (Const_template_literal {source; semantic})
+    | None ->
+      Location.raise_errorf ~loc:e.exp_loc "Invalid string escape sequence")
   | Texp_constant cst -> Lconst (const_of_typed cst)
   | Texp_let (rec_flag, pat_expr_list, body) ->
     transl_let ~js_hoist:None rec_flag pat_expr_list (transl_exp body)
@@ -1077,9 +1087,25 @@ and transl_exp0 (e : Typedtree.expression) : Lambda.lambda =
       | [(_, Some strings); (_, Some values)] -> (strings, values)
       | _ -> assert false
     in
+    let sources =
+      match strings.exp_desc with
+      | Texp_array segments ->
+        List.map
+          (fun (segment : Typedtree.expression) ->
+            match segment.exp_desc with
+            | Texp_constant (Const_template_segment source) -> source
+            | _ -> assert false)
+          segments
+      | _ -> assert false
+    in
+    let values =
+      match values.exp_desc with
+      | Texp_array values -> values
+      | _ -> assert false
+    in
     Lprim
-      ( Ptagged_template,
-        [transl_exp funct; transl_exp strings; transl_exp values],
+      ( Ptagged_template sources,
+        transl_exp funct :: transl_list values,
         e.exp_loc )
   | Texp_apply
       {

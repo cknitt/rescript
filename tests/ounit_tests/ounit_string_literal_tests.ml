@@ -87,11 +87,12 @@ let assert_external_js_string ~expected constant =
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a JavaScript string expression"
 
-let assert_js_template_segment ~expected constant =
+let assert_js_template_literal ~expected_source ~expected_semantic constant =
   match (Lam_compile_const.translate constant).J.expression_desc with
-  | Template_segment actual ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
-  | _ -> OUnit.assert_failure "expected a JavaScript template segment"
+  | Template_literal {source; semantic} ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_source source;
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_semantic semantic
+  | _ -> OUnit.assert_failure "expected a JavaScript template literal"
 
 let assert_external_json_literal ~expected constant =
   match (Lam_compile_const.translate_arg_cst constant).J.expression_desc with
@@ -260,28 +261,41 @@ let suites =
            match inline_string {|\uD800|} (Some "bq") with
            | _ -> OUnit.assert_failure "expected an invalid string escape"
            | exception Location.Error _ -> () );
-         ( "Lambda separates strings from template segments" >:: fun _ ->
+         ( "Lambda separates strings from template literals" >:: fun _ ->
            let semantic =
              convert_typed_constant (Asttypes.Const_string "a\n😀")
            in
            let template =
-             convert_typed_constant
-               (Asttypes.Const_template_segment {|a\n\uD83D\uDE00|})
+             Lam_constant_convert.convert_constant
+               (Lambda.Const_template_literal
+                  {source = {|a\n\uD83D\uDE00|}; semantic = "a\n😀"})
            in
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Lam_constant.Const_string "a\n😀") semantic;
            OUnit.assert_equal ~printer:Ext_obj.dump
-             (Lam_constant.Const_template_segment {|a\n\uD83D\uDE00|}) template;
+             (Lam_constant.Const_template_literal
+                {source = {|a\n\uD83D\uDE00|}; semantic = "a\n😀"})
+             template;
            OUnit.assert_bool "semantic and template strings stay distinct"
              (not
                 (Lam_constant.eq_approx (Lam_constant.Const_string {|a\n|})
-                   (Lam_constant.Const_template_segment {|a\n|}))) );
+                   (Lam_constant.Const_template_literal
+                      {source = {|a\n|}; semantic = "a\n"}))) );
          ( "Lambda string kinds lower differently" >:: fun _ ->
            assert_js_string ~expected:"a\n😀" (Lam_constant.Const_string "a\n😀");
-           assert_js_template_segment ~expected:{|a\n\uD83D\uDE00|}
-             (Lam_constant.Const_template_segment {|a\n\uD83D\uDE00|});
+           assert_js_template_literal ~expected_source:{|a\n\uD83D\uDE00|}
+             ~expected_semantic:"a\n😀"
+             (Lam_constant.Const_template_literal
+                {source = {|a\n\uD83D\uDE00|}; semantic = "a\n😀"});
            let semantic = Js_exp_make.str "a" in
-           let template = Js_exp_make.template_segment {|\x61|} in
+           let template = Js_exp_make.template_literal ~semantic:"a" {|\x61|} in
+           OUnit.assert_equal ~printer:(Printf.sprintf "%S") {|`\x61`|}
+             (Js_dump.string_of_expression template);
+           (match (Js_exp_make.string_length template).expression_desc with
+           | Number (Int {i = 1l}) -> ()
+           | _ ->
+             OUnit.assert_failure
+               "expected template literal length to use its semantic value");
            (match
               (Js_exp_make.string_append semantic template).expression_desc
             with
@@ -291,11 +305,13 @@ let suites =
                "expected semantic strings and template segments not to fold");
            (match
               (Js_exp_make.string_append template
-                 (Js_exp_make.template_segment "b"))
+                 (Js_exp_make.template_literal ~semantic:"b" "b"))
                 .expression_desc
             with
-           | Template_segment {|\x61b|} -> ()
-           | _ -> OUnit.assert_failure "expected template segments to fold");
+           | String_append _ -> ()
+           | _ ->
+             OUnit.assert_failure
+               "expected template literals not to merge their source text");
            let tagged =
              Js_exp_make.tagged_template
                (Js_exp_make.js_global "tag")

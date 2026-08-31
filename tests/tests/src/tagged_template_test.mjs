@@ -43,7 +43,7 @@ function runQuery(tag) {
   return tag`SELECT id = ${id}`;
 }
 
-let paramQuery = runQuery(sql);
+let paramQuery = sql`SELECT id = ${id}`;
 
 let s = Stdlib_TaggedTemplate.make((strings, parameters) => Stdlib_Array.reduceWithIndex(parameters, strings[0], (acc, param, i) => {
   let suffix = strings[i + 1 | 0];
@@ -95,6 +95,10 @@ Mocha.describe("tagged templates", () => {
   Mocha.test("with a ReScript tag lifted via TaggedTemplate.make, it should return the correct interpolation", () => Test_utils.eq("File \"tagged_template_test.res\", line 133, characters 13-20", greeting, "hello Ada you're 36 years old!"));
   Mocha.test("a template literal tagged with json should generate a regular string interpolation for now", () => Test_utils.eq("File \"tagged_template_test.res\", line 138, characters 13-20", "some random string", "some random string"));
   Mocha.test("a regular string interpolation should continue working", () => Test_utils.eq("File \"tagged_template_test.res\", line 142, characters 7-14", `some random ` + "string" + ` interpolation`, "some random string interpolation"));
+  Mocha.test("invalid escapes remain valid in tagged-template segments", () => {
+    let result = rawTag`\unicode`;
+    Test_utils.eq("File \"tagged_template_test.res\", line 147, characters 7-14", result.raw, ["\\unicode"]);
+  });
 });
 
 let extraLength = 10;

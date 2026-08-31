@@ -94,7 +94,7 @@ let rec no_side_effects (lam : Lam.t) : bool =
       true
     (* A tagged template invokes its tag at runtime, so it always has side
        effects. *)
-    | Ptagged_template | Pjs_apply | Pjs_call _ | Pinit_mod | Pupdate_mod
+    | Ptagged_template _ | Pjs_apply | Pjs_call _ | Pinit_mod | Pupdate_mod
     | Pjs_object_get _ | Pjs_object_set _ | Pdebugger | Pjs_fn_method
     (* Await promise *)
     | Pawait
@@ -196,7 +196,7 @@ and size_constant x =
   | Const_js_undefined _ | Const_module_alias | Const_js_true | Const_js_false
     ->
     1
-  | Const_string _ | Const_template_segment _ -> 1
+  | Const_string _ | Const_template_literal _ -> 1
   | Const_some s -> size_constant s
   | Const_block (_, str) ->
     Ext_list.fold_left str 0 (fun acc x -> acc + size_constant x)

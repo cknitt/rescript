@@ -30,7 +30,7 @@ type t =
   | Pfield of int * Lambda.field_dbg_info
   | Psetfield of int * Lambda.set_field_dbg_info
   | Pduprecord
-  | Ptagged_template
+  | Ptagged_template of string list
   | Precord_rest of string list
   | Pjs_call of {
       (* Location.t *  [loc] is passed down *)

@@ -154,7 +154,7 @@ let expression_desc : 'a. ('a, expression_desc) fn =
     let st = _self.block _self st body in
     st
   | Str _ -> st
-  | Template_segment _ -> st
+  | Template_literal _ -> st
   | Json_literal _ -> st
   | Raw_js_code _ -> st
   | Array _x0 -> list _self.expression _self st _x0

@@ -35,7 +35,7 @@ type t = J.expression
  *)
 let rec remove_pure_sub_exp (x : t) : t option =
   match x.expression_desc with
-  | Var _ | Str _ | Template_segment _ | Json_literal _ | Number _ ->
+  | Var _ | Str _ | Template_literal _ | Json_literal _ | Number _ ->
     None (* Can be refined later *)
   | Array_index (a, b) ->
     if is_pure_sub_exp a && is_pure_sub_exp b then None else Some x
@@ -160,8 +160,12 @@ let pure_runtime_call module_name fn_name args =
 let str ?comment txt : t =
   {expression_desc = Str txt; comment; source_loc = None}
 
-let template_segment ?comment source : t =
-  {expression_desc = Template_segment source; comment; source_loc = None}
+let template_literal ?comment ~semantic source : t =
+  {
+    expression_desc = Template_literal {source; semantic};
+    comment;
+    source_loc = None;
+  }
 
 let json_literal ?comment source : t =
   {expression_desc = Json_literal source; comment; source_loc = None}
@@ -234,7 +238,7 @@ module L = Literals
 let typeof ?comment (e : t) : t =
   match e.expression_desc with
   | Number _ | Length _ -> str ?comment L.js_type_number
-  | Str _ | Template_segment _ -> str ?comment L.js_type_string
+  | Str _ | Template_literal _ -> str ?comment L.js_type_string
   | Array _ -> str ?comment L.js_type_object
   | Bool _ -> str ?comment L.js_type_boolean
   | _ -> {expression_desc = Typeof e; comment; source_loc = None}
@@ -644,7 +648,8 @@ let array_length ?comment (e : t) : t =
 let string_length ?comment (e : t) : t =
   match e.expression_desc with
   | Str txt -> int ?comment (Int32.of_int (String_literal.utf16_length txt))
-  (* Encoded template segments do not expose their semantic UTF-16 length. *)
+  | Template_literal {semantic = txt} ->
+    int ?comment (Int32.of_int (String_literal.utf16_length txt))
   | _ -> {expression_desc = Length e; comment; source_loc = None}
 
 let function_length ?comment (e : t) : t =
@@ -655,46 +660,67 @@ let function_length ?comment (e : t) : t =
       (Int32.of_int (if is_method then params_length - 1 else params_length))
   | _ -> {expression_desc = Length e; comment; source_loc = None}
 
-type string_literal_kind = Semantic_string | Encoded_template_segment
+type string_literal =
+  | Semantic_string of string
+  | Backquoted_literal of {source: string; semantic: string}
 
 let as_string_literal (e : t) =
   match e.expression_desc with
-  | Str txt -> Some (Semantic_string, txt)
-  | Template_segment source -> Some (Encoded_template_segment, source)
+  | Str txt -> Some (Semantic_string txt)
+  | Template_literal {source; semantic} ->
+    Some (Backquoted_literal {source; semantic})
   | _ -> None
 
-let string_literal_desc kind txt =
-  match kind with
-  | Semantic_string -> J.Str txt
-  | Encoded_template_segment -> Template_segment txt
+let string_literal_is_empty = function
+  | Semantic_string "" | Backquoted_literal {semantic = ""} -> true
+  | _ -> false
+
+let concat_string_literals first second =
+  match (first, second) with
+  | Semantic_string a, Semantic_string b -> Some (J.Str (a ^ b))
+  | _ -> None
 
 let rec string_append ?comment (e : t) (el : t) : t =
-  let concat (base : t) kind a b =
-    {base with expression_desc = string_literal_desc kind (a ^ b)}
+  let concat (base : t) a b =
+    match concat_string_literals a b with
+    | Some expression_desc -> Some {base with expression_desc}
+    | None -> None
   in
   match (as_string_literal e, as_string_literal el) with
-  | Some (_, ""), _ -> el
-  | _, Some (_, "") -> e
-  | Some (kind, a), Some (kind_, b) when kind = kind_ ->
-    {(concat e kind a b) with comment; source_loc = None}
+  | Some literal, _ when string_literal_is_empty literal -> el
+  | _, Some literal when string_literal_is_empty literal -> e
+  | Some a, Some b -> (
+    match concat e a b with
+    | Some result -> {result with comment; source_loc = None}
+    | None ->
+      {comment; source_loc = None; expression_desc = String_append (e, el)})
   | _ -> (
     match (e.expression_desc, el.expression_desc) with
     | String_append (a, b_expr), String_append (c_expr, d) -> (
       match (as_string_literal b_expr, as_string_literal c_expr) with
-      | Some (kind, b), Some (kind_, c) when kind = kind_ ->
-        string_append ?comment (string_append a (concat b_expr kind b c)) d
+      | Some b, Some c -> (
+        match concat b_expr b c with
+        | Some combined -> string_append ?comment (string_append a combined) d
+        | None ->
+          {comment; source_loc = None; expression_desc = String_append (e, el)})
       | _ ->
         {comment; source_loc = None; expression_desc = String_append (e, el)})
     | _, String_append (b, c) -> (
       match (as_string_literal e, as_string_literal b) with
-      | Some (kind, a), Some (kind_, b) when kind = kind_ ->
-        string_append ?comment (concat e kind a b) c
+      | Some a, Some b -> (
+        match concat e a b with
+        | Some combined -> string_append ?comment combined c
+        | None ->
+          {comment; source_loc = None; expression_desc = String_append (e, el)})
       | _ ->
         {comment; source_loc = None; expression_desc = String_append (e, el)})
     | String_append (c, b_expr), _ -> (
       match (as_string_literal b_expr, as_string_literal el) with
-      | Some (kind, b), Some (kind_, a) when kind = kind_ ->
-        string_append ?comment c (concat b_expr kind b a)
+      | Some b, Some a -> (
+        match concat b_expr b a with
+        | Some combined -> string_append ?comment c combined
+        | None ->
+          {comment; source_loc = None; expression_desc = String_append (e, el)})
       | _ ->
         {comment; source_loc = None; expression_desc = String_append (e, el)})
     | _ -> {comment; source_loc = None; expression_desc = String_append (e, el)}
@@ -1481,7 +1507,8 @@ let to_int32 ?comment (e : J.expression) : J.expression =
 
 let string_comp (cmp : Lam_compat.comparison) ?comment (e0 : t) (e1 : t) =
   match (e0.expression_desc, e1.expression_desc) with
-  | Str a0, Str a1 | Template_segment a0, Template_segment a1 -> (
+  | Str a0, Str a1
+  | Template_literal {semantic = a0}, Template_literal {semantic = a1} -> (
     match (cmp, str_equal a0 a1) with
     | Ceq, Some b -> bool b
     | Cneq, Some b -> bool (b = false)

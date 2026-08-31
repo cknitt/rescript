@@ -113,7 +113,7 @@ let rec no_side_effect_expression_desc (x : J.expression_desc) =
   | String_index (a, b) | Array_index (a, b) ->
     no_side_effect a && no_side_effect b
   | Is_null_or_undefined b -> no_side_effect b
-  | Str _ | Template_segment _ -> true
+  | Str _ | Template_literal _ -> true
   | Array xs | Caml_block (xs, _, _) ->
     (* create [immutable] block,
         does not really mean that this opreation itself is [pure].
@@ -228,9 +228,10 @@ let rec eq_expression ({expression_desc = x0} : J.expression)
     match y0 with
     | Str a1 -> a0 = a1
     | _ -> false)
-  | Template_segment a0 -> (
+  | Template_literal {source = source0; semantic = semantic0} -> (
     match y0 with
-    | Template_segment a1 -> a0 = a1
+    | Template_literal {source = source1; semantic = semantic1} ->
+      source0 = source1 && semantic0 = semantic1
     | _ -> false)
   | Static_index (e0, p0, off0) -> (
     match y0 with
@@ -330,6 +331,6 @@ let rev_toplevel_flatten block =
 
 let rec is_okay_to_duplicate (e : J.expression) =
   match e.expression_desc with
-  | Var _ | Bool _ | Str _ | Template_segment _ | Number _ -> true
+  | Var _ | Bool _ | Str _ | Template_literal _ | Number _ -> true
   | Static_index (e, _s, _off) -> is_okay_to_duplicate e
   | _ -> false

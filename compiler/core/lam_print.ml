@@ -24,7 +24,8 @@ let rec struct_const ppf (cst : Lam_constant.t) =
   | Const_assertfalse -> fprintf ppf "assertfalse"
   | Const_char i -> fprintf ppf "%s" (Ext_util.string_of_int_as_char i)
   | Const_string s -> fprintf ppf "%S" s
-  | Const_template_segment s -> fprintf ppf "template(%S)" s
+  | Const_template_literal {source; semantic} ->
+    fprintf ppf "template(source=%S, semantic=%S)" source semantic
   | Const_float f -> fprintf ppf "%s" f
   | Const_bigint (sign, i) -> fprintf ppf "%sn" (Bigint_utils.to_string sign i)
   | Const_pointer name -> fprintf ppf "`%s" name
@@ -48,7 +49,7 @@ let primitive ppf (prim : Lam_primitive.t) =
   | Pupdate_mod -> fprintf ppf "update_mod!"
   | Pjs_apply -> fprintf ppf "#apply"
   (* Debug-only dump, exercised solely under -drawlambda/-dlambda. *)
-  | Ptagged_template -> fprintf ppf "#tagged_template" [@coverage off]
+  | Ptagged_template _ -> fprintf ppf "#tagged_template" [@coverage off]
   | Pjs_object_get name -> fprintf ppf "js_object_get[%s]" name
   | Pjs_object_set name -> fprintf ppf "js_object_set[%s]" name
   | Pfn_arity -> fprintf ppf "fn.length"
