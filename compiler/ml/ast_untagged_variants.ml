@@ -116,9 +116,9 @@ let process_tag_type (attrs : Parsetree.attributes) =
       match txt with
       | "as" ->
         if !st = None then (
-          (match Ast_payload.is_single_string payload with
+          (match Ast_payload.is_single_semantic_string payload with
           | None -> ()
-          | Some (s, _dec) -> st := Some (String s));
+          | Some s -> st := Some (String s));
           (match Ast_payload.is_single_int payload with
           | None -> ()
           | Some i -> st := Some (Int i));

@@ -33,6 +33,10 @@ type action = lid * Parsetree.expression option
 
 val is_single_string : t -> (string * string option) option
 
+val is_single_semantic_string : t -> string option
+(** Return the decoded value of an ordinary or constant backquoted string.
+    Other prefixed literals, such as [json], are not semantic strings. *)
+
 val is_single_int : t -> int option
 
 val is_single_float : t -> string option

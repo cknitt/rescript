@@ -3,9 +3,9 @@
 import * as Mocha from "mocha";
 import * as Test_utils from "./test_utils.mjs";
 
-let _map = {"a":"x","u":"hi","b":"你","c":"我"};
+let _map = {"a":"x","u":"hi","b":"b","c":"c"};
 
-let _revMap = {"x":"a","hi":"u","你":"b","我":"c"};
+let _revMap = {"x":"a","hi":"u","b":"b","c":"c"};
 
 function tToJs(param) {
   return _map[param];
@@ -19,12 +19,12 @@ Mocha.describe("Gpr_3142_test", () => {
   Mocha.test("jsConverter derivation", () => {
     Test_utils.eq("File \"gpr_3142_test.res\", line 18, characters 7-14", tToJs("a"), "x");
     Test_utils.eq("File \"gpr_3142_test.res\", line 19, characters 7-14", tToJs("u"), "hi");
-    Test_utils.eq("File \"gpr_3142_test.res\", line 20, characters 7-14", tToJs("b"), `你`);
-    Test_utils.eq("File \"gpr_3142_test.res\", line 21, characters 7-14", tToJs("c"), `我`);
+    Test_utils.eq("File \"gpr_3142_test.res\", line 20, characters 7-14", tToJs("b"), "b");
+    Test_utils.eq("File \"gpr_3142_test.res\", line 21, characters 7-14", tToJs("c"), "c");
     Test_utils.eq("File \"gpr_3142_test.res\", line 23, characters 7-14", tFromJs("x"), "a");
     Test_utils.eq("File \"gpr_3142_test.res\", line 24, characters 7-14", tFromJs("hi"), "u");
-    Test_utils.eq("File \"gpr_3142_test.res\", line 25, characters 7-14", tFromJs(`你`), "b");
-    Test_utils.eq("File \"gpr_3142_test.res\", line 26, characters 7-14", tFromJs(`我`), "c");
+    Test_utils.eq("File \"gpr_3142_test.res\", line 25, characters 7-14", tFromJs("b"), "b");
+    Test_utils.eq("File \"gpr_3142_test.res\", line 26, characters 7-14", tFromJs("c"), "c");
     Test_utils.eq("File \"gpr_3142_test.res\", line 27, characters 7-14", tFromJs("xx"), undefined);
   });
 });

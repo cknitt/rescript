@@ -78,6 +78,13 @@ let assert_js_string ~expected ~delim constant =
     OUnit.assert_equal ~printer:Ext_obj.dump delim actual_delim
   | _ -> OUnit.assert_failure "expected a JavaScript string expression"
 
+let string_payload s delim =
+  Parsetree.PStr
+    [
+      Ast_helper.Str.eval
+        (Ast_helper.Exp.constant (Parsetree.Pconst_string (s, delim)));
+    ]
+
 let suites =
   __FILE__
   >::: [
@@ -160,6 +167,19 @@ let suites =
            in
            OUnit.assert_equal ~printer:Ext_obj.dump pattern.ppat_desc
              transformed.ppat_desc );
+         ( "constant backquoted attribute strings become semantic" >:: fun _ ->
+           OUnit.assert_equal ~printer:Ext_obj.dump (Some "a\n😀")
+             (Ast_payload.is_single_semantic_string
+                (string_payload {|\x61\n\uD83D\uDE00|} (Some "bq")));
+           OUnit.assert_equal ~printer:Ext_obj.dump None
+             (Ast_payload.is_single_semantic_string
+                (string_payload {|{"answer":42}|} (Some "json")));
+           match
+             Ast_payload.is_single_semantic_string
+               (string_payload {|\uD800|} (Some "bq"))
+           with
+           | _ -> OUnit.assert_failure "expected an invalid string escape"
+           | exception Location.Error _ -> () );
          ( "Lambda separates strings from template segments" >:: fun _ ->
            let semantic = convert_lambda_string "a\n😀" None in
            let template =

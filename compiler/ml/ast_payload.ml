@@ -39,6 +39,32 @@ let is_single_string (x : t) =
     Some (name, dec)
   | _ -> None
 
+let is_single_semantic_string (x : t) =
+  match x with
+  | PStr
+      [
+        {
+          pstr_desc =
+            Pstr_eval
+              ( {
+                  pexp_desc = Pexp_constant (Pconst_string (s, delim));
+                  pexp_loc;
+                  _;
+                },
+                _ );
+          _;
+        };
+      ] -> (
+    match delim with
+    | None -> Some s
+    | Some ("bq" | "js" | "*j") -> (
+      match String_literal.decode_js_escapes s with
+      | Some s -> Some s
+      | None ->
+        Location.raise_errorf ~loc:pexp_loc "Invalid string escape sequence")
+    | Some _ -> None)
+  | _ -> None
+
 let is_single_int (x : t) : int option =
   match x with
   | PStr

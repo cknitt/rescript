@@ -89,7 +89,8 @@ let refine_arg_type ~(nolabel : bool) (ptyp : Ast_core_type.t) :
       | Int i ->
         (* This type is used in obj only to construct obj type*)
         Arg_cst (External_arg_spec.cst_int i)
-      | Str (i, delim) -> Arg_cst (External_arg_spec.cst_string i delim))
+      | Str s -> Arg_cst (External_arg_spec.cst_string s DNone)
+      | Json s -> Arg_cst (External_arg_spec.cst_string s DNoQuotes))
   else (* ([`a|`b] [@string]) *)
     spec_of_ptyp nolabel ptyp
 
@@ -109,9 +110,10 @@ let refine_obj_arg_type ~(nolabel : bool) (ptyp : Ast_core_type.t) :
       (* @as(24) *)
       (* This type is used in obj only to construct obj type *)
       Arg_cst (External_arg_spec.cst_int i)
-    | Some (Str (s, delim)) ->
+    | Some (Str s) ->
       (* @as("foo") *)
-      Arg_cst (External_arg_spec.cst_string s delim))
+      Arg_cst (External_arg_spec.cst_string s DNone)
+    | Some (Json s) -> Arg_cst (External_arg_spec.cst_string s DNoQuotes))
   else (* ([`a|`b] [@string]) *)
     spec_of_ptyp nolabel ptyp
 
