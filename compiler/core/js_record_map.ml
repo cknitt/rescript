@@ -132,7 +132,6 @@ let expression_desc : expression_desc fn =
     Call (_x0, _x1, _x2)
   | Tagged_template (_x0, _x1, _x2) ->
     let _x0 = _self.expression _self _x0 in
-    let _x1 = list _self.expression _self _x1 in
     let _x2 = list _self.expression _self _x2 in
     Tagged_template (_x0, _x1, _x2)
   | String_index (_x0, _x1) ->
@@ -158,6 +157,7 @@ let expression_desc : expression_desc fn =
     let body = _self.block _self body in
     Fun {fun_ with params; body}
   | Str _ as v -> v
+  | Template_segment _ as v -> v
   | Json_literal _ as v -> v
   | Raw_js_code _ as v -> v
   | Array _x0 ->

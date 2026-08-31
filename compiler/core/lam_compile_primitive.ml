@@ -94,6 +94,14 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
      {expression_desc = Array strings; _};
      {expression_desc = Array values; _};
     ] ->
+      let strings =
+        List.map
+          (fun (segment : J.expression) ->
+            match segment.expression_desc with
+            | Template_segment source -> source
+            | _ -> assert false)
+          strings
+      in
       E.tagged_template fn strings values
     | _ -> assert false)
   | Pnull_to_opt -> (
@@ -182,7 +190,8 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
   | Psome -> (
     let arg = Ext_list.singleton_exn args in
     match arg.expression_desc with
-    | Null | Object _ | Number _ | Caml_block _ | Array _ | Str _ ->
+    | Null | Object _ | Number _ | Caml_block _ | Array _ | Str _
+    | Template_segment _ ->
       (* This makes sense when type info
          is not available at the definition
          site, and inline recovered it
@@ -551,7 +560,10 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
     | _ -> assert false)
   | Pstringmin -> (
     match args with
-    | [({expression_desc = Str _} as a); ({expression_desc = Str _} as b)]
+    | [
+     ({expression_desc = Str _ | Template_segment _} as a);
+     ({expression_desc = Str _ | Template_segment _} as b);
+    ]
       when Js_analyzer.is_okay_to_duplicate a
            && Js_analyzer.is_okay_to_duplicate b ->
       E.econd (E.js_comp Clt a b) a b
@@ -559,7 +571,10 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
     | _ -> assert false)
   | Pstringmax -> (
     match args with
-    | [({expression_desc = Str _} as a); ({expression_desc = Str _} as b)]
+    | [
+     ({expression_desc = Str _ | Template_segment _} as a);
+     ({expression_desc = Str _ | Template_segment _} as b);
+    ]
       when Js_analyzer.is_okay_to_duplicate a
            && Js_analyzer.is_okay_to_duplicate b ->
       E.econd (E.js_comp Cgt a b) a b
@@ -601,7 +616,7 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
         (items
         |> List.filter_map (fun (exp : J.expression) ->
             match exp.expression_desc with
-            | Caml_block ([{expression_desc = Str {txt}}; expr], _, _) ->
+            | Caml_block ([{expression_desc = Str txt}; expr], _, _) ->
               Some (Js_op.Lit txt, expr)
             | _ -> None))
     | _ -> assert false)

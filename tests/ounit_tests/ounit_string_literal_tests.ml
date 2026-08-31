@@ -75,19 +75,23 @@ let typed_string s delim =
 let convert_typed_constant constant =
   Lam_constant_convert.convert_constant (Lambda.const_of_typed constant)
 
-let assert_js_string ~expected ~delim constant =
+let assert_js_string ~expected constant =
   match (Lam_compile_const.translate constant).J.expression_desc with
-  | Str {txt; delim = actual_delim} ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected txt;
-    OUnit.assert_equal ~printer:Ext_obj.dump delim actual_delim
+  | Str actual ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a JavaScript string expression"
 
-let assert_external_js_string ~expected ~delim constant =
+let assert_external_js_string ~expected constant =
   match (Lam_compile_const.translate_arg_cst constant).J.expression_desc with
-  | Str {txt; delim = actual_delim} ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected txt;
-    OUnit.assert_equal ~printer:Ext_obj.dump delim actual_delim
+  | Str actual ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a JavaScript string expression"
+
+let assert_js_template_segment ~expected constant =
+  match (Lam_compile_const.translate constant).J.expression_desc with
+  | Template_segment actual ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
+  | _ -> OUnit.assert_failure "expected a JavaScript template segment"
 
 let assert_external_json_literal ~expected constant =
   match (Lam_compile_const.translate_arg_cst constant).J.expression_desc with
@@ -232,7 +236,7 @@ let suites =
            OUnit.assert_equal ~printer:Ext_obj.dump
              (External_ffi_types.Const_json {|{"answer":42}|})
              (inline_string {|{"answer":42}|} (Some "json"));
-           assert_external_js_string ~expected:{|\x61|} ~delim:J.DNone
+           assert_external_js_string ~expected:{|\x61|}
              (External_arg_spec.cst_string {|\x61|});
            assert_external_json_literal ~expected:{|{"answer":42}|}
              (External_arg_spec.cst_json {|{"answer":42}|});
@@ -273,10 +277,39 @@ let suites =
                 (Lam_constant.eq_approx (Lam_constant.Const_string {|a\n|})
                    (Lam_constant.Const_template_segment {|a\n|}))) );
          ( "Lambda string kinds lower differently" >:: fun _ ->
-           assert_js_string ~expected:"a\n😀" ~delim:J.DNone
-             (Lam_constant.Const_string "a\n😀");
-           assert_js_string ~expected:{|a\n\uD83D\uDE00|} ~delim:J.DBackQuotes
-             (Lam_constant.Const_template_segment {|a\n\uD83D\uDE00|}) );
+           assert_js_string ~expected:"a\n😀" (Lam_constant.Const_string "a\n😀");
+           assert_js_template_segment ~expected:{|a\n\uD83D\uDE00|}
+             (Lam_constant.Const_template_segment {|a\n\uD83D\uDE00|});
+           let semantic = Js_exp_make.str "a" in
+           let template = Js_exp_make.template_segment {|\x61|} in
+           (match
+              (Js_exp_make.string_append semantic template).expression_desc
+            with
+           | String_append _ -> ()
+           | _ ->
+             OUnit.assert_failure
+               "expected semantic strings and template segments not to fold");
+           (match
+              (Js_exp_make.string_append template
+                 (Js_exp_make.template_segment "b"))
+                .expression_desc
+            with
+           | Template_segment {|\x61b|} -> ()
+           | _ -> OUnit.assert_failure "expected template segments to fold");
+           let tagged =
+             Js_exp_make.tagged_template
+               (Js_exp_make.js_global "tag")
+               [{|a\n|}; " b"]
+               [Js_exp_make.small_int 1]
+           in
+           (match tagged.expression_desc with
+           | Tagged_template (_, segments, [_]) ->
+             OUnit.assert_equal ~printer:Ext_obj.dump [{|a\n|}; " b"] segments
+           | _ ->
+             OUnit.assert_failure
+               "expected tagged templates to own their encoded segments");
+           OUnit.assert_equal ~printer:(Printf.sprintf "%S") {|tag`a\n${1} b`|}
+             (Js_dump.string_of_expression tagged) );
          ( "JavaScript references are not encoded as strings" >:: fun _ ->
            let value = Js_exp_make.var (Ext_ident.create "value") in
            (match (Js_exp_make.is_array value).expression_desc with

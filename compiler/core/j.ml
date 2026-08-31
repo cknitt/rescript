@@ -72,7 +72,6 @@ and exception_ident = ident
 and for_ident = ident
 and for_direction = Js_op.direction_flag
 and property_map = (property_name * expression) list
-and delim = DNone | DBackQuotes
 
 and record_rest_field = {
   record_rest_label: string;
@@ -109,7 +108,7 @@ and expression_desc =
      This can be constructed either in a static way [E.array_index_by_int] or a dynamic way
      [E.array_index]
   *)
-  | Tagged_template of expression * expression list * expression list
+  | Tagged_template of expression * string list * expression list
   | Static_index of expression * string * int32 option
   (* The third argument bool indicates whether we should
      print it as
@@ -132,10 +131,9 @@ and expression_desc =
       async: bool;
       directive: string option;
     }
-  | Str of {delim: delim; txt: string}
-  (* A string is UTF-8 encoded, and may contain
-     escape sequences.
-  *)
+  | Str of string  (** A decoded semantic string value. *)
+  | Template_segment of string
+      (** The encoded source text of one template-literal segment. *)
   | Json_literal of string
       (** Validated JavaScript literal source from a [json`...`] payload. *)
   | Raw_js_code of Js_raw_info.t

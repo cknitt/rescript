@@ -164,9 +164,9 @@ let rec exp_need_paren ?(arrow = false) (e : J.expression) =
   | Raw_js_code {code_info = Stmt _}
   | Length _ | Call _ | Caml_block_tag _ | Seq _ | Static_index _ | Cond _
   | Bin _ | Is_null_or_undefined _ | String_index _ | Array_index _
-  | String_append _ | Var _ | Undefined _ | Null | Str _ | Array _
-  | Caml_block _ | Typeof _ | Number _ | Js_not _ | Js_bnot _ | In _ | Bool _
-  | New _ ->
+  | String_append _ | Var _ | Undefined _ | Null | Str _ | Template_segment _
+  | Array _ | Caml_block _ | Typeof _ | Number _ | Js_not _ | Js_bnot _ | In _
+  | Bool _ | New _ ->
     false
   | Await _ -> false
   | Spread _ -> false
@@ -747,9 +747,9 @@ and expression_desc cxt ~(level : int) f x : cxt =
     let rec aux cxt xs ys =
       match (xs, ys) with
       | [], [] -> ()
-      | [{J.expression_desc = Str {txt; _}}], [] -> P.string f txt
-      | {J.expression_desc = Str {txt; _}} :: x_rest, y :: y_rest ->
-        P.string f txt;
+      | [source], [] -> P.string f source
+      | source :: x_rest, y :: y_rest ->
+        P.string f source;
         P.string f "${";
         let cxt = expression cxt ~level f y in
         P.string f "}";
@@ -766,15 +766,11 @@ and expression_desc cxt ~(level : int) f x : cxt =
         P.string f L.code_point_at;
         (* FIXME: use code_point_at *)
         P.paren_group f 1 (fun _ -> expression ~level:0 cxt f b))
-  | Str {delim; txt} ->
-    (*TODO --
-       when utf8-> it will not escape '\\' which is definitely not we want
-    *)
-    let () =
-      match delim with
-      | DNone -> Js_dump_string.pp_string f txt
-      | DBackQuotes -> P.string f ("`" ^ txt ^ "`")
-    in
+  | Str txt ->
+    Js_dump_string.pp_string f txt;
+    cxt
+  | Template_segment source ->
+    P.string f ("`" ^ source ^ "`");
     cxt
   | Json_literal source ->
     P.string f source;
@@ -1150,7 +1146,7 @@ and print_jsx cxt ?(spread_props : J.expression option)
   let print_tag cxt =
     match tag.expression_desc with
     (* "div" or any other primitive tag *)
-    | J.Str {txt} ->
+    | J.Str txt ->
       P.string f txt;
       cxt
     (* fragment *)
@@ -1403,7 +1399,7 @@ and statement_desc top cxt f (s : J.statement_desc) : cxt =
       | Some s -> P.string f s
       | None -> ());
       cxt
-    | Str _ | Json_literal _ -> cxt
+    | Str _ | Template_segment _ | Json_literal _ -> cxt
     | _ ->
       let cxt =
         (if exp_need_paren e then P.paren_group f 1 else P.group f 0) (fun _ ->
