@@ -81,7 +81,7 @@ let map_constant = function
   | Pconst_char c -> Pconst_char c
   (* The PPX bridge uses parser-form ast0, where template segments are [js]
      strings distinguished by a template attribute. *)
-  | Pconst_string (s, Some "bq") -> Pconst_string (s, Some "js")
+  | Pconst_template s -> Pconst_string (s, Some "js")
   | Pconst_string (s, q) -> Pconst_string (s, q)
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
 
@@ -404,7 +404,17 @@ module E = struct
     let attrs = sub.attributes sub attrs in
     match desc with
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
-    | Pexp_constant x -> constant ~loc ~attrs (map_constant x)
+    | Pexp_constant x ->
+      let attrs =
+        match x with
+        | Pconst_template _
+          when not
+                 (Ext_list.exists attrs (fun ({txt}, _) -> txt = "res.template"))
+          ->
+          (Location.mknoloc "res.template", Pt.PStr []) :: attrs
+        | _ -> attrs
+      in
+      constant ~loc ~attrs (map_constant x)
     | Pexp_let (r, vbs, e) ->
       let_ ~loc ~attrs r (List.map (sub.value_binding sub) vbs) (sub.expr sub e)
     | Pexp_fun {newtypes; params; body; async} -> (

@@ -50,6 +50,7 @@ let print_constant const =
       | Some delim -> delim ^ " "
     in
     "Pconst_string(" ^ delim ^ s ^ delim ^ ")"
+  | Pconst_template source -> "Pconst_template(" ^ source ^ ")"
   | Pconst_float (s, _) -> "Pconst_float(" ^ s ^ ")"
 
 let print_core_type typ ~pos =

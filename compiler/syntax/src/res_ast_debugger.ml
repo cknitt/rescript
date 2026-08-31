@@ -138,6 +138,8 @@ module Sexp_ast = struct
             | Some txt -> Sexp.list [Sexp.atom "Some"; string txt]
             | None -> Sexp.atom "None");
           ]
+      | Pconst_template source ->
+        Sexp.list [Sexp.atom "Pconst_template"; string source]
       | Pconst_float (txt, tag) ->
         Sexp.list [Sexp.atom "Pconst_float"; string txt; opt_char tag]
     in

@@ -446,7 +446,7 @@ let signature_item_mapper (self : mapper) (sigi : Parsetree.signature_item) :
           ((_, PStr [{pstr_desc = Pstr_eval ({pexp_desc; pexp_loc}, _)}]) as
            attr) -> (
         match pexp_desc with
-        | Pexp_constant (Pconst_string (s, dec)) ->
+        | Pexp_constant ((Pconst_string _ | Pconst_template _) as constant) ->
           succeed attr pval_attributes;
           {
             sigi with
@@ -455,7 +455,7 @@ let signature_item_mapper (self : mapper) (sigi : Parsetree.signature_item) :
                 {
                   value_desc with
                   pval_prim =
-                    Some (Ast_external_mk.inline_string ~loc:pexp_loc s dec);
+                    Some (Ast_external_mk.inline_string ~loc:pexp_loc constant);
                   pval_attributes = [];
                 };
           }
@@ -558,7 +558,8 @@ let structure_item_mapper (self : mapper) (str : Parsetree.structure_item) :
       Ast_attributes.has_inline_payload pvb_attributes
     in
     match (has_inline_property, pvb_expr.pexp_desc) with
-    | Some attr, Pexp_constant (Pconst_string (s, dec)) ->
+    | ( Some attr,
+        Pexp_constant ((Pconst_string _ | Pconst_template _) as constant) ) ->
       succeed attr pvb_attributes;
       {
         str with
@@ -571,7 +572,7 @@ let structure_item_mapper (self : mapper) (str : Parsetree.structure_item) :
               pval_attributes = [];
               pval_prim =
                 Some
-                  (Ast_external_mk.inline_string ~loc:pvb_expr.pexp_loc s dec);
+                  (Ast_external_mk.inline_string ~loc:pvb_expr.pexp_loc constant);
             };
       }
     | Some attr, Pexp_constant (Pconst_integer (s, None)) ->

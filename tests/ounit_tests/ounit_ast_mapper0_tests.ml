@@ -194,6 +194,12 @@ let assert_string_pat ~expected ~delim pat =
     OUnit.assert_equal ~printer:Ext_obj.dump delim actual_delim
   | _ -> assert_failure "Expected a string pattern"
 
+let assert_template_expr ~expected expr =
+  match expr.Parsetree.pexp_desc with
+  | Pexp_constant (Pconst_template actual) ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
+  | _ -> assert_failure "Expected a template expression"
+
 let test_ast0_strings_convert_to_internal_representation _ =
   let encoded = {|a\n\uD83D\uDE00|} in
   let expr0 =
@@ -218,8 +224,7 @@ let test_ast0_strings_convert_to_internal_representation _ =
       ~attrs:[attr "res.template" (Parsetree0.PStr [])]
       (Parsetree0.Pconst_string (encoded, Some "js"))
   in
-  assert_string_expr ~expected:encoded ~delim:(Some "bq")
-    (map_expr0 template_expr0);
+  assert_template_expr ~expected:encoded (map_expr0 template_expr0);
   let invalid_expr0 =
     Ast_helper0.Exp.constant ~loc
       (Parsetree0.Pconst_string ({|\uD800|}, Some "js"))
@@ -237,17 +242,16 @@ let test_string_literals_roundtrip_through_ast0 _ =
     (map_expr0 (map_expr_to0 expr));
   let encoded = {|a\n\uD83D\uDE00|} in
   let template_expr =
-    Ast_helper.Exp.constant ~loc
-      ~attrs:[attr "res.template" (Parsetree.PStr [])]
-      (Parsetree.Pconst_string (encoded, Some "bq"))
+    Ast_helper.Exp.constant ~loc (Parsetree.Pconst_template encoded)
   in
   let template_expr0 = map_expr_to0 template_expr in
   (match template_expr0.Parsetree0.pexp_desc with
   | Pexp_constant (Pconst_string (actual, Some "js")) ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") encoded actual
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") encoded actual;
+    OUnit.assert_bool "expected the ast0 template marker"
+      (List.mem "res.template" (attr_names template_expr0.pexp_attributes))
   | _ -> assert_failure "Expected ast0's template string representation");
-  assert_string_expr ~expected:encoded ~delim:(Some "bq")
-    (map_expr0 template_expr0);
+  assert_template_expr ~expected:encoded (map_expr0 template_expr0);
   let json_expr =
     Ast_helper.Exp.constant ~loc
       (Parsetree.Pconst_string ({|{"answer":42}|}, Some "json"))

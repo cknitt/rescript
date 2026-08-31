@@ -586,6 +586,8 @@ let print_constant ?(template_literal = false) c =
           print_string_contents txt;
           Doc.text rquote;
         ]
+  | Pconst_template source ->
+    Doc.concat [Doc.text "`"; print_string_contents source; Doc.text "`"]
   | Pconst_float (s, _) -> Doc.text s
   | Pconst_char c ->
     let str =
@@ -2623,7 +2625,8 @@ and print_pattern ~state (p : Parsetree.pattern) cmt_tbl =
         match c with
         | Pconst_string (_, Some ("js" | "*j" | "INTERNAL_RES_CHAR_CONTENTS"))
         | Pconst_string (_, None)
-        | Pconst_integer _ | Pconst_char _ | Pconst_float _ ->
+        | Pconst_template _ | Pconst_integer _ | Pconst_char _ | Pconst_float _
+          ->
           false
         | Pconst_string (_, Some _) -> true
       in
@@ -4102,6 +4105,7 @@ and print_template_literal ~state expr cmt_tbl =
     | Pexp_constant (Pconst_string (txt, Some prefix)) ->
       tag := prefix;
       print_string_contents txt
+    | Pexp_constant (Pconst_template source) -> print_string_contents source
     | _ ->
       let doc = print_expression_with_comments ~state expr cmt_tbl in
       let doc =
@@ -4136,8 +4140,10 @@ and print_tagged_template_literal ~state call_expr args cmt_tbl =
     List.map
       (fun x ->
         match x with
-        | {Parsetree.pexp_desc = Pexp_constant (Pconst_string (txt, _))} ->
-          print_string_contents txt
+        | {Parsetree.pexp_desc = Pexp_constant (Pconst_template source)} ->
+          print_string_contents source
+        | {Parsetree.pexp_desc = Pexp_constant (Pconst_string (source, _))} ->
+          print_string_contents source
         | _ -> assert false)
       strings_list
   in

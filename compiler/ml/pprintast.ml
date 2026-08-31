@@ -255,6 +255,8 @@ let constant f = function
   | Pconst_string (i, None) -> print_quoted_string_with_byte_width f i
   | Pconst_string (i, Some delim) ->
     pp f "{%s|%a|%s}" delim print_string_with_byte_width i delim
+  | Pconst_template source ->
+    pp f "{bq|%a|bq}" print_string_with_byte_width source
   | Pconst_integer (i, None) -> paren (i.[0] = '-') (fun f -> pp f "%s") f i
   | Pconst_integer (i, Some m) ->
     paren (i.[0] = '-') (fun f (i, m) -> pp f "%s%c" i m) f (i, m)

@@ -48,17 +48,26 @@ let inline_const (c : External_ffi_types.inline_const) :
     Parsetree.primitive_repr =
   Prim_inline_const c
 
-let inline_string ~loc (s : string) (delim : string option) =
-  let constant =
-    match delim with
-    | Some "json" -> External_ffi_types.Const_json s
-    | Some ("bq" | "js" | "*j") -> (
-      match String_literal.decode_js_escapes s with
-      | Some semantic -> Const_string semantic
-      | None -> Location.raise_errorf ~loc "Invalid string escape sequence")
-    | None | Some _ -> Const_string s
-  in
-  inline_const constant
+let inline_string ~loc = function
+  | Parsetree.Pconst_template source ->
+    let semantic =
+      match String_literal.decode_js_escapes source with
+      | Some semantic -> semantic
+      | None -> Location.raise_errorf ~loc "Invalid string escape sequence"
+    in
+    inline_const (Const_string semantic)
+  | Pconst_string (s, delim) ->
+    let constant =
+      match delim with
+      | Some "json" -> External_ffi_types.Const_json s
+      | Some ("js" | "*j") -> (
+        match String_literal.decode_js_escapes s with
+        | Some semantic -> Const_string semantic
+        | None -> Location.raise_errorf ~loc "Invalid string escape sequence")
+      | None | Some _ -> Const_string s
+    in
+    inline_const constant
+  | _ -> invalid_arg "Ast_external_mk.inline_string"
 
 let inline_bool b = inline_const (Const_bool b)
 

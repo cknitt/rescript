@@ -72,6 +72,11 @@ let typed_string s delim =
   | Ok constant -> constant
   | Error _ -> OUnit.assert_failure "expected a typed string constant"
 
+let typed_template source =
+  match Typecore.constant (Parsetree.Pconst_template source) with
+  | Ok constant -> constant
+  | Error _ -> OUnit.assert_failure "expected a typed template constant"
+
 let convert_typed_constant constant =
   Lam_constant_convert.convert_constant (Lambda.const_of_typed constant)
 
@@ -101,7 +106,18 @@ let assert_external_json_literal ~expected constant =
   | _ -> OUnit.assert_failure "expected a JavaScript JSON literal expression"
 
 let inline_string s delim =
-  match Ast_external_mk.inline_string ~loc:Location.none s delim with
+  match
+    Ast_external_mk.inline_string ~loc:Location.none
+      (Parsetree.Pconst_string (s, delim))
+  with
+  | Prim_inline_const constant -> constant
+  | _ -> OUnit.assert_failure "expected an inline constant"
+
+let inline_template source =
+  match
+    Ast_external_mk.inline_string ~loc:Location.none
+      (Parsetree.Pconst_template source)
+  with
   | Prim_inline_const constant -> constant
   | _ -> OUnit.assert_failure "expected an inline constant"
 
@@ -117,6 +133,13 @@ let string_payload s delim =
     [
       Ast_helper.Str.eval
         (Ast_helper.Exp.constant (Parsetree.Pconst_string (s, delim)));
+    ]
+
+let template_payload source =
+  Parsetree.PStr
+    [
+      Ast_helper.Str.eval
+        (Ast_helper.Exp.constant (Parsetree.Pconst_template source));
     ]
 
 let suites =
@@ -158,7 +181,7 @@ let suites =
              (Ast_utf8_string_interp.transform_exp expression encoded "js")
                .pexp_desc
            with
-           | Pexp_constant (Pconst_string (actual, Some "bq")) ->
+           | Pexp_constant (Pconst_template actual) ->
              OUnit.assert_equal ~printer:(Printf.sprintf "%S") encoded actual
            | _ -> OUnit.assert_failure "expected a raw template segment" );
          ( "invalid encoded values are rejected" >:: fun _ ->
@@ -203,7 +226,7 @@ let suites =
              transformed.ppat_desc );
          ( "typed tree separates strings from template literals" >:: fun _ ->
            let semantic = typed_string "a\n😀" None in
-           let template = typed_string {|a\n\uD83D\uDE00|} (Some "bq") in
+           let template = typed_template {|a\n\uD83D\uDE00|} in
            let json = typed_string {|{"answer":42}|} (Some "json") in
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Asttypes.Const_string "a\n😀") semantic;
@@ -217,12 +240,9 @@ let suites =
              (Parsetree.Pconst_string ("a\n😀", None))
              (Untypeast.constant semantic);
            OUnit.assert_equal ~printer:Ext_obj.dump
-             (Parsetree.Pconst_string ({|a\n\uD83D\uDE00|}, Some "bq"))
+             (Parsetree.Pconst_template {|a\n\uD83D\uDE00|})
              (Untypeast.constant template);
-           match
-             Typecore.constant
-               (Parsetree.Pconst_string ({|\unicode|}, Some "bq"))
-           with
+           match Typecore.constant (Parsetree.Pconst_template {|\unicode|}) with
            | Error Typecore.Invalid_string_escape_sequence -> ()
            | _ ->
              OUnit.assert_failure "expected an invalid ordinary template escape"
@@ -230,20 +250,19 @@ let suites =
          ( "constant backquoted attribute strings become semantic" >:: fun _ ->
            OUnit.assert_equal ~printer:Ext_obj.dump (Some "a\n😀")
              (Ast_payload.is_single_semantic_string
-                (string_payload {|\x61\n\uD83D\uDE00|} (Some "bq")));
+                (template_payload {|\x61\n\uD83D\uDE00|}));
            OUnit.assert_equal ~printer:Ext_obj.dump None
              (Ast_payload.is_single_semantic_string
                 (string_payload {|{"answer":42}|} (Some "json")));
            match
-             Ast_payload.is_single_semantic_string
-               (string_payload {|\uD800|} (Some "bq"))
+             Ast_payload.is_single_semantic_string (template_payload {|\uD800|})
            with
            | _ -> OUnit.assert_failure "expected an invalid string escape"
            | exception Location.Error _ -> () );
          ( "external string constants have explicit representations" >:: fun _ ->
            OUnit.assert_equal ~printer:Ext_obj.dump
              (External_ffi_types.Const_string "a\n😀")
-             (inline_string {|\x61\n\uD83D\uDE00|} (Some "bq"));
+             (inline_template {|\x61\n\uD83D\uDE00|});
            OUnit.assert_equal ~printer:Ext_obj.dump
              (External_ffi_types.Const_json {|{"answer":42}|})
              (inline_string {|{"answer":42}|} (Some "json"));
@@ -268,7 +287,7 @@ let suites =
            | _ -> OUnit.assert_failure "expected a runtime typeof expression");
            OUnit.assert_equal ~printer:(Printf.sprintf "%S") {| {answer: 42} |}
              (Js_dump.string_of_expression json);
-           match inline_string {|\uD800|} (Some "bq") with
+           match inline_template {|\uD800|} with
            | _ -> OUnit.assert_failure "expected an invalid string escape"
            | exception Location.Error _ -> () );
          ( "Lambda separates strings from template literals" >:: fun _ ->

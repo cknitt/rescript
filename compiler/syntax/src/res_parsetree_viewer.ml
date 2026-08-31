@@ -266,6 +266,7 @@ let is_huggable_expression expr =
   match expr.pexp_desc with
   | Pexp_array _ | Pexp_tuple _
   | Pexp_constant (Pconst_string (_, Some _))
+  | Pexp_constant (Pconst_template _)
   | Pexp_construct ({txt = Longident.Lident ("::" | "[]")}, _)
   | Pexp_object_literal _ | Pexp_record _ ->
     true
@@ -674,6 +675,7 @@ let is_template_literal expr =
     when has_template_literal_attr expr.pexp_attributes ->
     true
   | Pexp_constant (Pconst_string (_, Some "")) -> true
+  | Pexp_constant (Pconst_template _) -> true
   | Pexp_constant _ when has_template_literal_attr expr.pexp_attributes -> true
   | _ -> false
 

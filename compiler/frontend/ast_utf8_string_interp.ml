@@ -270,18 +270,6 @@ let transform_test s =
   check_and_transform 0 s 0 cxt;
   List.rev cxt.segments
 
-module Delim = struct
-  type interpolation =
-    | BackQuotes (* string interpolation *)
-    | Js (* simple double quoted string *)
-    | Unrecognized (* no interpolation: delimiter not recognized *)
-  let parse_unprocessed is_template = function
-    | "js" -> if is_template then BackQuotes else Js
-    | _ -> Unrecognized
-
-  let some_escaped_back_quote_delimiter = Some "bq"
-end
-
 (* Scanner string payloads still contain JavaScript escape spelling. Decode an
    ordinary string exactly once here, before it reaches typing and matching. *)
 let semantic_string loc s =
@@ -296,32 +284,19 @@ let transform_exp (e : Parsetree.expression) s delim : Parsetree.expression =
         | "res.template" | "res.taggedTemplate" -> true
         | _ -> false)
   in
-  match Delim.parse_unprocessed is_template delim with
-  | Js ->
+  if delim <> "js" then e
+  else if is_template then
+    {e with pexp_desc = Pexp_constant (Pconst_template s)}
+  else
     let semantic = semantic_string e.pexp_loc s in
     {e with pexp_desc = Pexp_constant (Pconst_string (semantic, None))}
-  | BackQuotes ->
-    {
-      e with
-      pexp_desc =
-        Pexp_constant
-          (Pconst_string (s, Delim.some_escaped_back_quote_delimiter));
-    }
-  | Unrecognized -> e
 
 let transform_pat (p : Parsetree.pattern) s delim : Parsetree.pattern =
-  match Delim.parse_unprocessed false delim with
-  | Js ->
+  match delim with
+  | "js" ->
     let semantic = semantic_string p.ppat_loc s in
     {p with ppat_desc = Ppat_constant (Pconst_string (semantic, None))}
-  | BackQuotes ->
-    {
-      p with
-      ppat_desc =
-        Ppat_constant
-          (Pconst_string (s, Delim.some_escaped_back_quote_delimiter));
-    }
-  | Unrecognized when delim = "INTERNAL_RES_CHAR_CONTENTS" -> p
-  | Unrecognized ->
+  | "INTERNAL_RES_CHAR_CONTENTS" -> p
+  | _ ->
     Location.raise_errorf ~loc:p.ppat_loc
       "Tagged template literals are not supported in patterns"

@@ -278,7 +278,7 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
     Ok (Const_bigint (sign, i))
   | Pconst_integer (i, Some c) -> Error (Unknown_literal (i, c))
   | Pconst_char c -> Ok (Const_char c)
-  | Pconst_string (source, Some "bq") -> (
+  | Pconst_template source -> (
     match String_literal.decode_js_escapes source with
     | Some semantic -> Ok (Const_template_literal {source; semantic})
     | None -> Error Invalid_string_escape_sequence)
@@ -2581,7 +2581,7 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
               List.map
                 (fun (segment : Parsetree.expression) ->
                   match segment.pexp_desc with
-                  | Pexp_constant (Pconst_string (source, Some "bq")) -> source
+                  | Pexp_constant (Pconst_template source) -> source
                   | _ -> assert false)
                 segments
             | _ -> assert false

@@ -64,6 +64,7 @@ let fmt_constant f x =
   | Pconst_string (s, None) -> fprintf f "PConst_string(%S,None)" s
   | Pconst_string (s, Some delim) ->
     fprintf f "PConst_string (%S,Some %S)" s delim
+  | Pconst_template source -> fprintf f "PConst_template %S" source
   | Pconst_float (s, m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m
 
 let fmt_mutable_flag f x =

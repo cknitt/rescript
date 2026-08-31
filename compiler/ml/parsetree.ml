@@ -30,6 +30,9 @@ type constant =
   (* "constant"
      {delim|other constant|delim}
   *)
+  | Pconst_template of string
+  (* Source spelling of a backquoted template segment. Semantic decoding is
+     deferred until the segment is known to belong to an ordinary template. *)
   | Pconst_float of string * char option
 (* 3.4 2e5 1.4e-4
 

@@ -96,7 +96,7 @@ let decode_js_string ~loc s =
 let map_constant ~loc ~is_template = function
   | Pconst_integer (s, suffix) -> Pt.Pconst_integer (s, suffix)
   | Pconst_char c -> Pconst_char c
-  | Pconst_string (s, Some "js") when is_template -> Pconst_string (s, Some "bq")
+  | Pconst_string (s, Some "js") when is_template -> Pconst_template s
   | Pconst_string (s, Some ("js" | "*j")) ->
     Pconst_string (decode_js_string ~loc s, None)
   | Pconst_string (s, q) -> Pconst_string (s, q)
