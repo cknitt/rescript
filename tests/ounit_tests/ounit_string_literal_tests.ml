@@ -46,6 +46,27 @@ let assert_transformed_pattern ?(delim = "js") ~encoded ~expected () =
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a semantic string pattern"
 
+let assert_int_equal expected actual =
+  OUnit.assert_equal ~printer:string_of_int expected actual
+
+let assert_code_point_at string index expected =
+  OUnit.assert_equal ~printer:Ext_obj.dump expected
+    (String_literal.code_point_at_utf16_index string index)
+
+let semantic_string s = Lam.const (Lam_constant.Const_string {s; delim = None})
+
+let lam_int i = Lam.const (Lam_constant.Const_int (Int32.of_int i))
+
+let assert_lam_int expected = function
+  | Lam.Lconst (Lam_constant.Const_int i) ->
+    OUnit.assert_equal ~printer:Int32.to_string (Int32.of_int expected) i
+  | _ -> OUnit.assert_failure "expected a folded Lambda integer"
+
+let assert_lam_char expected = function
+  | Lam.Lconst (Lam_constant.Const_char actual) ->
+    assert_int_equal expected actual
+  | _ -> OUnit.assert_failure "expected a folded Lambda character"
+
 let suites =
   __FILE__
   >::: [
@@ -128,4 +149,38 @@ let suites =
            in
            OUnit.assert_equal ~printer:Ext_obj.dump pattern.ppat_desc
              transformed.ppat_desc );
+         ( "UTF-16 length" >:: fun _ ->
+           assert_int_equal 0 (String_literal.utf16_length "");
+           assert_int_equal 3 (String_literal.utf16_length "abc");
+           assert_int_equal 1 (String_literal.utf16_length "é");
+           assert_int_equal 2 (String_literal.utf16_length "😀");
+           assert_int_equal 4 (String_literal.utf16_length "a😀b") );
+         ( "codePointAt with UTF-16 indices" >:: fun _ ->
+           assert_code_point_at "a😀b" (-1) None;
+           assert_code_point_at "a😀b" 0 (Some 0x61);
+           assert_code_point_at "a😀b" 1 (Some 0x1f600);
+           assert_code_point_at "a😀b" 2 (Some 0xde00);
+           assert_code_point_at "a😀b" 3 (Some 0x62);
+           assert_code_point_at "a😀b" 4 None );
+         ( "Lambda string length uses UTF-16 units" >:: fun _ ->
+           Lam.prim ~primitive:Lam_primitive.Pstringlength
+             ~args:[semantic_string "a😀b"]
+             Location.none
+           |> assert_lam_int 4 );
+         ( "Lambda string indexing uses codePointAt semantics" >:: fun _ ->
+           Lam.prim ~primitive:Lam_primitive.Pstringrefs
+             ~args:[semantic_string "a😀b"; lam_int 1]
+             Location.none
+           |> assert_lam_char 0x1f600;
+           Lam.prim ~primitive:Lam_primitive.Pstringrefu
+             ~args:[semantic_string "a😀b"; lam_int 2]
+             Location.none
+           |> assert_lam_char 0xde00 );
+         ( "JS string length uses UTF-16 units" >:: fun _ ->
+           match
+             (Js_exp_make.string_length (Js_exp_make.str "a😀b")).expression_desc
+           with
+           | J.Number (Js_op.Int {i}) ->
+             OUnit.assert_equal ~printer:Int32.to_string 4l i
+           | _ -> OUnit.assert_failure "expected a folded JavaScript integer" );
        ]

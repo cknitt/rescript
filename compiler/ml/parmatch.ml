@@ -1080,7 +1080,7 @@ let build_other ext env : Typedtree.pattern =
   | (({pat_desc = Tpat_constant (Const_string _)} as p), _) :: _ ->
     build_other_constant
       (function
-        | Tpat_constant (Const_string (s, _)) -> String.length s
+        | Tpat_constant (Const_string (s, _)) -> String_literal.utf16_length s
         | _ -> assert false)
       (function
         | i -> Tpat_constant (Const_string (String.make i '*', None)))

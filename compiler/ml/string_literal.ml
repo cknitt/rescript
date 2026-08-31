@@ -123,3 +123,22 @@ let decode_js_escapes s =
         | None -> None)
   in
   loop 0
+
+let utf16_length s =
+  Ext_utf8.decode_utf8_string s
+  |> List.fold_left
+       (fun length codepoint -> length + if codepoint > 0xffff then 2 else 1)
+       0
+
+let code_point_at_utf16_index s index =
+  if index < 0 then None
+  else
+    let rec loop utf16_index = function
+      | [] -> None
+      | codepoint :: rest ->
+        if utf16_index = index then Some codepoint
+        else if codepoint > 0xffff && utf16_index + 1 = index then
+          Some (0xdc00 + ((codepoint - 0x10000) land 0x3ff))
+        else loop (utf16_index + if codepoint > 0xffff then 2 else 1) rest
+    in
+    loop 0 (Ext_utf8.decode_utf8_string s)

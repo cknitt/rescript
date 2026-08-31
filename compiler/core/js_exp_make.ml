@@ -636,7 +636,8 @@ let array_length ?comment (e : t) : t =
 
 let string_length ?comment (e : t) : t =
   match e.expression_desc with
-  | Str {txt; delim = DNone} -> int ?comment (Int32.of_int (String.length txt))
+  | Str {txt; delim = DNone} ->
+    int ?comment (Int32.of_int (String_literal.utf16_length txt))
   (* No optimization for {j||j}*)
   | _ -> {expression_desc = Length e; comment; source_loc = None}
 

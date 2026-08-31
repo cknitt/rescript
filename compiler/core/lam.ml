@@ -381,7 +381,7 @@ let prim ~primitive:(prim : Lam_primitive.t) ~args loc : t =
       Lift.int (Int32.of_float (float_of_string a))
     (* | Pnegfloat -> Lift.float (-. a) *)
     | Pstringlength, Const_string {s; delim = None} ->
-      Lift.int (Int32.of_int (String.length s))
+      Lift.int (Int32.of_int (String_literal.utf16_length s))
     (* | Pnegbint Pnativeint, ( (Const_nativeint i)) *)
     (*   ->   *)
     (*   Lift.nativeint (Nativeint.neg i) *)
@@ -444,8 +444,9 @@ let prim ~primitive:(prim : Lam_primitive.t) ~args loc : t =
     | ( (Pstringrefs | Pstringrefu),
         Const_string {s = a; delim = None},
         Const_int b ) -> (
-      try Lift.char (Char.code (String.get a (Int32.to_int b)))
-      with _ -> default ())
+      match String_literal.code_point_at_utf16_index a (Int32.to_int b) with
+      | Some codepoint -> Lift.char codepoint
+      | None -> default ())
     | _ -> default ())
   | _ -> (
     match prim with
