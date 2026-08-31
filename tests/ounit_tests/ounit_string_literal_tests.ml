@@ -89,6 +89,12 @@ let assert_external_js_string ~expected ~delim constant =
     OUnit.assert_equal ~printer:Ext_obj.dump delim actual_delim
   | _ -> OUnit.assert_failure "expected a JavaScript string expression"
 
+let assert_external_json_literal ~expected constant =
+  match (Lam_compile_const.translate_arg_cst constant).J.expression_desc with
+  | Json_literal actual ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
+  | _ -> OUnit.assert_failure "expected a JavaScript JSON literal expression"
+
 let inline_string s delim =
   match Ast_external_mk.inline_string ~loc:Location.none s delim with
   | Prim_inline_const constant -> constant
@@ -228,9 +234,25 @@ let suites =
              (inline_string {|{"answer":42}|} (Some "json"));
            assert_external_js_string ~expected:{|\x61|} ~delim:J.DNone
              (External_arg_spec.cst_string {|\x61|});
-           assert_external_js_string ~expected:{|{"answer":42}|}
-             ~delim:J.DNoQuotes
+           assert_external_json_literal ~expected:{|{"answer":42}|}
              (External_arg_spec.cst_json {|{"answer":42}|});
+           let json = Js_exp_make.json_literal {| {answer: 42} |} in
+           OUnit.assert_bool "expected JSON literals to be side-effect free"
+             (Js_analyzer.no_side_effect_expression json);
+           OUnit.assert_bool
+             "expected allocating JSON literals not to duplicate"
+             (not (Js_analyzer.is_okay_to_duplicate json));
+           OUnit.assert_bool "expected JSON literals not to compare as strings"
+             (not
+                (Js_analyzer.eq_expression json
+                   (Js_exp_make.json_literal {| {answer: 42} |})));
+           (match (Js_exp_make.typeof json).expression_desc with
+           | Typeof argument ->
+             OUnit.assert_bool "expected typeof to preserve the JSON expression"
+               (json == argument)
+           | _ -> OUnit.assert_failure "expected a runtime typeof expression");
+           OUnit.assert_equal ~printer:(Printf.sprintf "%S") {| {answer: 42} |}
+             (Js_dump.string_of_expression json);
            match inline_string {|\uD800|} (Some "bq") with
            | _ -> OUnit.assert_failure "expected an invalid string escape"
            | exception Location.Error _ -> () );

@@ -81,6 +81,8 @@ val runtime_call :
 
 val str : ?delim:J.delim -> ?comment:string -> string -> t
 
+val json_literal : ?comment:string -> string -> t
+
 val record_rest : ?comment:string -> J.record_rest_field list -> t -> t
 
 val ocaml_fun :

@@ -35,7 +35,7 @@ type t = J.expression
  *)
 let rec remove_pure_sub_exp (x : t) : t option =
   match x.expression_desc with
-  | Var _ | Str _ | Number _ -> None (* Can be refined later *)
+  | Var _ | Str _ | Json_literal _ | Number _ -> None (* Can be refined later *)
   | Array_index (a, b) ->
     if is_pure_sub_exp a && is_pure_sub_exp b then None else Some x
   | Array xs -> if Ext_list.for_all xs is_pure_sub_exp then None else Some x
@@ -158,6 +158,9 @@ let pure_runtime_call module_name fn_name args =
 
 let str ?(delim = J.DNone) ?comment txt : t =
   {expression_desc = Str {txt; delim}; comment; source_loc = None}
+
+let json_literal ?comment source : t =
+  {expression_desc = Json_literal source; comment; source_loc = None}
 
 let raw_js_code ?comment info s : t =
   {

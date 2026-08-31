@@ -160,6 +160,7 @@ let rec exp_need_paren ?(arrow = false) (e : J.expression) =
         | Blk_record_ext _ | Blk_record_inlined _ | Blk_constructor _ ) )
   | Object _ ->
     true
+  | Json_literal _ -> true
   | Raw_js_code {code_info = Stmt _}
   | Length _ | Call _ | Caml_block_tag _ | Seq _ | Static_index _ | Cond _
   | Bin _ | Is_null_or_undefined _ | String_index _ | Array_index _
@@ -771,10 +772,12 @@ and expression_desc cxt ~(level : int) f x : cxt =
     *)
     let () =
       match delim with
-      | DNoQuotes -> P.string f txt
       | DNone -> Js_dump_string.pp_string f txt
       | DBackQuotes -> P.string f ("`" ^ txt ^ "`")
     in
+    cxt
+  | Json_literal source ->
+    P.string f source;
     cxt
   | Raw_js_code {code = s; code_info = info} -> (
     match info with
@@ -1400,7 +1403,7 @@ and statement_desc top cxt f (s : J.statement_desc) : cxt =
       | Some s -> P.string f s
       | None -> ());
       cxt
-    | Str _ -> cxt
+    | Str _ | Json_literal _ -> cxt
     | _ ->
       let cxt =
         (if exp_need_paren e then P.paren_group f 1 else P.group f 0) (fun _ ->
