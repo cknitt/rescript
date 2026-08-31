@@ -94,6 +94,13 @@ let inline_string s delim =
   | Prim_inline_const constant -> constant
   | _ -> OUnit.assert_failure "expected an inline constant"
 
+let assert_js_global ~expected (expression : J.expression) =
+  match expression.expression_desc with
+  | Var (Id ident) ->
+    OUnit.assert_bool "expected a JavaScript global" (Ext_ident.is_js ident);
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected ident.name
+  | _ -> OUnit.assert_failure "expected a JavaScript global reference"
+
 let string_payload s delim =
   Parsetree.PStr
     [
@@ -248,6 +255,37 @@ let suites =
              (Lam_constant.Const_string "a\n😀");
            assert_js_string ~expected:{|a\n\uD83D\uDE00|} ~delim:J.DBackQuotes
              (Lam_constant.Const_template_segment {|a\n\uD83D\uDE00|}) );
+         ( "JavaScript references are not encoded as strings" >:: fun _ ->
+           let value = Js_exp_make.var (Ext_ident.create "value") in
+           (match (Js_exp_make.is_array value).expression_desc with
+           | Call
+               ( {expression_desc = Static_index (array, "isArray", None)},
+                 [argument],
+                 _ ) ->
+             assert_js_global ~expected:"Array" array;
+             OUnit.assert_bool "expected the original argument"
+               (Js_analyzer.eq_expression value argument)
+           | _ -> OUnit.assert_failure "expected an Array.isArray call");
+           (match
+              Js_exp_make.and_
+                (Js_exp_make.is_array value)
+                (Js_exp_make.triple_equal value (Js_exp_make.str "literal"))
+            with
+           | {expression_desc = Bool false} -> ()
+           | _ ->
+             OUnit.assert_failure
+               "expected Array.isArray simplification to remain active");
+           let open Ast_untagged_variants.Dynamic_checks in
+           let date = Variant_runtime.Instance.Date in
+           assert_js_global ~expected:"Date"
+             (Js_exp_make.emit_check
+                (TagType (Variant_runtime.Untagged (InstanceType date))));
+           match Js_exp_make.emit_check (IsInstanceOf (date, Expr value)) with
+           | {expression_desc = Bin (InstanceOf, argument, constructor)} ->
+             OUnit.assert_bool "expected the original argument"
+               (Js_analyzer.eq_expression value argument);
+             assert_js_global ~expected:"Date" constructor
+           | _ -> OUnit.assert_failure "expected an instanceof expression" );
          ( "UTF-16 length" >:: fun _ ->
            assert_int_equal 0 (String_literal.utf16_length "");
            assert_int_equal 3 (String_literal.utf16_length "abc");

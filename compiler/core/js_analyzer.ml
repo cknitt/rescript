@@ -94,6 +94,14 @@ let free_variables_of_expression st =
   obj.expression obj st;
   Set_ident.diff init.used_idents init.defined_idents
 
+let is_array_function (e : J.expression) =
+  match e.expression_desc with
+  | Static_index
+      ({expression_desc = Var (Id ({name = "Array"} as ident))}, "isArray", None)
+    ->
+    Ext_ident.is_js ident
+  | _ -> false
+
 let rec no_side_effect_expression_desc (x : J.expression_desc) =
   match x with
   | Undefined _ | Null | Bool _ | Var _ -> true
@@ -128,8 +136,7 @@ let rec no_side_effect_expression_desc (x : J.expression_desc) =
   | Js_not e | Js_bnot e -> no_side_effect e
   | In (prop, obj) -> no_side_effect prop && no_side_effect obj
   | Cond (a, b, c) -> no_side_effect a && no_side_effect b && no_side_effect c
-  | Call ({expression_desc = Str {txt = "Array.isArray"}}, [e], _) ->
-    no_side_effect e
+  | Call (fn, [e], _) when is_array_function fn -> no_side_effect e
   | Call _ | New _ | Raw_js_code _ (* actually true? *) -> false
   | Await _ -> false
   | Spread _ -> false

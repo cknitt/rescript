@@ -236,7 +236,7 @@ let instanceof ?comment (e0 : t) (e1 : t) : t =
   {expression_desc = Bin (InstanceOf, e0, e1); comment; source_loc = None}
 
 let is_array (e0 : t) : t =
-  let f = str "Array.isArray" ~delim:DNoQuotes in
+  let f = dot (js_global "Array") "isArray" in
   {
     expression_desc = Call (f, [e0], Js_call_info.ml_full_call);
     comment = None;
@@ -947,7 +947,7 @@ let rec simplify_and_ ~n (e1 : t) (e2 : t) : t option =
         (* Note: cases boolean / Bool _, number / Number _, string / Str _ are handled above *)
         Some false_
       | ( Call
-            ( {expression_desc = Str {txt = "Array.isArray"}},
+            ( ({expression_desc = Static_index _} as fn),
               [{expression_desc = Var ia}],
               _ ),
           Bin
@@ -961,10 +961,10 @@ let rec simplify_and_ ~n (e1 : t) (e2 : t) : t option =
               {expression_desc = Bool _ | Null | Undefined _ | Number _ | Str _}
             ),
           Call
-            ( {expression_desc = Str {txt = "Array.isArray"}},
+            ( ({expression_desc = Static_index _} as fn),
               [{expression_desc = Var ia}],
               _ ) )
-        when Js_op_util.same_vident ia ib ->
+        when Js_analyzer.is_array_function fn && Js_op_util.same_vident ia ib ->
         Some false_
       | ( Bin
             ( EqEqEq,
@@ -1085,7 +1085,7 @@ let rec simplify_and_ ~n (e1 : t) (e2 : t) : t option =
         (* Note: cases boolean / Bool _, number / Number _, string / Str _, object / Null are handled above *)
         Some {expression_desc = typeof; comment = None; source_loc = None}
       | ( (Call
-             ( {expression_desc = Str {txt = "Array.isArray"}},
+             ( ({expression_desc = Static_index _} as fn),
                [{expression_desc = Var ia}],
                _ ) as is_array),
           Bin
@@ -1099,10 +1099,10 @@ let rec simplify_and_ ~n (e1 : t) (e2 : t) : t option =
               {expression_desc = Bool _ | Null | Undefined _ | Number _ | Str _}
             ),
           (Call
-             ( {expression_desc = Str {txt = "Array.isArray"}},
+             ( ({expression_desc = Static_index _} as fn),
                [{expression_desc = Var ia}],
                _ ) as is_array) )
-        when Js_op_util.same_vident ia ib ->
+        when Js_analyzer.is_array_function fn && Js_op_util.same_vident ia ib ->
         Some {expression_desc = is_array; comment = None; source_loc = None}
       | _ when Js_analyzer.eq_expression e1 e2 -> Some e1
       | ( Bin
@@ -1370,7 +1370,7 @@ let tag_type = function
   | Untagged FunctionType -> str "function"
   | Untagged StringType -> str "string"
   | Untagged (InstanceType i) ->
-    str (Variant_runtime.Instance.to_string i) ~delim:DNoQuotes
+    js_global (Variant_runtime.Instance.to_string i)
   | Untagged ObjectType -> str "object"
   | Untagged UnknownType ->
     (* TODO: this should not happen *)
@@ -1392,7 +1392,7 @@ let rec emit_check (check : t Ast_untagged_variants.Dynamic_checks.t) =
   | IsInstanceOf (Array, x) -> is_array (emit_check x)
   | IsInstanceOf (instance, x) ->
     let instance_name = Variant_runtime.Instance.to_string instance in
-    instanceof (emit_check x) (str instance_name ~delim:DNoQuotes)
+    instanceof (emit_check x) (js_global instance_name)
   | Not x -> not (emit_check x)
   | Expr x -> x
 
