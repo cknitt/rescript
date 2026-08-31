@@ -269,10 +269,7 @@ let make_await_attr loc = (Location.mkloc "res.await" loc, Parsetree.PStr [])
 let suppress_fragile_match_warning_attr =
   ( Location.mknoloc "warning",
     Parsetree.PStr
-      [
-        Ast_helper.Str.eval
-          (Ast_helper.Exp.constant (Pconst_string ("-4", None)));
-      ] )
+      [Ast_helper.Str.eval (Ast_helper.Exp.constant (Pconst_string "-4"))] )
 let make_braces_attr loc = (Location.mkloc "res.braces" loc, Parsetree.PStr [])
 let template_literal_attr = (Location.mknoloc "res.template", Parsetree.PStr [])
 let make_pat_variant_spread_attr =
@@ -1026,18 +1023,17 @@ let parse_constant p =
     | Float {f; suffix} ->
       let float_txt = if is_negative then "-" ^ f else f in
       Parsetree.Pconst_float (float_txt, suffix)
-    | String s ->
-      Pconst_string (s, if p.mode = ParseForTypeChecker then Some "js" else None)
+    | String s -> Pconst_unprocessed_string s
     | Codepoint {c; original} ->
       if p.mode = ParseForTypeChecker then Pconst_char c
       else
         (* Pconst_char char does not have enough information for formatting.
          * When parsing for the printer, we encode the char contents as a string
          * with a special prefix. *)
-        Pconst_string (original, Some "INTERNAL_RES_CHAR_CONTENTS")
+        Pconst_char_source original
     | token ->
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
-      Pconst_string ("", None)
+      Pconst_string ""
   in
   Parser.next_unsafe p;
   constant
@@ -1047,9 +1043,11 @@ let parse_template_constant ~prefix (p : Parser.t) =
   let start_pos = p.start_pos in
   Parser.next_template_literal_token p;
   match p.token with
-  | TemplateTail (txt, _) ->
+  | TemplateTail (txt, _) -> (
     Parser.next p;
-    Parsetree.Pconst_string (txt, prefix)
+    match prefix with
+    | None | Some "js" -> Parsetree.Pconst_unprocessed_string txt
+    | Some tag -> Pconst_tagged_string {tag; source = txt})
   | _ ->
     let rec skip_tokens () =
       if p.token <> Eof then (
@@ -1063,7 +1061,7 @@ let parse_template_constant ~prefix (p : Parser.t) =
     skip_tokens ();
     Parser.err ~start_pos ~end_pos:p.prev_end_pos p
       (Diagnostics.message Error_messages.string_interpolation_in_pattern);
-    Pconst_string ("", None)
+    Pconst_string ""
 
 let parse_comma_delimited_region p ~grammar ~closing ~f =
   Parser.leave_breadcrumb p grammar;
@@ -2083,9 +2081,7 @@ and parse_regex ~start_pos p pattern flags =
       [
         Ast_helper.Str.eval ~loc
           (Ast_helper.Exp.constant ~loc
-             (Pconst_string
-                ( "/" ^ pattern ^ "/" ^ flags,
-                  if p.mode = ParseForTypeChecker then Some "js" else None )));
+             (Pconst_raw_source ("/" ^ pattern ^ "/" ^ flags)));
       ]
   in
   Ast_helper.Exp.extension (Location.mkloc "re" loc, payload)
@@ -2496,12 +2492,10 @@ and parse_binary_expr ?(context = OrdinaryExpr) ?a p prec =
 (* ) *)
 
 and parse_template_expr ?prefix p =
-  let part_prefix =
-    (* we could stop treating json prefix as something special
-       but we would first need to remove @as(json`true`) feature *)
+  let is_json =
     match prefix with
-    | Some {txt = Longident.Lident ("json" as prefix); _} -> Some prefix
-    | _ -> Some "js"
+    | Some {txt = Longident.Lident "json"; _} -> true
+    | _ -> false
   in
 
   let parse_parts p =
@@ -2514,7 +2508,7 @@ and parse_template_expr ?prefix p =
         let loc = mk_loc start_pos last_pos in
         let str =
           Ast_helper.Exp.constant ~attrs:[template_literal_attr] ~loc
-            (Pconst_string (txt, part_prefix))
+            (if is_json then Pconst_json txt else Pconst_template txt)
         in
         List.rev ((str, None) :: acc)
       | TemplatePart (txt, last_pos) ->
@@ -2523,7 +2517,7 @@ and parse_template_expr ?prefix p =
         let expr = parse_expr_block p in
         let str =
           Ast_helper.Exp.constant ~attrs:[template_literal_attr] ~loc
-            (Pconst_string (txt, part_prefix))
+            (if is_json then Pconst_json txt else Pconst_template txt)
         in
         aux ((str, Some expr) :: acc)
       | token ->
@@ -2565,8 +2559,8 @@ and parse_template_expr ?prefix p =
         (List.map
            (fun part ->
              match part with
-             | s, Some v -> [s; v]
-             | s, None -> [s])
+             | string, Some value -> [string; value]
+             | string, None -> [string])
            parts)
     in
     let expr_option =
@@ -2580,7 +2574,7 @@ and parse_template_expr ?prefix p =
     in
     match expr_option with
     | Some expr -> expr
-    | None -> Ast_helper.Exp.constant (Pconst_string ("", None))
+    | None -> Ast_helper.Exp.constant (Pconst_string "")
   in
 
   match prefix with
@@ -3172,10 +3166,9 @@ and parse_braced_or_record_expr p =
       Parser.expect Rbrace p;
       expr
     | _ -> (
-      let tag = if p.mode = ParseForTypeChecker then Some "js" else None in
       let constant =
         Ast_helper.Exp.constant ~loc:field.loc
-          (Parsetree.Pconst_string (s, tag))
+          (Parsetree.Pconst_unprocessed_string s)
       in
       let a = parse_primary_expr ~operand:constant p in
       let e = parse_binary_expr ~a p 1 in
@@ -4411,8 +4404,7 @@ and parse_dict_expr ~start_pos p =
         (Ast_helper.Exp.tuple
            ~loc:(mk_loc key_loc.loc_start value_loc.loc_end)
            [
-             Ast_helper.Exp.constant ~loc:key_loc (Pconst_string (key, None));
-             value_expr;
+             Ast_helper.Exp.constant ~loc:key_loc (Pconst_string key); value_expr;
            ])
     | _ -> None
   in
@@ -6723,7 +6715,7 @@ and parse_structure_item_region pending_structure_items p =
              PStr
                [
                  Ast_helper.Str.eval ~loc
-                   (Ast_helper.Exp.constant ~loc (Pconst_string (s, None)));
+                   (Ast_helper.Exp.constant ~loc (Pconst_string s));
                ] ))
     | AtAt ->
       let attr = parse_standalone_attribute p in
@@ -7409,7 +7401,7 @@ and parse_signature_item_region pending_signature_items p =
              PStr
                [
                  Ast_helper.Str.eval ~loc
-                   (Ast_helper.Exp.constant ~loc (Pconst_string (s, None)));
+                   (Ast_helper.Exp.constant ~loc (Pconst_string s));
                ] ))
     | PercentPercent ->
       let extension = parse_extension ~module_language:true p in
@@ -7635,8 +7627,7 @@ and doc_comment_to_attribute loc s : Parsetree.attribute =
   ( {txt = "res.doc"; loc},
     PStr
       [
-        Ast_helper.Str.eval ~loc
-          (Ast_helper.Exp.constant ~loc (Pconst_string (s, None)));
+        Ast_helper.Str.eval ~loc (Ast_helper.Exp.constant ~loc (Pconst_string s));
       ] )
 
 and parse_attributes p =

@@ -198,9 +198,7 @@ let iter_process_bs_string_or_int_as (attrs : Parsetree.attributes) =
                       pstr_desc =
                         Pstr_eval
                           ( {
-                              pexp_desc =
-                                Pexp_constant
-                                  (Pconst_string (s, Some ("json" as delim)));
+                              pexp_desc = Pexp_constant (Pconst_json s);
                               pexp_loc;
                               _;
                             },
@@ -213,7 +211,8 @@ let iter_process_bs_string_or_int_as (attrs : Parsetree.attributes) =
                 match
                   Classify_function.classify
                     ~check:
-                      (pexp_loc, Bs_flow_ast_utils.flow_deli_offset (Some delim))
+                      ( pexp_loc,
+                        Bs_flow_ast_utils.flow_deli_offset (Some "json") )
                     s
                 with
                 | Js_literal _ -> ()

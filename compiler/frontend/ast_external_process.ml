@@ -261,8 +261,7 @@ let parse_external_attributes (no_arguments : bool) (prim_name_check : string)
               let with_ = ref None in
               Ext_list.iter fields (fun {lid = l; x = exp} ->
                   match (l, exp.pexp_desc) with
-                  | {txt = Lident "from"}, Pexp_constant (Pconst_string (s, _))
-                    ->
+                  | {txt = Lident "from"}, Pexp_constant (Pconst_string s) ->
                     from_name := Some s
                   | {txt = Lident "with"}, Pexp_record (fields, _) ->
                     with_ := Some fields
@@ -283,7 +282,7 @@ let parse_external_attributes (no_arguments : bool) (prim_name_check : string)
                 let import_attributes_from_record =
                   Ext_list.filter_map with_fields (fun {lid = l; x = exp} ->
                       match exp.pexp_desc with
-                      | Pexp_constant (Pconst_string (s, _)) -> (
+                      | Pexp_constant (Pconst_string s) -> (
                         match l.txt with
                         | Longident.Lident "type_" -> Some ("type", s)
                         | Longident.Lident txt -> Some (txt, s)

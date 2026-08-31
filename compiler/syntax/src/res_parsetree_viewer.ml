@@ -265,14 +265,17 @@ let is_multiline_text txt =
 let is_huggable_expression expr =
   match expr.pexp_desc with
   | Pexp_array _ | Pexp_tuple _
-  | Pexp_constant (Pconst_string (_, Some _))
+  | Pexp_constant (Pconst_json _ | Pconst_char_source _ | Pconst_tagged_string _)
   | Pexp_constant (Pconst_template _)
   | Pexp_construct ({txt = Longident.Lident ("::" | "[]")}, _)
   | Pexp_object_literal _ | Pexp_record _ ->
     true
   | _ when is_block_expr expr -> true
   | _ when is_braced_expr expr -> true
-  | Pexp_constant (Pconst_string (txt, None)) when is_multiline_text txt -> true
+  | Pexp_constant (Pconst_string txt) when is_multiline_text txt -> true
+  | Pexp_constant (Pconst_unprocessed_string source)
+    when is_multiline_text source ->
+    true
   | _ -> false
 
 let is_huggable_rhs expr =
@@ -395,8 +398,7 @@ let has_attributes attrs =
             [
               {
                 pstr_desc =
-                  Pstr_eval
-                    ({pexp_desc = Pexp_constant (Pconst_string ("-4", None))}, _);
+                  Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string "-4")}, _);
               };
             ] ) ->
         not (has_if_let_attribute attrs)
@@ -509,8 +511,7 @@ let filter_fragile_match_attributes attrs =
             [
               {
                 pstr_desc =
-                  Pstr_eval
-                    ({pexp_desc = Pexp_constant (Pconst_string ("-4", _))}, _);
+                  Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string "-4")}, _);
               };
             ] ) ->
         false
@@ -585,7 +586,12 @@ let partition_doc_comment_attributes attrs =
               {
                 pstr_desc =
                   Pstr_eval
-                    ({pexp_desc = Pexp_constant (Pconst_string (_, _))}, _);
+                    ( {
+                        pexp_desc =
+                          Pexp_constant
+                            (Pconst_string _ | Pconst_unprocessed_string _);
+                      },
+                      _ );
               };
             ] ) ->
         true
@@ -674,7 +680,6 @@ let is_template_literal expr =
       }
     when has_template_literal_attr expr.pexp_attributes ->
     true
-  | Pexp_constant (Pconst_string (_, Some "")) -> true
   | Pexp_constant (Pconst_template _) -> true
   | Pexp_constant _ when has_template_literal_attr expr.pexp_attributes -> true
   | _ -> false

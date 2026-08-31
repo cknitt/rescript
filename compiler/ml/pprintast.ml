@@ -252,11 +252,18 @@ let print_quoted_string_with_byte_width f s =
 
 let constant f = function
   | Pconst_char i -> pp f "%s" (string_of_int_as_char i)
-  | Pconst_string (i, None) -> print_quoted_string_with_byte_width f i
-  | Pconst_string (i, Some delim) ->
-    pp f "{%s|%a|%s}" delim print_string_with_byte_width i delim
+  | Pconst_string i -> print_quoted_string_with_byte_width f i
+  | Pconst_unprocessed_string source ->
+    pp f "{js|%a|js}" print_string_with_byte_width source
   | Pconst_template source ->
-    pp f "{bq|%a|bq}" print_string_with_byte_width source
+    pp f "{js|%a|js}" print_string_with_byte_width source
+  | Pconst_json source ->
+    pp f "{json|%a|json}" print_string_with_byte_width source
+  | Pconst_raw_source source ->
+    pp f "{js|%a|js}" print_string_with_byte_width source
+  | Pconst_char_source source -> pp f "'%s'" source
+  | Pconst_tagged_string {tag; source} ->
+    pp f "{%s|%a|%s}" tag print_string_with_byte_width source tag
   | Pconst_integer (i, None) -> paren (i.[0] = '-') (fun f -> pp f "%s") f i
   | Pconst_integer (i, Some m) ->
     paren (i.[0] = '-') (fun f (i, m) -> pp f "%s%c" i m) f (i, m)

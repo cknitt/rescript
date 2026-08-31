@@ -127,19 +127,18 @@ module Sexp_ast = struct
       | Pconst_integer (txt, tag) ->
         Sexp.list [Sexp.atom "Pconst_integer"; string txt; opt_char tag]
       | Pconst_char _ -> Sexp.list [Sexp.atom "Pconst_char"]
-      | Pconst_string (_, Some "INTERNAL_RES_CHAR_CONTENTS") ->
-        Sexp.list [Sexp.atom "Pconst_char"]
-      | Pconst_string (txt, tag) ->
-        Sexp.list
-          [
-            Sexp.atom "Pconst_string";
-            string txt;
-            (match tag with
-            | Some txt -> Sexp.list [Sexp.atom "Some"; string txt]
-            | None -> Sexp.atom "None");
-          ]
+      | Pconst_char_source _ -> Sexp.list [Sexp.atom "Pconst_char"]
+      | Pconst_string txt ->
+        Sexp.list [Sexp.atom "Pconst_string"; string txt; Sexp.atom "None"]
+      | Pconst_unprocessed_string txt ->
+        Sexp.list [Sexp.atom "Pconst_unprocessed_string"; string txt]
       | Pconst_template source ->
         Sexp.list [Sexp.atom "Pconst_template"; string source]
+      | Pconst_json source -> Sexp.list [Sexp.atom "Pconst_json"; string source]
+      | Pconst_raw_source source ->
+        Sexp.list [Sexp.atom "Pconst_raw_source"; string source]
+      | Pconst_tagged_string {tag; source} ->
+        Sexp.list [Sexp.atom "Pconst_tagged_string"; string tag; string source]
       | Pconst_float (txt, tag) ->
         Sexp.list [Sexp.atom "Pconst_float"; string txt; opt_char tag]
     in

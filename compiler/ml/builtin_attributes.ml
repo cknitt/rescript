@@ -17,7 +17,14 @@ open Asttypes
 open Parsetree
 
 let string_of_cst = function
-  | Pconst_string (s, _) -> Some s
+  | Pconst_string s
+  | Pconst_unprocessed_string s
+  | Pconst_template s
+  | Pconst_json s
+  | Pconst_raw_source s
+  | Pconst_char_source s ->
+    Some s
+  | Pconst_tagged_string {source} -> Some source
   | _ -> None
 
 let string_of_payload = function
@@ -48,20 +55,19 @@ let rec error_of_extension ext =
     | PStr
         ({
            pstr_desc =
-             Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (msg, _))}, _);
+             Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string msg)}, _);
          }
         :: {
              pstr_desc =
                Pstr_eval
-                 ( {pexp_desc = Pexp_constant (Pconst_string (if_highlight, _))},
-                   _ );
+                 ({pexp_desc = Pexp_constant (Pconst_string if_highlight)}, _);
            }
         :: inner) ->
       Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
     | PStr
         ({
            pstr_desc =
-             Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (msg, _))}, _);
+             Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string msg)}, _);
          }
         :: inner) ->
       Location.error ~loc ~sub:(sub_from inner) msg
@@ -91,7 +97,7 @@ let rec deprecated_of_attrs_with_migrate = function
           match field with
           | {
            lid = {txt = Lident "reason"};
-           x = {pexp_desc = Pexp_constant (Pconst_string (reason, _))};
+           x = {pexp_desc = Pexp_constant (Pconst_string reason)};
           } ->
             Some reason
           | _ -> None)
@@ -204,7 +210,7 @@ let warning_attribute ?(ppwarning = true) =
         [
           {
             pstr_desc =
-              Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (s, _))}, _);
+              Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string s)}, _);
             pstr_loc;
           };
         ] )

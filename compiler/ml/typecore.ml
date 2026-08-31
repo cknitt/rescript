@@ -282,7 +282,12 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
     match String_literal.decode_js_escapes source with
     | Some semantic -> Ok (Const_template_literal {source; semantic})
     | None -> Error Invalid_string_escape_sequence)
-  | Pconst_string (s, _) -> Ok (Const_string s)
+  | Pconst_string s -> Ok (Const_string s)
+  | Pconst_json source -> Ok (Const_string source)
+  | Pconst_raw_source s -> Ok (Const_string s)
+  | Pconst_unprocessed_string _ | Pconst_char_source _ | Pconst_tagged_string _
+    ->
+    Error Invalid_string_escape_sequence
   | Pconst_float (f, None) -> Ok (Const_float f)
   | Pconst_float (f, Some c) -> Error (Unknown_literal (f, c))
 

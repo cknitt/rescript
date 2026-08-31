@@ -98,8 +98,11 @@ let map_constant ~loc ~is_template = function
   | Pconst_char c -> Pconst_char c
   | Pconst_string (s, Some "js") when is_template -> Pconst_template s
   | Pconst_string (s, Some ("js" | "*j")) ->
-    Pconst_string (decode_js_string ~loc s, None)
-  | Pconst_string (s, q) -> Pconst_string (s, q)
+    Pconst_string (decode_js_string ~loc s)
+  | Pconst_string (s, None) -> Pconst_string s
+  | Pconst_string (s, Some "json") -> Pconst_json s
+  | Pconst_string (s, Some "INTERNAL_RES_CHAR_CONTENTS") -> Pconst_char_source s
+  | Pconst_string (source, Some tag) -> Pconst_tagged_string {tag; source}
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
 
 let is_raw_source_extension = function
@@ -113,7 +116,7 @@ let map_raw_source_payload sub = function
           pstr_desc =
             Pstr_eval
               ( {
-                  pexp_desc = Pexp_constant (Pconst_string (s, delim));
+                  pexp_desc = Pexp_constant (Pconst_string (s, _));
                   pexp_loc;
                   pexp_attributes;
                 },
@@ -125,7 +128,7 @@ let map_raw_source_payload sub = function
       Ast_helper.Exp.constant
         ~loc:(sub.location sub pexp_loc)
         ~attrs:(sub.attributes sub pexp_attributes)
-        (Pt.Pconst_string (s, delim))
+        (Pt.Pconst_raw_source s)
     in
     Some
       (Pt.PStr

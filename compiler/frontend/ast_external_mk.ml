@@ -56,17 +56,8 @@ let inline_string ~loc = function
       | None -> Location.raise_errorf ~loc "Invalid string escape sequence"
     in
     inline_const (Const_string semantic)
-  | Pconst_string (s, delim) ->
-    let constant =
-      match delim with
-      | Some "json" -> External_ffi_types.Const_json s
-      | Some ("js" | "*j") -> (
-        match String_literal.decode_js_escapes s with
-        | Some semantic -> Const_string semantic
-        | None -> Location.raise_errorf ~loc "Invalid string escape sequence")
-      | None | Some _ -> Const_string s
-    in
-    inline_const constant
+  | Pconst_json source -> inline_const (External_ffi_types.Const_json source)
+  | Pconst_string s -> inline_const (Const_string s)
   | _ -> invalid_arg "Ast_external_mk.inline_string"
 
 let inline_bool b = inline_const (Const_bool b)

@@ -18,7 +18,9 @@ let tag_is_one_of_the_gentype_annotations s =
 let rec get_attribute_payload check_text (attributes : Typedtree.attributes) =
   let rec from_expr (expr : Parsetree.expression) =
     match expr with
-    | {pexp_desc = Pexp_constant (Pconst_string (s, _))} ->
+    | {
+     pexp_desc = Pexp_constant (Pconst_string s | Pconst_unprocessed_string s);
+    } ->
       Some (StringPayload s)
     | {pexp_desc = Pexp_constant (Pconst_integer (n, _))} -> Some (IntPayload n)
     | {pexp_desc = Pexp_constant (Pconst_float (s, _))} -> Some (FloatPayload s)

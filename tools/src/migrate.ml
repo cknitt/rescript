@@ -33,7 +33,8 @@ module Insert_ext = struct
       } ->
       if txt = ext_labelled then
         match c with
-        | Pconst_string (name, _) -> Some (Labelled name)
+        | Pconst_string name | Pconst_unprocessed_string name ->
+          Some (Labelled name)
         | _ -> None
       else if txt = ext_unlabelled then
         match c with
@@ -86,7 +87,8 @@ module Mapper_utils = struct
         elems
         |> List.filter_map (fun (e : Parsetree.expression) ->
             match e.pexp_desc with
-            | Pexp_constant (Pconst_string (s, _)) -> Some s
+            | Pexp_constant (Pconst_string s | Pconst_unprocessed_string s) ->
+              Some s
             | _ -> None)
       | _ -> []
 

@@ -61,10 +61,15 @@ let fmt_constant f x =
   match x with
   | Pconst_integer (i, m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m
   | Pconst_char c -> fprintf f "PConst_char %02x" c
-  | Pconst_string (s, None) -> fprintf f "PConst_string(%S,None)" s
-  | Pconst_string (s, Some delim) ->
-    fprintf f "PConst_string (%S,Some %S)" s delim
+  | Pconst_string s -> fprintf f "PConst_string %S" s
+  | Pconst_unprocessed_string source ->
+    fprintf f "PConst_unprocessed_string %S" source
   | Pconst_template source -> fprintf f "PConst_template %S" source
+  | Pconst_json source -> fprintf f "PConst_json %S" source
+  | Pconst_raw_source source -> fprintf f "PConst_raw_source %S" source
+  | Pconst_char_source source -> fprintf f "PConst_char_source %S" source
+  | Pconst_tagged_string {tag; source} ->
+    fprintf f "PConst_tagged_string (%S,%S)" tag source
   | Pconst_float (s, m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m
 
 let fmt_mutable_flag f x =

@@ -570,24 +570,24 @@ let print_constant ?(template_literal = false) c =
     match suffix with
     | Some c -> Doc.text (s ^ Char.escaped c)
     | None -> Doc.text s)
-  | Pconst_string (txt, None) ->
+  | Pconst_string txt ->
     Doc.concat [Doc.text "\""; print_string_contents txt; Doc.text "\""]
-  | Pconst_string (txt, Some prefix) ->
-    if prefix = "INTERNAL_RES_CHAR_CONTENTS" then
-      Doc.concat [Doc.text "'"; Doc.text txt; Doc.text "'"]
-    else
-      let lquote, rquote =
-        if template_literal then ("`", "`") else ("\"", "\"")
-      in
-      Doc.concat
-        [
-          (if prefix = "js" then Doc.nil else Doc.text prefix);
-          Doc.text lquote;
-          print_string_contents txt;
-          Doc.text rquote;
-        ]
+  | Pconst_unprocessed_string source ->
+    let lquote, rquote =
+      if template_literal then ("`", "`") else ("\"", "\"")
+    in
+    Doc.concat [Doc.text lquote; print_string_contents source; Doc.text rquote]
   | Pconst_template source ->
     Doc.concat [Doc.text "`"; print_string_contents source; Doc.text "`"]
+  | Pconst_json source ->
+    Doc.concat [Doc.text "json`"; print_string_contents source; Doc.text "`"]
+  | Pconst_raw_source source ->
+    Doc.concat [Doc.text "\""; print_string_contents source; Doc.text "\""]
+  | Pconst_char_source source ->
+    Doc.concat [Doc.text "'"; Doc.text source; Doc.text "'"]
+  | Pconst_tagged_string {tag; source} ->
+    Doc.concat
+      [Doc.text tag; Doc.text "`"; print_string_contents source; Doc.text "`"]
   | Pconst_float (s, _) -> Doc.text s
   | Pconst_char c ->
     let str =
@@ -1641,9 +1641,7 @@ and collect_literal_dict_rows (e : Parsetree.expression) =
     | {
      pexp_desc =
        Pexp_tuple
-         [
-           {pexp_desc = Pexp_constant (Pconst_string (name, _)); pexp_loc}; value;
-         ];
+         [{pexp_desc = Pexp_constant (Pconst_string name); pexp_loc}; value];
     } ->
       Some ((Location.mkloc (Longident.Lident name) pexp_loc, value), e)
     | _ -> None
@@ -2623,12 +2621,11 @@ and print_pattern ~state (p : Parsetree.pattern) cmt_tbl =
         Parsetree_viewer.has_template_literal_attr p.ppat_attributes
         ||
         match c with
-        | Pconst_string (_, Some ("js" | "*j" | "INTERNAL_RES_CHAR_CONTENTS"))
-        | Pconst_string (_, None)
-        | Pconst_template _ | Pconst_integer _ | Pconst_char _ | Pconst_float _
-          ->
+        | Pconst_string _ | Pconst_unprocessed_string _ | Pconst_template _
+        | Pconst_json _ | Pconst_raw_source _ | Pconst_char_source _
+        | Pconst_tagged_string _ | Pconst_integer _ | Pconst_char _
+        | Pconst_float _ ->
           false
-        | Pconst_string (_, Some _) -> true
       in
       print_constant ~template_literal c
     | Ppat_tuple patterns ->
@@ -3668,7 +3665,7 @@ and print_expression ~state (e : Parsetree.expression) cmt_tbl =
               {
                 pstr_desc =
                   Pstr_eval
-                    ({pexp_desc = Pexp_constant (Pconst_string (expr, _))}, []);
+                    ({pexp_desc = Pexp_constant (Pconst_raw_source expr)}, []);
               };
             ] ) ->
         Doc.text expr
@@ -4102,10 +4099,10 @@ and print_template_literal ~state expr cmt_tbl =
       let lhs = walk_expr arg1 in
       let rhs = walk_expr arg2 in
       Doc.concat [lhs; rhs]
-    | Pexp_constant (Pconst_string (txt, Some prefix)) ->
-      tag := prefix;
-      print_string_contents txt
     | Pexp_constant (Pconst_template source) -> print_string_contents source
+    | Pexp_constant (Pconst_json source) ->
+      tag := "json";
+      print_string_contents source
     | _ ->
       let doc = print_expression_with_comments ~state expr cmt_tbl in
       let doc =
@@ -4141,8 +4138,6 @@ and print_tagged_template_literal ~state call_expr args cmt_tbl =
       (fun x ->
         match x with
         | {Parsetree.pexp_desc = Pexp_constant (Pconst_template source)} ->
-          print_string_contents source
-        | {Parsetree.pexp_desc = Pexp_constant (Pconst_string (source, _))} ->
           print_string_contents source
         | _ -> assert false)
       strings_list
@@ -6134,7 +6129,13 @@ and print_attribute ?(standalone = false) ~state
         [
           {
             pstr_desc =
-              Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (txt, _))}, _);
+              Pstr_eval
+                ( {
+                    pexp_desc =
+                      Pexp_constant
+                        (Pconst_string txt | Pconst_unprocessed_string txt);
+                  },
+                  _ );
           };
         ] ) ->
     ( Doc.concat

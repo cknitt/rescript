@@ -94,8 +94,12 @@ let pat_mapper (self : mapper) (p : Parsetree.pattern) =
   match p.ppat_desc with
   | Ppat_constant (Pconst_integer (s, Some 'l')) ->
     {p with ppat_desc = Ppat_constant (Pconst_integer (s, None))}
-  | Ppat_constant (Pconst_string (s, Some delim)) ->
-    Ast_utf8_string_interp.transform_pat p s delim
+  | Ppat_constant (Pconst_unprocessed_string source) ->
+    Ast_utf8_string_interp.transform_pat p source
+  | Ppat_constant (Pconst_char_source _) -> p
+  | Ppat_constant (Pconst_json _ | Pconst_tagged_string _) ->
+    Location.raise_errorf ~loc:p.ppat_loc
+      "Tagged template literals are not supported in patterns"
   | _ -> default_pat_mapper self p
 
 (* Unpack requires core_type package for type inference:
@@ -113,8 +117,8 @@ let expr_mapper ~async_context ~in_function_def (self : mapper)
   (* Its output should not be rewritten anymore *)
   | Pexp_extension extension ->
     Ast_exp_extension.handle_extension e self extension
-  | Pexp_constant (Pconst_string (s, Some delim)) ->
-    Ast_utf8_string_interp.transform_exp e s delim
+  | Pexp_constant (Pconst_unprocessed_string source) ->
+    Ast_utf8_string_interp.transform_exp e source
   | Pexp_constant (Pconst_integer (s, Some 'l')) ->
     {e with pexp_desc = Pexp_constant (Pconst_integer (s, None))}
   (* End rewriting *)
@@ -446,7 +450,9 @@ let signature_item_mapper (self : mapper) (sigi : Parsetree.signature_item) :
           ((_, PStr [{pstr_desc = Pstr_eval ({pexp_desc; pexp_loc}, _)}]) as
            attr) -> (
         match pexp_desc with
-        | Pexp_constant ((Pconst_string _ | Pconst_template _) as constant) ->
+        | Pexp_constant
+            ((Pconst_string _ | Pconst_json _ | Pconst_template _) as constant)
+          ->
           succeed attr pval_attributes;
           {
             sigi with
@@ -559,7 +565,9 @@ let structure_item_mapper (self : mapper) (str : Parsetree.structure_item) :
     in
     match (has_inline_property, pvb_expr.pexp_desc) with
     | ( Some attr,
-        Pexp_constant ((Pconst_string _ | Pconst_template _) as constant) ) ->
+        Pexp_constant
+          ((Pconst_string _ | Pconst_json _ | Pconst_template _) as constant) )
+      ->
       succeed attr pvb_attributes;
       {
         str with

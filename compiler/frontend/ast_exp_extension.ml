@@ -48,12 +48,11 @@ let handle_extension e (_self : Ast_mapper.mapper)
         ( Nolabel,
           Exp.constant ~loc
             (Pconst_string
-               ( (pretext
-                 ^
-                 match todo_message with
-                 | None -> " - Todo"
-                 | Some msg -> " - Todo: " ^ msg),
-                 None )) );
+               (pretext
+               ^
+               match todo_message with
+               | None -> " - Todo"
+               | Some msg -> " - Todo: " ^ msg)) );
       ]
   | "ffi" -> Ast_exp_handle_external.handle_ffi ~loc ~payload
   | "raw" -> Ast_exp_handle_external.handle_raw ~kind:Raw_exp loc payload

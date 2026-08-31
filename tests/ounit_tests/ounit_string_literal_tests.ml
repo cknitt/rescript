@@ -10,39 +10,36 @@ let assert_invalid_backquoted_pattern encoded =
   in
   let pattern =
     Ast_helper.Pat.constant ~attrs:[template_attribute]
-      (Parsetree.Pconst_string (encoded, Some "js"))
+      (Parsetree.Pconst_unprocessed_string encoded)
   in
-  match Ast_utf8_string_interp.transform_pat pattern encoded "js" with
+  match Ast_utf8_string_interp.transform_pat pattern encoded with
   | _ -> OUnit.assert_failure "expected an invalid string escape"
   | exception Location.Error _ -> ()
 
 let assert_invalid_tagged_pattern tag contents =
   let pattern =
-    Ast_helper.Pat.constant (Parsetree.Pconst_string (contents, Some tag))
+    Ast_helper.Pat.constant
+      (Parsetree.Pconst_tagged_string {tag; source = contents})
   in
-  match Ast_utf8_string_interp.transform_pat pattern contents tag with
+  match Bs_builtin_ppx.mapper.pat Bs_builtin_ppx.mapper pattern with
   | _ -> OUnit.assert_failure "expected a tagged pattern error"
   | exception Location.Error _ -> ()
 
-let assert_transformed_expression ?(delim = "js") ~encoded ~expected () =
+let assert_transformed_expression ~encoded ~expected () =
   let expression =
-    Ast_helper.Exp.constant (Parsetree.Pconst_string (encoded, Some delim))
+    Ast_helper.Exp.constant (Parsetree.Pconst_unprocessed_string encoded)
   in
-  match
-    (Ast_utf8_string_interp.transform_exp expression encoded delim).pexp_desc
-  with
-  | Pexp_constant (Pconst_string (actual, None)) ->
+  match (Ast_utf8_string_interp.transform_exp expression encoded).pexp_desc with
+  | Pexp_constant (Pconst_string actual) ->
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a semantic string expression"
 
-let assert_transformed_pattern ?(delim = "js") ~encoded ~expected () =
+let assert_transformed_pattern ~encoded ~expected () =
   let pattern =
-    Ast_helper.Pat.constant (Parsetree.Pconst_string (encoded, Some delim))
+    Ast_helper.Pat.constant (Parsetree.Pconst_unprocessed_string encoded)
   in
-  match
-    (Ast_utf8_string_interp.transform_pat pattern encoded delim).ppat_desc
-  with
-  | Ppat_constant (Pconst_string (actual, None)) ->
+  match (Ast_utf8_string_interp.transform_pat pattern encoded).ppat_desc with
+  | Ppat_constant (Pconst_string actual) ->
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a semantic string pattern"
 
@@ -67,8 +64,8 @@ let assert_lam_char expected = function
     assert_int_equal expected actual
   | _ -> OUnit.assert_failure "expected a folded Lambda character"
 
-let typed_string s delim =
-  match Typecore.constant (Parsetree.Pconst_string (s, delim)) with
+let typed_string s =
+  match Typecore.constant (Parsetree.Pconst_string s) with
   | Ok constant -> constant
   | Error _ -> OUnit.assert_failure "expected a typed string constant"
 
@@ -76,6 +73,11 @@ let typed_template source =
   match Typecore.constant (Parsetree.Pconst_template source) with
   | Ok constant -> constant
   | Error _ -> OUnit.assert_failure "expected a typed template constant"
+
+let typed_json source =
+  match Typecore.constant (Parsetree.Pconst_json source) with
+  | Ok constant -> constant
+  | Error _ -> OUnit.assert_failure "expected a typed JSON-tagged string"
 
 let convert_typed_constant constant =
   Lam_constant_convert.convert_constant (Lambda.const_of_typed constant)
@@ -105,11 +107,8 @@ let assert_external_json_literal ~expected constant =
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a JavaScript JSON literal expression"
 
-let inline_string s delim =
-  match
-    Ast_external_mk.inline_string ~loc:Location.none
-      (Parsetree.Pconst_string (s, delim))
-  with
+let inline_string constant =
+  match Ast_external_mk.inline_string ~loc:Location.none constant with
   | Prim_inline_const constant -> constant
   | _ -> OUnit.assert_failure "expected an inline constant"
 
@@ -128,12 +127,8 @@ let assert_js_global ~expected (expression : J.expression) =
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected ident.name
   | _ -> OUnit.assert_failure "expected a JavaScript global reference"
 
-let string_payload s delim =
-  Parsetree.PStr
-    [
-      Ast_helper.Str.eval
-        (Ast_helper.Exp.constant (Parsetree.Pconst_string (s, delim)));
-    ]
+let string_payload constant =
+  Parsetree.PStr [Ast_helper.Str.eval (Ast_helper.Exp.constant constant)]
 
 let template_payload source =
   Parsetree.PStr
@@ -175,10 +170,10 @@ let suites =
            in
            let expression =
              Ast_helper.Exp.constant ~attrs:[template_attribute]
-               (Parsetree.Pconst_string (encoded, Some "js"))
+               (Parsetree.Pconst_template encoded)
            in
            match
-             (Ast_utf8_string_interp.transform_exp expression encoded "js")
+             (Bs_builtin_ppx.mapper.expr Bs_builtin_ppx.mapper expression)
                .pexp_desc
            with
            | Pexp_constant (Pconst_template actual) ->
@@ -215,19 +210,17 @@ let suites =
            assert_invalid_tagged_pattern "json" {|\x61|} );
          ( "printer char patterns are not tagged templates" >:: fun _ ->
            let pattern =
-             Ast_helper.Pat.constant
-               (Parsetree.Pconst_string ("a", Some "INTERNAL_RES_CHAR_CONTENTS"))
+             Ast_helper.Pat.constant (Parsetree.Pconst_char_source "a")
            in
            let transformed =
-             Ast_utf8_string_interp.transform_pat pattern "a"
-               "INTERNAL_RES_CHAR_CONTENTS"
+             Bs_builtin_ppx.mapper.pat Bs_builtin_ppx.mapper pattern
            in
            OUnit.assert_equal ~printer:Ext_obj.dump pattern.ppat_desc
              transformed.ppat_desc );
          ( "typed tree separates strings from template literals" >:: fun _ ->
-           let semantic = typed_string "a\n😀" None in
+           let semantic = typed_string "a\n😀" in
            let template = typed_template {|a\n\uD83D\uDE00|} in
-           let json = typed_string {|{"answer":42}|} (Some "json") in
+           let json = typed_json {|{"answer":42}|} in
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Asttypes.Const_string "a\n😀") semantic;
            OUnit.assert_equal ~printer:Ext_obj.dump
@@ -237,7 +230,7 @@ let suites =
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Asttypes.Const_string {|{"answer":42}|}) json;
            OUnit.assert_equal ~printer:Ext_obj.dump
-             (Parsetree.Pconst_string ("a\n😀", None))
+             (Parsetree.Pconst_string "a\n😀")
              (Untypeast.constant semantic);
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Parsetree.Pconst_template {|a\n\uD83D\uDE00|})
@@ -253,7 +246,7 @@ let suites =
                 (template_payload {|\x61\n\uD83D\uDE00|}));
            OUnit.assert_equal ~printer:Ext_obj.dump None
              (Ast_payload.is_single_semantic_string
-                (string_payload {|{"answer":42}|} (Some "json")));
+                (string_payload (Pconst_json {|{"answer":42}|})));
            match
              Ast_payload.is_single_semantic_string (template_payload {|\uD800|})
            with
@@ -265,7 +258,7 @@ let suites =
              (inline_template {|\x61\n\uD83D\uDE00|});
            OUnit.assert_equal ~printer:Ext_obj.dump
              (External_ffi_types.Const_json {|{"answer":42}|})
-             (inline_string {|{"answer":42}|} (Some "json"));
+             (inline_string (Pconst_json {|{"answer":42}|}));
            assert_external_js_string ~expected:{|\x61|}
              (External_arg_spec.cst_string {|\x61|});
            assert_external_json_literal ~expected:{|{"answer":42}|}

@@ -26,13 +26,21 @@ type constant =
   *)
   | Pconst_char of int
   (* 'c' *)
-  | Pconst_string of string * string option
-  (* "constant"
-     {delim|other constant|delim}
-  *)
+  | Pconst_string of string
+  (* A decoded semantic string value. *)
+  | Pconst_unprocessed_string of string
+  (* Scanner source spelling awaiting ordinary-string normalization. *)
   | Pconst_template of string
   (* Source spelling of a backquoted template segment. Semantic decoding is
      deferred until the segment is known to belong to an ordinary template. *)
+  | Pconst_json of string
+  (* Source spelling of a [json`...`] segment. *)
+  | Pconst_raw_source of string
+  (* JavaScript source carried by a compiler raw/ffi/re extension. *)
+  | Pconst_char_source of string
+  (* Printer-only source spelling of a character literal. *)
+  | Pconst_tagged_string of {tag: string; source: string}
+  (* A tagged backquoted pattern, retained until the frontend rejects it. *)
   | Pconst_float of string * char option
 (* 3.4 2e5 1.4e-4
 

@@ -277,26 +277,10 @@ let semantic_string loc s =
   | Some decoded -> decoded
   | None -> Location.raise_errorf ~loc "Invalid string escape sequence"
 
-let transform_exp (e : Parsetree.expression) s delim : Parsetree.expression =
-  let is_template =
-    Ext_list.exists e.pexp_attributes (fun ({txt}, _) ->
-        match txt with
-        | "res.template" | "res.taggedTemplate" -> true
-        | _ -> false)
-  in
-  if delim <> "js" then e
-  else if is_template then
-    {e with pexp_desc = Pexp_constant (Pconst_template s)}
-  else
-    let semantic = semantic_string e.pexp_loc s in
-    {e with pexp_desc = Pexp_constant (Pconst_string (semantic, None))}
+let transform_exp (e : Parsetree.expression) source : Parsetree.expression =
+  let semantic = semantic_string e.pexp_loc source in
+  {e with pexp_desc = Pexp_constant (Pconst_string semantic)}
 
-let transform_pat (p : Parsetree.pattern) s delim : Parsetree.pattern =
-  match delim with
-  | "js" ->
-    let semantic = semantic_string p.ppat_loc s in
-    {p with ppat_desc = Ppat_constant (Pconst_string (semantic, None))}
-  | "INTERNAL_RES_CHAR_CONTENTS" -> p
-  | _ ->
-    Location.raise_errorf ~loc:p.ppat_loc
-      "Tagged template literals are not supported in patterns"
+let transform_pat (p : Parsetree.pattern) source : Parsetree.pattern =
+  let semantic = semantic_string p.ppat_loc source in
+  {p with ppat_desc = Ppat_constant (Pconst_string semantic)}

@@ -29,7 +29,11 @@ let get_jsx_config_by_key ~key ~type_ record_fields =
         | ( String,
             {txt = Lident k},
             (* accept both normal strings and "js" strings *)
-            {pexp_desc = Pexp_constant (Pconst_string (value, _))} )
+            {
+              pexp_desc =
+                Pexp_constant
+                  (Pconst_string value | Pconst_unprocessed_string value);
+            } )
           when k = key ->
           Some value
         | _ -> None)

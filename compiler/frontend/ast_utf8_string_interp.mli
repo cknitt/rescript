@@ -55,6 +55,5 @@ type exn += Error of pos * pos * error
 
 val empty_segment : segment -> bool
 val transform_test : string -> segment list
-val transform_exp :
-  Parsetree.expression -> string -> string -> Parsetree.expression
-val transform_pat : Parsetree.pattern -> string -> string -> Parsetree.pattern
+val transform_exp : Parsetree.expression -> string -> Parsetree.expression
+val transform_pat : Parsetree.pattern -> string -> Parsetree.pattern

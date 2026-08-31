@@ -31,12 +31,20 @@ let is_single_string (x : t) =
       [
         {
           pstr_desc =
-            Pstr_eval
-              ({pexp_desc = Pexp_constant (Pconst_string (name, dec)); _}, _);
+            Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string name); _}, _);
           _;
         };
       ] ->
-    Some (name, dec)
+    Some (name, None)
+  | PStr
+      [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant constant; _}, _); _}]
+    -> (
+    match constant with
+    | Pconst_unprocessed_string name -> Some (name, None)
+    | Pconst_raw_source name -> Some (name, Some "js")
+    | Pconst_json name -> Some (name, Some "json")
+    | Pconst_template name -> Some (name, Some "js")
+    | _ -> None)
   | _ -> None
 
 let is_single_semantic_string (x : t) =
@@ -45,9 +53,18 @@ let is_single_semantic_string (x : t) =
       [
         {
           pstr_desc =
+            Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string s); _}, _);
+          _;
+        };
+      ] ->
+    Some s
+  | PStr
+      [
+        {
+          pstr_desc =
             Pstr_eval
               ( {
-                  pexp_desc = Pexp_constant (Pconst_string (s, delim));
+                  pexp_desc = Pexp_constant (Pconst_unprocessed_string s);
                   pexp_loc;
                   _;
                 },
@@ -55,14 +72,10 @@ let is_single_semantic_string (x : t) =
           _;
         };
       ] -> (
-    match delim with
-    | None -> Some s
-    | Some ("js" | "*j") -> (
-      match String_literal.decode_js_escapes s with
-      | Some s -> Some s
-      | None ->
-        Location.raise_errorf ~loc:pexp_loc "Invalid string escape sequence")
-    | Some _ -> None)
+    match String_literal.decode_js_escapes s with
+    | Some s -> Some s
+    | None ->
+      Location.raise_errorf ~loc:pexp_loc "Invalid string escape sequence")
   | PStr
       [
         {
@@ -152,46 +165,53 @@ let is_single_ident (x : t) =
 
 let raw_as_string_exp_exn ~(kind : Js_raw_info.raw_kind) ?is_function (x : t) :
     Parsetree.expression option =
-  match x with
-  (* TODO also need detect empty phrase case *)
-  | PStr
-      [
-        {
-          pstr_desc =
-            Pstr_eval
-              ( ({
-                   pexp_desc = Pexp_constant (Pconst_string (str, deli));
-                   pexp_loc = loc;
-                 } as e),
-                _ );
-          _;
-        };
-      ] ->
-    Bs_flow_ast_utils.check_flow_errors ~loc
-      ~offset:(Bs_flow_ast_utils.flow_deli_offset deli)
+  let string_expression =
+    match x with
+    (* TODO also need detect empty phrase case *)
+    | PStr
+        [
+          {
+            pstr_desc =
+              Pstr_eval
+                (({pexp_desc = Pexp_constant constant; _} as expression), _);
+            _;
+          };
+        ] -> (
+      match constant with
+      | Pconst_unprocessed_string source
+      | Pconst_template source
+      | Pconst_raw_source source ->
+        Some (source, Bs_flow_ast_utils.flow_deli_offset (Some "js"), expression)
+      | Pconst_string source -> Some (source, 0, expression)
+      | _ -> None)
+    | _ -> None
+  in
+  match string_expression with
+  | Some (str, offset, ({pexp_loc = loc} as expression)) ->
+    Bs_flow_ast_utils.check_flow_errors ~loc ~offset
       (match kind with
       | Raw_re | Raw_exp ->
-        let ((_loc, e) as prog), errors =
+        let ((_loc, expression) as program), errors =
           let open Parser_flow in
           let env = Parser_env.init_env None str in
           do_parse env Parse.expression false
         in
         (if kind = Raw_re then
-           match e with
+           match expression with
            | RegExpLiteral _ -> ()
            | _ ->
              Location.raise_errorf ~loc
                "Syntax error: a valid JS regex literal expected");
         (match is_function with
         | Some is_function -> (
-          match Classify_function.classify_exp prog with
+          match Classify_function.classify_exp program with
           | Js_function {arity; _} -> is_function := Some arity
           | _ -> ())
         | None -> ());
         errors
       | Raw_program -> snd (Parser_flow.parse_program false None str));
-    Some {e with pexp_desc = Pexp_constant (Pconst_string (str, None))}
-  | _ -> None
+    Some {expression with pexp_desc = Pexp_constant (Pconst_raw_source str)}
+  | None -> None
 
 type lid = string Asttypes.loc
 
@@ -262,15 +282,27 @@ let assert_strings loc (x : t) : string list =
     try
       Ext_list.map strs (fun e ->
           match (e : Parsetree.expression) with
-          | {pexp_desc = Pexp_constant (Pconst_string (name, _)); _} -> name
+          | {pexp_desc = Pexp_constant (Pconst_string name); _}
+          | {pexp_desc = Pexp_constant (Pconst_unprocessed_string name); _} ->
+            name
           | _ -> raise Not_str)
     with Not_str -> Location.raise_errorf ~loc "expect string tuple list")
   | PStr
       [
         {
           pstr_desc =
+            Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string name); _}, _);
+          _;
+        };
+      ] ->
+    [name]
+  | PStr
+      [
+        {
+          pstr_desc =
             Pstr_eval
-              ({pexp_desc = Pexp_constant (Pconst_string (name, _)); _}, _);
+              ( {pexp_desc = Pexp_constant (Pconst_unprocessed_string name); _},
+                _ );
           _;
         };
       ] ->

@@ -10,7 +10,13 @@ let rec find_doc_attribute attributes =
         [
           {
             pstr_desc =
-              Pstr_eval ({pexp_desc = Pexp_constant (Pconst_string (doc, _))}, _);
+              Pstr_eval
+                ( {
+                    pexp_desc =
+                      Pexp_constant
+                        (Pconst_string doc | Pconst_unprocessed_string doc);
+                  },
+                  _ );
           };
         ] )
     :: _ ->
@@ -26,7 +32,8 @@ let rec find_deprecated_attribute attributes =
     :: _ -> (
     match expr with
     (* Simple deprecated attr @deprecated("message") *)
-    | Pexp_constant (Pconst_string (_msg, _)) -> Some _msg
+    | Pexp_constant (Pconst_string msg | Pconst_unprocessed_string msg) ->
+      Some msg
     (* deprecated attr with record *)
     | Pexp_record (fields, _) ->
       let reason = ref "" in
@@ -35,7 +42,11 @@ let rec find_deprecated_attribute attributes =
       |> List.iter (fun {lid = {txt}; x} ->
           match (txt, x) with
           | ( Lident "reason",
-              {pexp_desc = Pexp_constant (Pconst_string (msg, _))} ) ->
+              {
+                pexp_desc =
+                  Pexp_constant
+                    (Pconst_string msg | Pconst_unprocessed_string msg);
+              } ) ->
             reason := msg
           | _ -> ());
 
