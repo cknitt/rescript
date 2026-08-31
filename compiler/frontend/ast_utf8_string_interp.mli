@@ -58,4 +58,3 @@ val transform_test : string -> segment list
 val transform_exp :
   Parsetree.expression -> string -> string -> Parsetree.expression
 val transform_pat : Parsetree.pattern -> string -> string -> Parsetree.pattern
-val parse_processed_delim : string option -> External_arg_spec.delim option

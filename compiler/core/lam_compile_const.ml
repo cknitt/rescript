@@ -77,4 +77,5 @@ and translate (x : Lam_constant.t) : J.expression =
 let translate_arg_cst (cst : External_arg_spec.cst) =
   match cst with
   | Arg_int_lit i -> E.int (Int32.of_int i)
-  | Arg_string_lit (s, delim) -> E.str s ~delim
+  | Arg_string_lit s -> E.str s
+  | Arg_json_lit s -> E.str s ~delim:DNoQuotes

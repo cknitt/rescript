@@ -415,9 +415,9 @@ and lambda_switch = lambda switch
 let const_int (i : int) = Const_int (Int32.of_int i)
 
 let const_string s delim =
-  match External_arg_spec.parse_processed_delim delim with
-  | Some DBackQuotes -> Const_template_segment s
-  | None | Some (DNone | DNoQuotes) -> Const_string s
+  match delim with
+  | Some "bq" -> Const_template_segment s
+  | None | Some _ -> Const_string s
 
 let const_of_typed (c : Asttypes.constant) : structured_constant =
   match c with

@@ -82,6 +82,18 @@ let assert_js_string ~expected ~delim constant =
     OUnit.assert_equal ~printer:Ext_obj.dump delim actual_delim
   | _ -> OUnit.assert_failure "expected a JavaScript string expression"
 
+let assert_external_js_string ~expected ~delim constant =
+  match (Lam_compile_const.translate_arg_cst constant).J.expression_desc with
+  | Str {txt; delim = actual_delim} ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected txt;
+    OUnit.assert_equal ~printer:Ext_obj.dump delim actual_delim
+  | _ -> OUnit.assert_failure "expected a JavaScript string expression"
+
+let inline_string s delim =
+  match Ast_external_mk.inline_string ~loc:Location.none s delim with
+  | Prim_inline_const constant -> constant
+  | _ -> OUnit.assert_failure "expected an inline constant"
+
 let string_payload s delim =
   Parsetree.PStr
     [
@@ -198,6 +210,21 @@ let suites =
              Ast_payload.is_single_semantic_string
                (string_payload {|\uD800|} (Some "bq"))
            with
+           | _ -> OUnit.assert_failure "expected an invalid string escape"
+           | exception Location.Error _ -> () );
+         ( "external string constants have explicit representations" >:: fun _ ->
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (External_ffi_types.Const_string "a\n😀")
+             (inline_string {|\x61\n\uD83D\uDE00|} (Some "bq"));
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (External_ffi_types.Const_json {|{"answer":42}|})
+             (inline_string {|{"answer":42}|} (Some "json"));
+           assert_external_js_string ~expected:{|\x61|} ~delim:J.DNone
+             (External_arg_spec.cst_string {|\x61|});
+           assert_external_js_string ~expected:{|{"answer":42}|}
+             ~delim:J.DNoQuotes
+             (External_arg_spec.cst_json {|{"answer":42}|});
+           match inline_string {|\uD800|} (Some "bq") with
            | _ -> OUnit.assert_failure "expected an invalid string escape"
            | exception Location.Error _ -> () );
          ( "Lambda separates strings from template segments" >:: fun _ ->

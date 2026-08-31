@@ -48,10 +48,17 @@ let inline_const (c : External_ffi_types.inline_const) :
     Parsetree.primitive_repr =
   Prim_inline_const c
 
-let inline_string (s : string) (delim_raw : string option) =
-  inline_const
-    (Const_str
-       {s; delim = Ast_utf8_string_interp.parse_processed_delim delim_raw})
+let inline_string ~loc (s : string) (delim : string option) =
+  let constant =
+    match delim with
+    | Some "json" -> External_ffi_types.Const_json s
+    | Some ("bq" | "js" | "*j") -> (
+      match String_literal.decode_js_escapes s with
+      | Some semantic -> Const_string semantic
+      | None -> Location.raise_errorf ~loc "Invalid string escape sequence")
+    | None | Some _ -> Const_string s
+  in
+  inline_const constant
 
 let inline_bool b = inline_const (Const_bool b)
 

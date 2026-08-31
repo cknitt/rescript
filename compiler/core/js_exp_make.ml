@@ -674,7 +674,7 @@ let rec string_append ?comment (e : t) (el : t) : t =
 let obj ?comment ?dup properties : t =
   {expression_desc = Object (dup, properties); comment; source_loc = None}
 
-let str_equal (txt0 : string) (delim0 : External_arg_spec.delim) txt1 delim1 =
+let str_equal (txt0 : string) (delim0 : J.delim) txt1 delim1 =
   if delim0 = delim1 then
     if Ext_string.equal txt0 txt1 then Some true
     else if

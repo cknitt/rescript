@@ -451,8 +451,7 @@ let warn_polymorphic_comparison loc prim args =
 let lambda_of_inline_const (c : External_ffi_types.inline_const) :
     Lambda.structured_constant =
   match c with
-  | Const_str {s; delim = Some DBackQuotes} -> Const_template_segment s
-  | Const_str {s; delim = None | Some (DNone | DNoQuotes)} -> Const_string s
+  | External_ffi_types.Const_string s | Const_json s -> Const_string s
   | Const_bool true -> Const_true
   | Const_bool false -> Const_false
   | Const_int i -> Const_int i
