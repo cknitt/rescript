@@ -50,8 +50,6 @@ let print_constant const =
   | Pconst_json source -> "Pconst_json(" ^ source ^ ")"
   | Pconst_raw_source source -> "Pconst_raw_source(" ^ source ^ ")"
   | Pconst_char_source source -> "Pconst_char_source(" ^ source ^ ")"
-  | Pconst_tagged_string {tag; source} ->
-    "Pconst_tagged_string(" ^ tag ^ ", " ^ source ^ ")"
   | Pconst_float (s, _) -> "Pconst_float(" ^ s ^ ")"
 
 let print_core_type typ ~pos =

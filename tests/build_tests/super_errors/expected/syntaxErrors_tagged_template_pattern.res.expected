@@ -1,6 +1,6 @@
 
-  [1;31mWe've found a bug for you![0m
-  [36m/.../fixtures/tagged_template_pattern.res[0m:[2m3:5-14[0m
+  [1;31mSyntax error![0m
+  [36m/.../fixtures/syntaxErrors_tagged_template_pattern.res[0m:[2m3:5-14[0m
 
   1 [2m│[0m let classify = value =>
   2 [2m│[0m   switch value {

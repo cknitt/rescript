@@ -97,7 +97,7 @@ let pat_mapper (self : mapper) (p : Parsetree.pattern) =
   | Ppat_constant (Pconst_unprocessed_string source) ->
     Ast_utf8_string_interp.transform_pat p source
   | Ppat_constant (Pconst_char_source _) -> p
-  | Ppat_constant (Pconst_json _ | Pconst_tagged_string _) ->
+  | Ppat_constant (Pconst_json _) ->
     Location.raise_errorf ~loc:p.ppat_loc
       "Tagged template literals are not supported in patterns"
   | _ -> default_pat_mapper self p

@@ -24,7 +24,6 @@ let string_of_cst = function
   | Pconst_raw_source s
   | Pconst_char_source s ->
     Some s
-  | Pconst_tagged_string {source} -> Some source
   | _ -> None
 
 let string_of_payload = function

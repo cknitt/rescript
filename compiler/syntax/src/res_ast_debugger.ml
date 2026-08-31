@@ -137,8 +137,6 @@ module Sexp_ast = struct
       | Pconst_json source -> Sexp.list [Sexp.atom "Pconst_json"; string source]
       | Pconst_raw_source source ->
         Sexp.list [Sexp.atom "Pconst_raw_source"; string source]
-      | Pconst_tagged_string {tag; source} ->
-        Sexp.list [Sexp.atom "Pconst_tagged_string"; string tag; string source]
       | Pconst_float (txt, tag) ->
         Sexp.list [Sexp.atom "Pconst_float"; string txt; opt_char tag]
     in

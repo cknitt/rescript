@@ -265,7 +265,7 @@ let is_multiline_text txt =
 let is_huggable_expression expr =
   match expr.pexp_desc with
   | Pexp_array _ | Pexp_tuple _
-  | Pexp_constant (Pconst_json _ | Pconst_char_source _ | Pconst_tagged_string _)
+  | Pexp_constant (Pconst_json _ | Pconst_char_source _)
   | Pexp_constant (Pconst_template _)
   | Pexp_construct ({txt = Longident.Lident ("::" | "[]")}, _)
   | Pexp_object_literal _ | Pexp_record _ ->

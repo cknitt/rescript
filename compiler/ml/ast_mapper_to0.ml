@@ -87,7 +87,6 @@ let map_constant = function
     Pconst_string (s, Some "js")
   | Pconst_json s -> Pconst_string (s, Some "json")
   | Pconst_char_source s -> Pconst_string (s, Some "INTERNAL_RES_CHAR_CONTENTS")
-  | Pconst_tagged_string {tag; source} -> Pconst_string (source, Some tag)
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
 
 let for_of_attr_name = "_res.for_of"

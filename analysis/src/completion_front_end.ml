@@ -211,7 +211,7 @@ let rec expr_to_context_path_inner ~(in_jsx_context : bool)
   match e.pexp_desc with
   | Pexp_constant
       ( Pconst_string _ | Pconst_unprocessed_string _ | Pconst_template _
-      | Pconst_json _ | Pconst_raw_source _ | Pconst_tagged_string _ ) ->
+      | Pconst_json _ | Pconst_raw_source _ ) ->
     Some Completable.CPString
   | Pexp_constant (Pconst_integer _) -> Some CPInt
   | Pexp_constant (Pconst_float _) -> Some CPFloat

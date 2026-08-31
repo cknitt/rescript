@@ -16,15 +16,6 @@ let assert_invalid_backquoted_pattern encoded =
   | _ -> OUnit.assert_failure "expected an invalid string escape"
   | exception Location.Error _ -> ()
 
-let assert_invalid_tagged_pattern tag contents =
-  let pattern =
-    Ast_helper.Pat.constant
-      (Parsetree.Pconst_tagged_string {tag; source = contents})
-  in
-  match Bs_builtin_ppx.mapper.pat Bs_builtin_ppx.mapper pattern with
-  | _ -> OUnit.assert_failure "expected a tagged pattern error"
-  | exception Location.Error _ -> ()
-
 let assert_transformed_expression ~encoded ~expected () =
   let expression =
     Ast_helper.Exp.constant (Parsetree.Pconst_unprocessed_string encoded)
@@ -203,11 +194,6 @@ let suites =
          ( "backquoted patterns reject lone surrogate escapes" >:: fun _ ->
            assert_invalid_backquoted_pattern {|\uD800|};
            assert_invalid_backquoted_pattern {|\uDC00|} );
-         ( "patterns reject tagged template literals" >:: fun _ ->
-           (* A tagged pattern cannot invoke its tag. Treating its raw contents as
-              a string made json`\x61` collide with the ordinary "\\x61"
-              pattern during string-switch sorting. *)
-           assert_invalid_tagged_pattern "json" {|\x61|} );
          ( "printer char patterns are not tagged templates" >:: fun _ ->
            let pattern =
              Ast_helper.Pat.constant (Parsetree.Pconst_char_source "a")

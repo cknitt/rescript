@@ -585,9 +585,6 @@ let print_constant ?(template_literal = false) c =
     Doc.concat [Doc.text "\""; print_string_contents source; Doc.text "\""]
   | Pconst_char_source source ->
     Doc.concat [Doc.text "'"; Doc.text source; Doc.text "'"]
-  | Pconst_tagged_string {tag; source} ->
-    Doc.concat
-      [Doc.text tag; Doc.text "`"; print_string_contents source; Doc.text "`"]
   | Pconst_float (s, _) -> Doc.text s
   | Pconst_char c ->
     let str =
@@ -2623,8 +2620,7 @@ and print_pattern ~state (p : Parsetree.pattern) cmt_tbl =
         match c with
         | Pconst_string _ | Pconst_unprocessed_string _ | Pconst_template _
         | Pconst_json _ | Pconst_raw_source _ | Pconst_char_source _
-        | Pconst_tagged_string _ | Pconst_integer _ | Pconst_char _
-        | Pconst_float _ ->
+        | Pconst_integer _ | Pconst_char _ | Pconst_float _ ->
           false
       in
       print_constant ~template_literal c

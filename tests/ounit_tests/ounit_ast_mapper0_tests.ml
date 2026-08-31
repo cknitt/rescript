@@ -223,6 +223,24 @@ let test_ast0_strings_convert_to_internal_representation _ =
       (Parsetree0.Pconst_string (encoded, Some "js"))
   in
   assert_template_expr ~expected:encoded (map_expr0 template_expr0);
+  let quoted_expr0 =
+    Ast_helper0.Exp.constant ~loc
+      (Parsetree0.Pconst_string ({|\x61|}, Some "custom"))
+  in
+  assert_string_expr ~expected:{|\x61|} (map_expr0 quoted_expr0);
+  (* A tagged pattern cannot invoke its tag. Treating its raw contents as a
+     string made json`\x61` collide with the ordinary "\\x61" pattern during
+     string-switch sorting. Reject both known and arbitrary PPX delimiters. *)
+  List.iter
+    (fun tag ->
+      let tagged_pattern0 =
+        Ast_helper0.Pat.constant ~loc
+          (Parsetree0.Pconst_string ({|\x61|}, Some tag))
+      in
+      match map_pat0 tagged_pattern0 with
+      | _ -> assert_failure "Expected the ast0 tagged pattern to be rejected"
+      | exception Location.Error _ -> ())
+    ["custom"; "json"];
   let invalid_expr0 =
     Ast_helper0.Exp.constant ~loc
       (Parsetree0.Pconst_string ({|\uD800|}, Some "js"))
@@ -266,19 +284,6 @@ let test_string_literals_roundtrip_through_ast0 _ =
   | Ppat_constant (Pconst_char_source actual) ->
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") {|\u{61}|} actual
   | _ -> assert_failure "Expected printer character source");
-  let tagged =
-    Ast_helper.Pat.constant ~loc
-      (Parsetree.Pconst_tagged_string {tag = "custom"; source = {|\x61|}})
-  in
-  (match
-     (map_pat0
-        (Ast_mapper_to0.default_mapper.pat Ast_mapper_to0.default_mapper tagged))
-       .ppat_desc
-   with
-  | Ppat_constant (Pconst_tagged_string {tag; source}) ->
-    OUnit.assert_equal "custom" tag;
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") {|\x61|} source
-  | _ -> assert_failure "Expected a tagged string pattern");
   let unprocessed =
     Ast_helper.Exp.constant ~loc (Parsetree.Pconst_unprocessed_string {|\x61|})
   in

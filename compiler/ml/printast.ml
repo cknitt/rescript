@@ -68,8 +68,6 @@ let fmt_constant f x =
   | Pconst_json source -> fprintf f "PConst_json %S" source
   | Pconst_raw_source source -> fprintf f "PConst_raw_source %S" source
   | Pconst_char_source source -> fprintf f "PConst_char_source %S" source
-  | Pconst_tagged_string {tag; source} ->
-    fprintf f "PConst_tagged_string (%S,%S)" tag source
   | Pconst_float (s, m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m
 
 let fmt_mutable_flag f x =

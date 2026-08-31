@@ -262,8 +262,6 @@ let constant f = function
   | Pconst_raw_source source ->
     pp f "{js|%a|js}" print_string_with_byte_width source
   | Pconst_char_source source -> pp f "'%s'" source
-  | Pconst_tagged_string {tag; source} ->
-    pp f "{%s|%a|%s}" tag print_string_with_byte_width source tag
   | Pconst_integer (i, None) -> paren (i.[0] = '-') (fun f -> pp f "%s") f i
   | Pconst_integer (i, Some m) ->
     paren (i.[0] = '-') (fun f (i, m) -> pp f "%s%c" i m) f (i, m)

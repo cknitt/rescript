@@ -39,8 +39,6 @@ type constant =
   (* JavaScript source carried by a compiler raw/ffi/re extension. *)
   | Pconst_char_source of string
   (* Printer-only source spelling of a character literal. *)
-  | Pconst_tagged_string of {tag: string; source: string}
-  (* A tagged backquoted pattern, retained until the frontend rejects it. *)
   | Pconst_float of string * char option
 (* 3.4 2e5 1.4e-4
 

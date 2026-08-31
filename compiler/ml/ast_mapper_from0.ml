@@ -102,8 +102,17 @@ let map_constant ~loc ~is_template = function
   | Pconst_string (s, None) -> Pconst_string s
   | Pconst_string (s, Some "json") -> Pconst_json s
   | Pconst_string (s, Some "INTERNAL_RES_CHAR_CONTENTS") -> Pconst_char_source s
-  | Pconst_string (source, Some tag) -> Pconst_tagged_string {tag; source}
+  (* Other v0 quotation delimiters are syntax, not part of the string value.
+     Tagged ReScript templates are represented as applications before PPX. *)
+  | Pconst_string (source, Some _) -> Pconst_string source
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
+
+let map_pattern_constant ~loc = function
+  | Pconst_string (_, Some tag)
+    when tag <> "js" && tag <> "*j" && tag <> "INTERNAL_RES_CHAR_CONTENTS" ->
+    Location.raise_errorf ~loc
+      "Tagged template literals are not supported in patterns"
+  | constant -> map_constant ~loc ~is_template:false constant
 
 let is_raw_source_extension = function
   | "raw" | "ffi" | "re" -> true
@@ -933,12 +942,11 @@ module P = struct
     | Ppat_any -> any ~loc ~attrs ()
     | Ppat_var s -> var ~loc ~attrs (map_loc sub s)
     | Ppat_alias (p, s) -> alias ~loc ~attrs (sub.pat sub p) (map_loc sub s)
-    | Ppat_constant c ->
-      constant ~loc ~attrs (map_constant ~loc ~is_template:false c)
+    | Ppat_constant c -> constant ~loc ~attrs (map_pattern_constant ~loc c)
     | Ppat_interval (c1, c2) ->
       interval ~loc ~attrs
-        (map_constant ~loc ~is_template:false c1)
-        (map_constant ~loc ~is_template:false c2)
+        (map_pattern_constant ~loc c1)
+        (map_pattern_constant ~loc c2)
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub.pat sub) pl)
     | Ppat_construct (l, p) ->
       construct ~loc ~attrs (map_loc sub l) (map_opt (sub.pat sub) p)

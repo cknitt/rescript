@@ -223,6 +223,9 @@ module Error_messages = struct
   let string_interpolation_in_pattern =
     "String interpolation is not supported in pattern matching."
 
+  let tagged_template_in_pattern =
+    "Tagged template literals are not supported in patterns"
+
   let object_quoted_field_name name =
     "An object type declaration needs quoted field names. Did you mean \""
     ^ name ^ "\"?"
@@ -1038,16 +1041,18 @@ let parse_constant p =
   Parser.next_unsafe p;
   constant
 
-let parse_template_constant ~prefix (p : Parser.t) =
+let parse_template_constant ~start_pos ~prefix (p : Parser.t) =
   (* Arrived at the ` char *)
-  let start_pos = p.start_pos in
   Parser.next_template_literal_token p;
   match p.token with
   | TemplateTail (txt, _) -> (
     Parser.next p;
     match prefix with
     | None | Some "js" -> Parsetree.Pconst_unprocessed_string txt
-    | Some tag -> Pconst_tagged_string {tag; source = txt})
+    | Some _ ->
+      Parser.err ~start_pos ~end_pos:p.prev_end_pos p
+        (Diagnostics.message Error_messages.tagged_template_in_pattern);
+      Pconst_unprocessed_string txt)
   | _ ->
     let rec skip_tokens () =
       if p.token <> Eof then (
@@ -1231,7 +1236,7 @@ let rec parse_pattern ?(alias = true) ?(or_ = true) p =
         Ast_helper.Pat.interval ~loc:(mk_loc start_pos p.prev_end_pos) c c2
       | _ -> Ast_helper.Pat.constant ~loc:(mk_loc start_pos p.prev_end_pos) c)
     | Backtick ->
-      let constant = parse_template_constant ~prefix:(Some "js") p in
+      let constant = parse_template_constant ~start_pos ~prefix:(Some "js") p in
       Ast_helper.Pat.constant ~attrs:[template_literal_attr]
         ~loc:(mk_loc start_pos p.prev_end_pos)
         constant
@@ -1270,7 +1275,9 @@ let rec parse_pattern ?(alias = true) ?(or_ = true) p =
       Parser.next p;
       match p.token with
       | Backtick ->
-        let constant = parse_template_constant ~prefix:(Some ident) p in
+        let constant =
+          parse_template_constant ~start_pos ~prefix:(Some ident) p
+        in
         Ast_helper.Pat.constant ~loc:(mk_loc start_pos p.prev_end_pos) constant
       | _ -> Ast_helper.Pat.var ~loc ~attrs (Location.mkloc ident loc))
     | Uident _ -> (
