@@ -81,6 +81,7 @@ type error =
   | Continue_outside_loop
   | Literal_overflow of string
   | Unknown_literal of string * char
+  | Invalid_string_escape_sequence
   | Illegal_letrec_pat
   | Empty_record_literal
   | Uncurried_arity_mismatch of {
@@ -263,7 +264,7 @@ let all_idents_cases el =
 let type_constant = function
   | Const_int _ -> instance_def Predef.type_int
   | Const_char _ -> instance_def Predef.type_char
-  | Const_string _ | Const_template_segment _ -> instance_def Predef.type_string
+  | Const_string _ | Const_template_literal _ -> instance_def Predef.type_string
   | Const_float _ -> instance_def Predef.type_float
   | Const_bigint _ -> instance_def Predef.type_bigint
 
@@ -277,7 +278,10 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
     Ok (Const_bigint (sign, i))
   | Pconst_integer (i, Some c) -> Error (Unknown_literal (i, c))
   | Pconst_char c -> Ok (Const_char c)
-  | Pconst_string (s, Some "bq") -> Ok (Const_template_segment s)
+  | Pconst_string (source, Some "bq") -> (
+    match String_literal.decode_js_escapes source with
+    | Some semantic -> Ok (Const_template_literal {source; semantic})
+    | None -> Error Invalid_string_escape_sequence)
   | Pconst_string (s, _) -> Ok (Const_string s)
   | Pconst_float (f, None) -> Ok (Const_float f)
   | Pconst_float (f, Some c) -> Error (Unknown_literal (f, c))
@@ -2447,13 +2451,21 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
       }
   | Pexp_constant cst ->
     let cst = constant_or_raise env loc cst in
+    let exp_attributes =
+      match cst with
+      | Const_template_literal _ ->
+        List.filter
+          (fun ({txt}, _) -> txt <> "res.template")
+          sexp.pexp_attributes
+      | _ -> sexp.pexp_attributes
+    in
     rue
       {
         exp_desc = Texp_constant cst;
         exp_loc = loc;
         exp_extra = [];
         exp_type = type_constant cst;
-        exp_attributes = sexp.pexp_attributes;
+        exp_attributes;
         exp_env = env;
       }
   | Pexp_let
@@ -2516,7 +2528,7 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
   | Pexp_fun {newtypes = []; params; body = sfun_body; async} ->
     type_function ~async loc sexp.pexp_attributes env ty_expected params
       sfun_body
-  | Pexp_apply {funct = sfunct; args = sargs; partial; transformed_jsx} ->
+  | Pexp_apply {funct = sfunct; args = sargs; partial; transformed_jsx} -> (
     assert (sargs <> []);
     begin_def ();
     (* one more level for non-returning functions *)
@@ -2546,7 +2558,7 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
       Ext_list.exists sexp.pexp_attributes (fun ({txt}, _) ->
           txt = "res.taggedTemplate")
     in
-    let args, ty_res, fully_applied =
+    let tagged_template, args, ty_res, fully_applied =
       if is_tagged_template then (
         (* Backtick tagged-template syntax: the tag must be a value of the
            builtin [taggedTemplate<'param, 'output>] type. The parser desugars
@@ -2563,9 +2575,16 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
              (Error (funct.exp_loc, env, Tagged_template_non_tag funct.exp_type)));
         match sargs with
         | [(Nolabel, strings); (Nolabel, values)] ->
-          let typed_strings =
-            type_expect ~context:None env strings
-              (Predef.type_array Predef.type_string)
+          let sources =
+            match strings.pexp_desc with
+            | Pexp_array segments ->
+              List.map
+                (fun (segment : Parsetree.expression) ->
+                  match segment.pexp_desc with
+                  | Pexp_constant (Pconst_string (source, Some "bq")) -> source
+                  | _ -> assert false)
+                segments
+            | _ -> assert false
           in
           (* Type each interpolated value directly against [param_ty] with a
              tagged-template-specific clash context, rather than routing the
@@ -2575,37 +2594,25 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
           let typed_values =
             match values.pexp_desc with
             | Pexp_array interpolations ->
-              let typed_interpolations =
-                List.map
-                  (fun interp ->
-                    type_expect ~context:(Some TaggedTemplateValue) env interp
-                      param_ty)
-                  interpolations
-              in
-              re
-                {
-                  exp_desc = Texp_array typed_interpolations;
-                  exp_loc = values.pexp_loc;
-                  exp_extra = [];
-                  exp_type = newconstr Predef.path_array [param_ty];
-                  exp_attributes = values.pexp_attributes;
-                  exp_env = env;
-                }
+              List.map
+                (fun interp ->
+                  type_expect ~context:(Some TaggedTemplateValue) env interp
+                    param_ty)
+                interpolations
             (* The parser always desugars the interpolated values into an array
                literal, so any other shape is a compiler invariant violation. *)
             | _ -> assert false
           in
-          ( [
-              (Asttypes.Nolabel, Some typed_strings);
-              (Asttypes.Nolabel, Some typed_values);
-            ],
-            output_ty,
-            true )
+          (Some (sources, typed_values), [], output_ty, true)
         | _ -> assert false)
       else
         match translate_unified_ops env funct sargs with
-        | Some (targs, result_type) -> (targs, result_type, true)
-        | None -> type_application ~context total_app env funct sargs
+        | Some (targs, result_type) -> (None, targs, result_type, true)
+        | None ->
+          let args, result_type, fully_applied =
+            type_application ~context total_app env funct sargs
+          in
+          (None, args, result_type, fully_applied)
     in
     end_def ();
     unify_var env (newvar ()) funct.exp_type;
@@ -2628,8 +2635,25 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
       | _ -> false
     in
 
-    if fully_applied && not is_primitive then rue (mk_apply funct args)
-    else rue (mk_apply funct args)
+    match tagged_template with
+    | Some (sources, values) ->
+      let exp_attributes =
+        List.filter
+          (fun ({txt}, _) -> txt <> "res.taggedTemplate")
+          sexp.pexp_attributes
+      in
+      rue
+        {
+          exp_desc = Texp_tagged_template {tag = funct; sources; values};
+          exp_loc = loc;
+          exp_extra = [];
+          exp_type = ty_res;
+          exp_attributes;
+          exp_env = env;
+        }
+    | None ->
+      if fully_applied && not is_primitive then rue (mk_apply funct args)
+      else rue (mk_apply funct args))
   | Pexp_match (sarg, caselist) ->
     begin_def ();
     let arg = type_exp ~context:None env sarg in
@@ -5233,6 +5257,8 @@ let report_error env loc ppf error =
       ty
   | Unknown_literal (n, m) ->
     fprintf ppf "Unknown modifier '%c' for literal %s%c" m n m
+  | Invalid_string_escape_sequence ->
+    fprintf ppf "Invalid string escape sequence"
   | Illegal_letrec_pat ->
     fprintf ppf "Only variables are allowed as left-hand side of `let rec`"
   | Empty_record_literal ->

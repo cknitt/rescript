@@ -19,7 +19,9 @@ type constant =
   | Const_int of int
   | Const_char of int
   | Const_string of string
-  | Const_template_segment of string
+  | Const_template_literal of {source: string; semantic: string}
+    (* Ordinary backquoted literal. [source] preserves output spelling;
+       [semantic] is its decoded runtime value. *)
   | Const_float of string
   | Const_bigint of bool * string
 

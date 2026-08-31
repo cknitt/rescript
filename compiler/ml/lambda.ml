@@ -424,7 +424,8 @@ let const_of_typed (c : Asttypes.constant) : structured_constant =
   | Asttypes.Const_int i -> Const_int (Int32.of_int i)
   | Asttypes.Const_char i -> Const_char i
   | Asttypes.Const_string s -> Const_string s
-  | Asttypes.Const_template_segment _ -> assert false
+  | Asttypes.Const_template_literal {source; semantic} ->
+    Const_template_literal {source; semantic}
   | Asttypes.Const_float f -> Const_float f
   | Asttypes.Const_bigint (sign, i) -> Const_bigint (sign, i)
 

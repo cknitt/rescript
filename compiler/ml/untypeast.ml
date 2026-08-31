@@ -19,7 +19,7 @@ open Parsetree
 let constant = function
   | Const_char c -> Pconst_char c
   | Const_string s -> Pconst_string (s, None)
-  | Const_template_segment s -> Pconst_string (s, Some "bq")
+  | Const_template_literal {source} -> Pconst_string (source, Some "bq")
   | Const_int i -> Pconst_integer (string_of_int i, None)
   | Const_bigint (sign, i) ->
     Pconst_integer (Bigint_utils.to_string sign i, Some 'n')

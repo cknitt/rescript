@@ -241,6 +241,7 @@ Source: [typecore.ml:27](../compiler/ml/typecore.ml).
 | `Continue_outside_loop` | ✓ | `continue_outside_loop.res`, `continue_in_nested_function.res` | |
 | `Literal_overflow` | ✓ | `intoverflow.res` | |
 | `Unknown_literal` | ✓ | `unknown_literal.res` | |
+| `Invalid_string_escape_sequence` | ✓ | `invalid_ordinary_template_escape.res` | |
 | `Illegal_letrec_pat` | ✓ | `illegal_letrec_pat.res` | |
 | `Empty_record_literal` | ✓ | `empty_record_literal.res` | |
 | `Uncurried_arity_mismatch` | ✓ | `arity_mismatch3.res` etc. | |

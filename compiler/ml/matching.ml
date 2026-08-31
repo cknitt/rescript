@@ -1971,7 +1971,7 @@ let combine_constant loc arg cst partial ctx def
           const_lambda_list
       in
       call_switcher loc fail arg 0 max_int int_lambda_list
-    | Const_string _ | Const_template_segment _ ->
+    | Const_string _ | Const_template_literal _ ->
       (* Note as the bytecode compiler may resort to dichotomic search,
          the clauses of stringswitch  are sorted with duplicates removed.
          This partly applies to the native code compiler, which requires
@@ -1981,8 +1981,8 @@ let combine_constant loc arg cst partial ctx def
         List.map
           (fun (c, act) ->
             match c with
-            | Asttypes.Const_string s | Asttypes.Const_template_segment s ->
-              (s, act)
+            | Asttypes.Const_string s -> (s, act)
+            | Asttypes.Const_template_literal {semantic} -> (semantic, act)
             | _ -> assert false)
           const_lambda_list
       in

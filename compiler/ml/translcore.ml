@@ -1032,16 +1032,8 @@ and transl_exp0 (e : Typedtree.expression) : Lambda.lambda =
     transl_primitive e.exp_loc p e.exp_env e.exp_type ~val_type:vd.val_type
   | Texp_ident (path, _, {val_kind = Val_reg}) ->
     transl_value_path ~loc:e.exp_loc e.exp_env path
-  | Texp_constant (Const_template_segment source) -> (
-    (* Tagged-template segments are handled by the enclosing
-       [Texp_apply] case below and never reach this branch. An ordinary
-       template literal must have a semantic string value in addition to its
-       preserved source spelling. Establish that invariant while the source
-       location is still available. *)
-    match String_literal.decode_js_escapes source with
-    | Some semantic -> Lconst (Const_template_literal {source; semantic})
-    | None ->
-      Location.raise_errorf ~loc:e.exp_loc "Invalid string escape sequence")
+  | Texp_constant (Const_template_literal {source; semantic}) ->
+    Lconst (Const_template_literal {source; semantic})
   | Texp_constant cst -> Lconst (const_of_typed cst)
   | Texp_let (rec_flag, pat_expr_list, body) ->
     transl_let ~js_hoist:None rec_flag pat_expr_list (transl_exp body)
@@ -1073,40 +1065,9 @@ and transl_exp0 (e : Typedtree.expression) : Lambda.lambda =
     in
     let loc = e.exp_loc in
     Lfunction {params; body = lbody; attr; loc}
-  | Texp_apply {funct; args = oargs}
-    when List.exists
-           (fun (attr, _) -> attr.txt = "res.taggedTemplate")
-           e.exp_attributes ->
-    (* Backtick tagged-template syntax on a value of the builtin
-       [taggedTemplate<'param, 'output>] type. Typecore has already checked the
-       tag's type, so here we just emit a real JS tagged-template literal,
-       regardless of how the tag value was obtained (external, let-binding,
-       function parameter, factory result, cross-module). *)
-    let strings, values =
-      match oargs with
-      | [(_, Some strings); (_, Some values)] -> (strings, values)
-      | _ -> assert false
-    in
-    let sources =
-      match strings.exp_desc with
-      | Texp_array segments ->
-        List.map
-          (fun (segment : Typedtree.expression) ->
-            match segment.exp_desc with
-            | Texp_constant (Const_template_segment source) -> source
-            | _ -> assert false)
-          segments
-      | _ -> assert false
-    in
-    let values =
-      match values.exp_desc with
-      | Texp_array values -> values
-      | _ -> assert false
-    in
+  | Texp_tagged_template {tag; sources; values} ->
     Lprim
-      ( Ptagged_template sources,
-        transl_exp funct :: transl_list values,
-        e.exp_loc )
+      (Ptagged_template sources, transl_exp tag :: transl_list values, e.exp_loc)
   | Texp_apply
       {
         funct =

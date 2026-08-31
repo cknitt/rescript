@@ -237,6 +237,13 @@ and expression_desc =
      breaks analysis when it reads CMTs produced by older compiler versions. *)
   | Texp_for_of of Ident.t * Parsetree.pattern * expression * expression
   | Texp_for_await_of of Ident.t * Parsetree.pattern * expression * expression
+  | Texp_tagged_template of {
+      tag: expression;
+      sources: string list;
+      values: expression list;
+    }
+      (** A JavaScript tagged template. [sources] contains the raw spelling of
+          each segment because invalid escapes are legal in tagged templates. *)
 
 and case = {c_lhs: pattern; c_guard: expression option; c_rhs: expression}
 

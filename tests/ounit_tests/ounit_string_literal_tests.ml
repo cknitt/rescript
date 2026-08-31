@@ -201,14 +201,16 @@ let suites =
            in
            OUnit.assert_equal ~printer:Ext_obj.dump pattern.ppat_desc
              transformed.ppat_desc );
-         ( "typed tree separates strings from template segments" >:: fun _ ->
+         ( "typed tree separates strings from template literals" >:: fun _ ->
            let semantic = typed_string "a\n😀" None in
            let template = typed_string {|a\n\uD83D\uDE00|} (Some "bq") in
            let json = typed_string {|{"answer":42}|} (Some "json") in
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Asttypes.Const_string "a\n😀") semantic;
            OUnit.assert_equal ~printer:Ext_obj.dump
-             (Asttypes.Const_template_segment {|a\n\uD83D\uDE00|}) template;
+             (Asttypes.Const_template_literal
+                {source = {|a\n\uD83D\uDE00|}; semantic = "a\n😀"})
+             template;
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Asttypes.Const_string {|{"answer":42}|}) json;
            OUnit.assert_equal ~printer:Ext_obj.dump
@@ -216,7 +218,15 @@ let suites =
              (Untypeast.constant semantic);
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Parsetree.Pconst_string ({|a\n\uD83D\uDE00|}, Some "bq"))
-             (Untypeast.constant template) );
+             (Untypeast.constant template);
+           match
+             Typecore.constant
+               (Parsetree.Pconst_string ({|\unicode|}, Some "bq"))
+           with
+           | Error Typecore.Invalid_string_escape_sequence -> ()
+           | _ ->
+             OUnit.assert_failure "expected an invalid ordinary template escape"
+         );
          ( "constant backquoted attribute strings become semantic" >:: fun _ ->
            OUnit.assert_equal ~printer:Ext_obj.dump (Some "a\n😀")
              (Ast_payload.is_single_semantic_string

@@ -52,7 +52,8 @@ let fmt_constant f x =
   | Const_int i -> fprintf f "Const_int %d" i
   | Const_char c -> fprintf f "Const_char %02x" c
   | Const_string s -> fprintf f "Const_string(%S)" s
-  | Const_template_segment s -> fprintf f "Const_template_segment(%S)" s
+  | Const_template_literal {source; semantic} ->
+    fprintf f "Const_template_literal(source=%S, semantic=%S)" source semantic
   | Const_float s -> fprintf f "Const_float %s" s
   | Const_bigint (sign, i) ->
     fprintf f "Const_bigint %s" (Bigint_utils.to_string sign i)
@@ -361,6 +362,14 @@ and expression i ppf x =
     line i ppf "Texp_for_await_of \"%a\"\n" fmt_ident s;
     expression i ppf e1;
     expression i ppf e2
+  | Texp_tagged_template {tag; sources; values} ->
+    line i ppf "Texp_tagged_template sources=%a\n"
+      (Format.pp_print_list
+         ~pp_sep:(fun ppf () -> Format.fprintf ppf ", ")
+         (fun ppf source -> Format.fprintf ppf "%S" source))
+      sources;
+    expression i ppf tag;
+    List.iter (expression i ppf) values
   | Texp_object_get (e, s) ->
     line i ppf "Texp_object_get \"%s\"\n" s.txt;
     expression i ppf e

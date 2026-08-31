@@ -114,6 +114,7 @@ type error =
   | Continue_outside_loop
   | Literal_overflow of string
   | Unknown_literal of string * char
+  | Invalid_string_escape_sequence
   | Illegal_letrec_pat
   | Empty_record_literal
   | Uncurried_arity_mismatch of {
