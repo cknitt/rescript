@@ -257,6 +257,7 @@ let primitive ppf = function
   | Pjs_fn_method -> fprintf ppf "#fn_method"
   (* Debug-only dump, exercised solely under -drawlambda/-dlambda. *)
   | Ptagged_template _ -> fprintf ppf "#tagged_template" [@coverage off]
+  | Ptemplate _ -> fprintf ppf "#template" [@coverage off]
 
 let function_attribute ppf {inline; is_a_functor; return_unit} =
   if is_a_functor then fprintf ppf "is_a_functor@ ";

@@ -3672,8 +3672,8 @@ and print_expression ~state (e : Parsetree.expression) cmt_tbl =
         print_extension ~state ~at_module_lvl:false extension cmt_tbl)
     | Pexp_template {kind; sources; values} ->
       print_template_literal ~state ~kind ~sources ~values cmt_tbl
-    | Pexp_tagged_template {tag; sources; values} ->
-      print_tagged_template_literal ~state ~tag ~sources ~values cmt_tbl
+    | Pexp_tagged_template {tag; raw_sources; values} ->
+      print_tagged_template_literal ~state ~tag ~raw_sources ~values cmt_tbl
     | Pexp_apply
         {funct = e; args = [(Nolabel, {pexp_desc = Pexp_array sub_lists})]}
       when Parsetree_viewer.is_spread_array e ->
@@ -4118,8 +4118,8 @@ and print_template_literal ~state ~kind ~sources ~values cmt_tbl =
       Doc.text "`";
     ]
 
-and print_tagged_template_literal ~state ~tag ~sources ~values cmt_tbl =
-  let strings = List.map print_string_contents sources in
+and print_tagged_template_literal ~state ~tag ~raw_sources ~values cmt_tbl =
+  let strings = List.map print_string_contents raw_sources in
   let values =
     List.map
       (fun x ->

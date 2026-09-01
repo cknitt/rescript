@@ -776,7 +776,7 @@ and expression ctxt f x =
         | Ptemplate_string -> ""
         | Ptemplate_json -> "json")
         parts (sources, values)
-    | Pexp_tagged_template {tag; sources; values} ->
+    | Pexp_tagged_template {tag; raw_sources; values} ->
       let rec parts f (sources, values) =
         match (sources, values) with
         | [source], [] -> pp f "%s" source
@@ -784,7 +784,7 @@ and expression ctxt f x =
           pp f "%s${%a}%a" source (expression ctxt) value parts (sources, values)
         | _ -> assert false
       in
-      pp f "%a`%a`" (simple_expr ctxt) tag parts (sources, values)
+      pp f "%a`%a`" (simple_expr ctxt) tag parts (raw_sources, values)
     | _ -> expression1 ctxt f x
 
 and expression1 ctxt f x =

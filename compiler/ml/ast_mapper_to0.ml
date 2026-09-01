@@ -637,14 +637,14 @@ module E = struct
         | [] -> assert false
       in
       {expression with pexp_attributes = template_attr :: attrs}
-    | Pexp_tagged_template {tag; sources; values} ->
+    | Pexp_tagged_template {tag; raw_sources; values} ->
       let template_attr = (Location.mknoloc "res.template", Pt.PStr []) in
       let segments =
         List.map
           (fun source ->
             Ast_helper0.Exp.constant ~loc ~attrs:[template_attr]
               (Pt.Pconst_string (source, Some "js")))
-          sources
+          raw_sources
       in
       let tagged_attr = (Location.mknoloc "res.taggedTemplate", Pt.PStr []) in
       apply ~loc ~attrs:(tagged_attr :: attrs) (sub.expr sub tag)

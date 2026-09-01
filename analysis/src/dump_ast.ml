@@ -272,11 +272,11 @@ and print_expr_item expr ~pos ~indentation =
     ^ String.concat ", "
         (List.map (fun value -> print_expr_item value ~pos ~indentation) values)
     ^ "])"
-  | Pexp_tagged_template {tag; sources; values} ->
+  | Pexp_tagged_template {tag; raw_sources; values} ->
     "Pexp_tagged_template(tag="
     ^ print_expr_item tag ~pos ~indentation
     ^ ", sources="
-    ^ string_of_int (List.length sources)
+    ^ string_of_int (List.length raw_sources)
     ^ ", values="
     ^ string_of_int (List.length values)
     ^ ")"

@@ -50,6 +50,7 @@ let primitive ppf (prim : Lam_primitive.t) =
   | Pjs_apply -> fprintf ppf "#apply"
   (* Debug-only dump, exercised solely under -drawlambda/-dlambda. *)
   | Ptagged_template _ -> fprintf ppf "#tagged_template" [@coverage off]
+  | Ptemplate _ -> fprintf ppf "#template" [@coverage off]
   | Pjs_object_get name -> fprintf ppf "js_object_get[%s]" name
   | Pjs_object_set name -> fprintf ppf "js_object_set[%s]" name
   | Pfn_arity -> fprintf ppf "fn.length"

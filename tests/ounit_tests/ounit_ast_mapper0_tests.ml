@@ -352,10 +352,11 @@ let test_tagged_templates_roundtrip_through_ast0 _ =
   | Pexp_tagged_template
       {
         tag = {pexp_desc = Pexp_ident {txt = Longident.Lident "tag"}};
-        sources;
+        raw_sources;
         values = [{pexp_desc = Pexp_constant (Pconst_integer ("1", None))}];
       } ->
-    OUnit.assert_equal ~printer:Ext_obj.dump [{|raw\unicode|}; " tail"] sources;
+    OUnit.assert_equal ~printer:Ext_obj.dump [{|raw\unicode|}; " tail"]
+      raw_sources;
     OUnit.assert_equal ["keep"]
       (attr_names (map_expr0 expression0).pexp_attributes)
   | _ -> assert_failure "Expected an explicit tagged template after roundtrip"
@@ -396,7 +397,7 @@ let test_interpolated_templates_roundtrip_through_ast0 _ =
         OUnit.assert_equal ~printer:Ext_obj.dump [{|head\n|}; "tail"] sources;
         OUnit.assert_equal ["keep"] (attr_names pexp_attributes)
       | _ -> assert_failure "Expected an explicit template after roundtrip")
-    [(Parsetree.Ptemplate_string, "js"); (Parsetree.Ptemplate_json, "json")]
+    [(Asttypes.Ptemplate_string, "js"); (Asttypes.Ptemplate_json, "json")]
 
 let test_string_source_reprints_after_ast0_roundtrip _ =
   let source =

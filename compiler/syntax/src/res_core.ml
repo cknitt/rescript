@@ -2550,7 +2550,7 @@ and parse_template_expr ?prefix p =
 
   let gen_tagged_template (lident_loc : Longident.t Location.loc) =
     let ident = Ast_helper.Exp.ident ~attrs:[] ~loc:lident_loc.loc lident_loc in
-    let sources =
+    let raw_sources =
       List.map
         (fun (string : Parsetree.expression) ->
           match string.pexp_desc with
@@ -2558,7 +2558,7 @@ and parse_template_expr ?prefix p =
           | _ -> assert false)
         strings
     in
-    Ast_helper.Exp.tagged_template ~loc:lident_loc.loc ident sources values
+    Ast_helper.Exp.tagged_template ~loc:lident_loc.loc ident raw_sources values
   in
 
   let gen_interpolated_string () =

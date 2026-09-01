@@ -369,16 +369,16 @@ and expression i ppf x =
       | Ptemplate_json -> "json")
       (Format.pp_print_list
          ~pp_sep:(fun ppf () -> Format.fprintf ppf ", ")
-         (fun ppf ({source; semantic} : Typedtree.template_segment) ->
+         (fun ppf ({source; semantic} : Asttypes.template_segment) ->
            Format.fprintf ppf "{source=%S; semantic=%S}" source semantic))
       segments;
     List.iter (expression i ppf) values
-  | Texp_tagged_template {tag; sources; values} ->
-    line i ppf "Texp_tagged_template sources=%a\n"
+  | Texp_tagged_template {tag; raw_sources; values} ->
+    line i ppf "Texp_tagged_template raw_sources=%a\n"
       (Format.pp_print_list
          ~pp_sep:(fun ppf () -> Format.fprintf ppf ", ")
          (fun ppf source -> Format.fprintf ppf "%S" source))
-      sources;
+      raw_sources;
     expression i ppf tag;
     List.iter (expression i ppf) values
   | Texp_object_get (e, s) ->

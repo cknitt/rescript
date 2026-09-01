@@ -125,7 +125,7 @@ let assert_typed_template ~kind ~sources ~expected_semantics =
     Typecore.type_exp Env.initial_safe_string expression
       ~context:(Some Error_message_utils.StringConcat)
   in
-  match typed.exp_desc with
+  begin match typed.exp_desc with
   | Texp_template
       {
         kind = actual_kind;
@@ -134,14 +134,24 @@ let assert_typed_template ~kind ~sources ~expected_semantics =
       } ->
     OUnit.assert_equal kind actual_kind;
     OUnit.assert_equal ~printer:Ext_obj.dump sources
-      (List.map
-         (fun ({source} : Typedtree.template_segment) -> source)
-         segments);
+      (List.map (fun ({source} : Asttypes.template_segment) -> source) segments);
     OUnit.assert_equal ~printer:Ext_obj.dump expected_semantics
       (List.map
-         (fun ({semantic} : Typedtree.template_segment) -> semantic)
+         (fun ({semantic} : Asttypes.template_segment) -> semantic)
          segments)
   | _ -> OUnit.assert_failure "expected an explicit typed template"
+  end;
+  match Translcore.transl_exp typed with
+  | Lprim (Ptemplate (actual_kind, segments), [Lconst (Const_string "value")], _)
+    ->
+    OUnit.assert_equal kind actual_kind;
+    OUnit.assert_equal ~printer:Ext_obj.dump sources
+      (List.map (fun ({source} : Asttypes.template_segment) -> source) segments);
+    OUnit.assert_equal ~printer:Ext_obj.dump expected_semantics
+      (List.map
+         (fun ({semantic} : Asttypes.template_segment) -> semantic)
+         segments)
+  | _ -> OUnit.assert_failure "expected an explicit Lambda template"
 
 let convert_typed_constant constant =
   Lam_constant_convert.convert_constant (Lambda.const_of_typed constant)
@@ -247,15 +257,15 @@ let suites =
          ( "interpolated templates have an explicit parser representation"
          >:: fun _ ->
            assert_parsed_template ~prefix:""
-             ~expected_kind:Parsetree.Ptemplate_string;
+             ~expected_kind:Asttypes.Ptemplate_string;
            assert_parsed_template ~prefix:"json"
-             ~expected_kind:Parsetree.Ptemplate_json );
+             ~expected_kind:Asttypes.Ptemplate_json );
          ( "interpolated templates have an explicit typed representation"
          >:: fun _ ->
-           assert_typed_template ~kind:Parsetree.Ptemplate_string
+           assert_typed_template ~kind:Asttypes.Ptemplate_string
              ~sources:[{|head\n|}; {|\u0061|}]
              ~expected_semantics:["head\n"; "a"];
-           assert_typed_template ~kind:Parsetree.Ptemplate_json
+           assert_typed_template ~kind:Asttypes.Ptemplate_json
              ~sources:[{|head\n|}; {|\u0061|}]
              ~expected_semantics:[{|head\n|}; {|\u0061|}] );
          ( "invalid encoded values are rejected" >:: fun _ ->

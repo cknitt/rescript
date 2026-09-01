@@ -770,12 +770,12 @@ module Sexp_ast = struct
             Sexp.list (List.map string sources);
             Sexp.list (List.map expression values);
           ]
-      | Pexp_tagged_template {tag; sources; values} ->
+      | Pexp_tagged_template {tag; raw_sources; values} ->
         Sexp.list
           [
             Sexp.atom "Pexp_tagged_template";
             expression tag;
-            Sexp.list (List.map string sources);
+            Sexp.list (List.map string raw_sources);
             Sexp.list (List.map expression values);
           ]
       | Pexp_await e -> Sexp.list [Sexp.atom "Pexp_await"; expression e]

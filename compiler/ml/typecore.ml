@@ -2537,7 +2537,7 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
       sfun_body
   | Pexp_template {kind; sources; values} ->
     begin_def ();
-    let segments : Typedtree.template_segment list =
+    let segments : Asttypes.template_segment list =
       List.map
         (fun source ->
           match kind with
@@ -2564,7 +2564,7 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
-  | Pexp_tagged_template {tag = stag; sources; values = svalues} ->
+  | Pexp_tagged_template {tag = stag; raw_sources; values = svalues} ->
     begin_def ();
     let tag =
       type_exp ~deprecated_context:FunctionCall ~context:None env stag
@@ -2587,7 +2587,7 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
     end_def ();
     rue
       {
-        exp_desc = Texp_tagged_template {tag; sources; values};
+        exp_desc = Texp_tagged_template {tag; raw_sources; values};
         exp_loc = loc;
         exp_extra = [];
         exp_type = output_ty;

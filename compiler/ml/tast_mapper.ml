@@ -255,11 +255,11 @@ let expr sub x =
       Texp_for_await_of (id, p, sub.expr sub exp1, sub.expr sub exp2)
     | Texp_template {kind; segments; values} ->
       Texp_template {kind; segments; values = List.map (sub.expr sub) values}
-    | Texp_tagged_template {tag; sources; values} ->
+    | Texp_tagged_template {tag; raw_sources; values} ->
       Texp_tagged_template
         {
           tag = sub.expr sub tag;
-          sources;
+          raw_sources;
           values = List.map (sub.expr sub) values;
         }
     | Texp_object_get (exp, name) -> Texp_object_get (sub.expr sub exp, name)

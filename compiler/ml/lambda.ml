@@ -312,6 +312,9 @@ type primitive =
   (* Tagged template literal. The payload contains the raw source text of each
      segment; the arguments are the tag followed by the interpolated values. *)
   | Ptagged_template of string list
+  (* Compiler-provided interpolation. The payload contains the validated
+     segments; the arguments are the interpolated string values. *)
+  | Ptemplate of Asttypes.template_kind * Asttypes.template_segment list
 
 and comparison = Ceq | Cneq | Clt | Cgt | Cle | Cge
 

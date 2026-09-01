@@ -49,8 +49,6 @@ type constant =
    Suffixes are rejected by the typechecker.
 *)
 
-type template_kind = Ptemplate_string | Ptemplate_json
-
 (** {1 Extension points} *)
 
 type attribute = string loc * payload
@@ -355,10 +353,10 @@ and expression_desc =
      spelling of the segments surrounding [values]. *)
   | Pexp_tagged_template of {
       tag: expression;
-      sources: string list;
+      raw_sources: string list;
       values: expression list;
     }
-(* A JavaScript tagged template. [sources] preserves each segment's raw
+(* A JavaScript tagged template. [raw_sources] preserves each segment's raw
      spelling because invalid escapes are legal in tagged templates. *)
 
 (* an element of a record pattern or expression *)

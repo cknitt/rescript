@@ -37,6 +37,9 @@ type t =
   (* Tagged template literal. The payload contains raw segment source; the
      arguments are the tag followed by the interpolated values. *)
   | Ptagged_template of string list
+  (* Compiler-provided interpolation. The payload retains both output spelling
+     and decoded meaning until JavaScript IR generation. *)
+  | Ptemplate of Asttypes.template_kind * Asttypes.template_segment list
   | Precord_rest of string list
   (* External call *)
   | Pjs_call of {
@@ -225,8 +228,8 @@ let eq_primitive_approx (lhs : t) (rhs : t) =
   | Phash_finalmix | Precord_rest _ ->
     rhs = lhs
   (* Reachable only via the optimizer's term-equality comparison, which the
-     test suite doesn't exercise for tagged templates. *)
-  | Ptagged_template _ -> ( ((rhs = lhs) [@coverage off]))
+     test suite doesn't exercise for template primitives. *)
+  | Ptagged_template _ | Ptemplate _ -> ( ((rhs = lhs) [@coverage off]))
   | Pcreate_extension a -> (
     match rhs with
     | Pcreate_extension b -> a = (b : string)

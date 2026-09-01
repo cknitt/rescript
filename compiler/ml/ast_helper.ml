@@ -199,8 +199,8 @@ module Exp = struct
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pexp_extension a)
   let template ?loc ?attrs kind sources values =
     mk ?loc ?attrs (Pexp_template {kind; sources; values})
-  let tagged_template ?loc ?attrs tag sources values =
-    mk ?loc ?attrs (Pexp_tagged_template {tag; sources; values})
+  let tagged_template ?loc ?attrs tag raw_sources values =
+    mk ?loc ?attrs (Pexp_tagged_template {tag; raw_sources; values})
   let await ?loc ?attrs a = mk ?loc ?attrs (Pexp_await a)
   let jsx_fragment ?loc ?attrs a b c =
     mk ?loc ?attrs

@@ -91,6 +91,26 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
     match args with
     | fn :: values -> E.tagged_template fn strings values
     | [] -> assert false)
+  | Ptemplate (kind, segments) ->
+    let segments =
+      List.map
+        (fun ({source; semantic} : Asttypes.template_segment) ->
+          match kind with
+          | Asttypes.Ptemplate_string -> E.template_literal ~semantic source
+          | Ptemplate_json -> E.str semantic)
+        segments
+    in
+    let rec interleave acc segments values =
+      match (segments, values) with
+      | [segment], [] -> List.rev (segment :: acc)
+      | segment :: segments, value :: values ->
+        interleave (value :: segment :: acc) segments values
+      | _ -> assert false
+    in
+    begin match interleave [] segments args with
+    | first :: rest -> List.fold_left E.string_append first rest
+    | [] -> assert false
+    end
   | Pnull_to_opt -> (
     match args with
     | [e] -> (

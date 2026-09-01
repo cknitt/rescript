@@ -684,7 +684,7 @@ module E = struct
       when List.exists
              (fun ({Location.txt}, _) -> txt = "res.taggedTemplate")
              attrs ->
-      let sources =
+      let raw_sources =
         List.map
           (fun (segment : Parsetree0.expression) ->
             match segment.pexp_desc with
@@ -697,7 +697,7 @@ module E = struct
           (fun ({Location.txt}, _) -> txt <> "res.taggedTemplate")
           attrs
       in
-      tagged_template ~loc ~attrs (sub.expr sub tag) sources
+      tagged_template ~loc ~attrs (sub.expr sub tag) raw_sources
         (List.map (sub.expr sub) values)
     | Pexp_apply _ as application
       when List.exists (fun ({Location.txt}, _) -> txt = "res.template") attrs
@@ -723,7 +723,8 @@ module E = struct
             };
           ] ->
           let segment_kind =
-            if tag = "json" then Pt.Ptemplate_json else Pt.Ptemplate_string
+            if tag = "json" then Asttypes.Ptemplate_json
+            else Asttypes.Ptemplate_string
           in
           if kind = None || kind = Some segment_kind then
             Some (segment_kind, List.rev (source :: sources), List.rev values)
@@ -735,7 +736,8 @@ module E = struct
           }
           :: value :: rest ->
           let segment_kind =
-            if tag = "json" then Pt.Ptemplate_json else Pt.Ptemplate_string
+            if tag = "json" then Asttypes.Ptemplate_json
+            else Asttypes.Ptemplate_string
           in
           if kind = None || kind = Some segment_kind then
             collect (Some segment_kind) (source :: sources) (value :: values)
