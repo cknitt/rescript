@@ -532,43 +532,6 @@ multi-file harnesses, which never set `-ppx`.
 | `compiler/ext/bsc_args.ml` | `Unknown` | ☐ (needs CLI harness) | — | bsc_args.ml:45. Reachable trivially via `bsc --bogus`, but the `super_errors{,_multi}` runners only pass `bsc` a fixed flag list plus the source file — they can't exercise CLI-level errors. |
 | `compiler/ext/bsc_args.ml` | `Missing` | ☐ (needs CLI harness) | — | Same as above: `bsc -o` (no following filename). Needs a harness that invokes `bsc` with crafted argv. |
 
----
-
-## `compiler/frontend/ast_utf8_string.ml` (retained defensive family)
-
-Source: [ast_utf8_string.ml:25](../compiler/frontend/ast_utf8_string.ml). Re-validation found these are source-unreachable for regular ReScript, but not completely dead: `transform_test` and the defensive string-transform path still raise them, and the OUnit unicode tests assert their offsets. Retained.
-
-| Variant | Status |
-|---|---|
-| `Invalid_code_point` | ? (source-unreachable, retained defensive/test helper) |
-| `Unterminated_backslash` | ? (source-unreachable, retained defensive/test helper) |
-| `Invalid_hex_escape` | ? (source-unreachable, retained defensive/test helper) |
-| `Invalid_unicode_escape` | ? (source-unreachable, retained defensive/test helper) |
-| `Invalid_unicode_codepoint_escape` | ? (source-unreachable, retained defensive/test helper) |
-
-## `compiler/frontend/ast_utf8_string_interp.ml` (retained test family)
-
-Source: [ast_utf8_string_interp.ml:25](../compiler/frontend/ast_utf8_string_interp.ml).
-
-`pos_error` is reached through `transform_test`, which is intentionally
-used by OUnit tests. Modern ReScript backtick templates take the
-`BackQuotes` branch of `transform_exp` and skip the interpolation parser,
-so these are source-unreachable for regular ReScript, but not completely
-dead. Retained.
-
-| Variant | Status |
-|---|---|
-| `Invalid_code_point` | ? (source-unreachable, retained test helper) |
-| `Unterminated_backslash` | ? (source-unreachable, retained test helper) |
-| `Invalid_escape_code` | ? (source-unreachable, retained test helper) |
-| `Invalid_hex_escape` | ? (source-unreachable, retained test helper) |
-| `Invalid_unicode_escape` | ? (source-unreachable, retained test helper) |
-| `Unterminated_variable` | ? (source-unreachable, retained test helper) |
-| `Unmatched_paren` | ? (source-unreachable, retained test helper) |
-| `Invalid_syntax_of_var` | ? (source-unreachable, retained test helper) |
-
----
-
 ## Removal audit notes
 
 All variants that were confirmed completely dead in this pass are listed

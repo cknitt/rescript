@@ -17,7 +17,6 @@ let suites =
       Ounit_ident_mask_tests.suites;
       Ounit_lid_of_path_tests.suites;
       Ounit_utf8_test.suites;
-      Ounit_unicode_tests.suites;
       Ounit_util_tests.suites;
       Ounit_rec_check_tests.suites;
       Ounit_lambda_constant_tests.suites;

@@ -497,6 +497,18 @@ let suites =
                (Js_analyzer.eq_expression value argument);
              assert_js_global ~expected:"Date" constructor
            | _ -> OUnit.assert_failure "expected an instanceof expression" );
+         ( "semantic string equality folds directly" >:: fun _ ->
+           let assert_equal_result expected left right =
+             match (Js_exp_make.string_equal left right).expression_desc with
+             | Bool actual -> OUnit.assert_equal expected actual
+             | _ -> OUnit.assert_failure "expected folded string equality"
+           in
+           assert_equal_result true
+             (Js_exp_make.str "a\n😀")
+             (Js_exp_make.str "a\n😀");
+           assert_equal_result false (Js_exp_make.str "a") (Js_exp_make.str "é");
+           assert_equal_result true (Js_exp_make.str "a")
+             (Js_exp_make.template_literal ~semantic:"a" {|\x61|}) );
          ( "UTF-16 length" >:: fun _ ->
            assert_int_equal 0 (String_literal.utf16_length "");
            assert_int_equal 3 (String_literal.utf16_length "abc");

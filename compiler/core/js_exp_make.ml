@@ -736,14 +736,6 @@ let rec string_append ?comment (e : t) (el : t) : t =
 let obj ?comment ?dup properties : t =
   {expression_desc = Object (dup, properties); comment; source_loc = None}
 
-let str_equal txt0 txt1 =
-  if Ext_string.equal txt0 txt1 then Some true
-  else if
-    Ast_utf8_string.simple_comparison txt0
-    && Ast_utf8_string.simple_comparison txt1
-  then Some false
-  else None
-
 let rec triple_equal ?comment (e0 : t) (e1 : t) : t =
   match (e0.expression_desc, e1.expression_desc) with
   | ( (Null | Undefined _),
@@ -1515,10 +1507,13 @@ let to_int32 ?comment (e : J.expression) : J.expression =
 let string_comp (cmp : Lam_compat.comparison) ?comment (e0 : t) (e1 : t) =
   match (e0.expression_desc, e1.expression_desc) with
   | Str a0, Str a1
+  | Str a0, Template_literal {semantic = a1}
+  | Template_literal {semantic = a0}, Str a1
   | Template_literal {semantic = a0}, Template_literal {semantic = a1} -> (
-    match (cmp, str_equal a0 a1) with
-    | Ceq, Some b -> bool b
-    | Cneq, Some b -> bool (b = false)
+    let equal = Ext_string.equal a0 a1 in
+    match cmp with
+    | Ceq -> bool equal
+    | Cneq -> bool (Stdlib.not equal)
     | _ -> bin ?comment (Lam_compile_util.jsop_of_comp cmp) e0 e1)
   | _ -> bin ?comment (Lam_compile_util.jsop_of_comp cmp) e0 e1
 
