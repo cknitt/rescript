@@ -1036,13 +1036,7 @@ let parse_constant p =
       Parsetree.Pconst_float (float_txt, suffix)
     | String source ->
       parse_string_constant p ~start_pos:p.start_pos ~end_pos:p.end_pos source
-    | Codepoint {c; original} ->
-      if p.mode = ParseForTypeChecker then Pconst_char c
-      else
-        (* Pconst_char char does not have enough information for formatting.
-         * When parsing for the printer, we encode the char contents as a string
-         * with a special prefix. *)
-        Pconst_char_source original
+    | Codepoint {c; original} -> Pconst_char {source = original; semantic = c}
     | token ->
       Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
       Ast_helper.Const.string ""

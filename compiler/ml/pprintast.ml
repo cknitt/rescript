@@ -251,7 +251,7 @@ let print_quoted_string_with_byte_width f s =
   print_string_with_byte_width f quoted
 
 let constant f = function
-  | Pconst_char i -> pp f "%s" (string_of_int_as_char i)
+  | Pconst_char {source} -> pp f "'%s'" source
   | Pconst_string {source} ->
     pp f "{js|%a|js}" print_string_with_byte_width source
   | Pconst_template source ->
@@ -260,7 +260,6 @@ let constant f = function
     pp f "{json|%a|json}" print_string_with_byte_width source
   | Pconst_raw_source source ->
     pp f "{js|%a|js}" print_string_with_byte_width source
-  | Pconst_char_source source -> pp f "'%s'" source
   | Pconst_integer (i, None) -> paren (i.[0] = '-') (fun f -> pp f "%s") f i
   | Pconst_integer (i, Some m) ->
     paren (i.[0] = '-') (fun f (i, m) -> pp f "%s%c" i m) f (i, m)

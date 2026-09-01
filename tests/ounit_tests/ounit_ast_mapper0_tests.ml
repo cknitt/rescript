@@ -297,18 +297,22 @@ let test_string_literals_roundtrip_through_ast0 _ =
   | Pexp_constant (Pconst_json actual) ->
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") {|{"answer":42}|} actual
   | _ -> assert_failure "Expected a JSON literal");
-  let char_source =
-    Ast_helper.Pat.constant ~loc (Parsetree.Pconst_char_source {|\u{61}|})
+  let char_pattern =
+    Ast_helper.Pat.constant ~loc
+      (Parsetree.Pconst_char {source = {|\u{61}|}; semantic = 0x61})
   in
-  (match
-     (map_pat0
-        (Ast_mapper_to0.default_mapper.pat Ast_mapper_to0.default_mapper
-           char_source))
-       .ppat_desc
-   with
-  | Ppat_constant (Pconst_char_source actual) ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") {|\u{61}|} actual
-  | _ -> assert_failure "Expected printer character source");
+  let char_pattern0 =
+    Ast_mapper_to0.default_mapper.pat Ast_mapper_to0.default_mapper char_pattern
+  in
+  (match char_pattern0.ppat_desc with
+  | Ppat_constant (Pconst_char actual) ->
+    OUnit.assert_equal ~printer:string_of_int 0x61 actual
+  | _ -> assert_failure "Expected an ast0 character literal");
+  (match (map_pat0 char_pattern0).ppat_desc with
+  | Ppat_constant (Pconst_char {source; semantic}) ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") "a" source;
+    OUnit.assert_equal ~printer:string_of_int 0x61 semantic
+  | _ -> assert_failure "Expected a character literal after ast0 roundtrip");
   let source_string =
     Ast_helper.Exp.constant ~loc
       (Parsetree.Pconst_string {source = {|\x61|}; semantic = "a"})

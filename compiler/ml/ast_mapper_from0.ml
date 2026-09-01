@@ -101,20 +101,21 @@ let source_string ~loc source =
 
 let map_constant ~loc ~is_template = function
   | Pconst_integer (s, suffix) -> Pt.Pconst_integer (s, suffix)
-  | Pconst_char c -> Pconst_char c
+  | Pconst_char semantic ->
+    (* Ast0 stores only the code point, so source spelling cannot survive the
+       PPX bridge. Reconstruct a valid canonical spelling on the way back. *)
+    Pconst_char {source = String_literal.encode_char_source semantic; semantic}
   | Pconst_string (s, Some "js") when is_template -> Pconst_template s
   | Pconst_string (s, Some ("js" | "*j")) -> source_string ~loc s
   | Pconst_string (s, None) -> semantic_string s
   | Pconst_string (s, Some "json") -> Pconst_json s
-  | Pconst_string (s, Some "INTERNAL_RES_CHAR_CONTENTS") -> Pconst_char_source s
   (* Other v0 quotation delimiters are syntax, not part of the string value.
      Tagged ReScript templates are represented as applications before PPX. *)
   | Pconst_string (semantic, Some _) -> semantic_string semantic
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
 
 let map_pattern_constant ~loc ~is_template = function
-  | Pconst_string (_, Some tag)
-    when tag <> "js" && tag <> "*j" && tag <> "INTERNAL_RES_CHAR_CONTENTS" ->
+  | Pconst_string (_, Some tag) when tag <> "js" && tag <> "*j" ->
     Location.raise_errorf ~loc
       "Tagged template literals are not supported in patterns"
   | constant -> map_constant ~loc ~is_template constant

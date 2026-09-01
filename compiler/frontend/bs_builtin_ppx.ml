@@ -94,7 +94,6 @@ let pat_mapper (self : mapper) (p : Parsetree.pattern) =
   match p.ppat_desc with
   | Ppat_constant (Pconst_integer (s, Some 'l')) ->
     {p with ppat_desc = Ppat_constant (Pconst_integer (s, None))}
-  | Ppat_constant (Pconst_char_source _) -> p
   | Ppat_constant (Pconst_json _) ->
     Location.raise_errorf ~loc:p.ppat_loc
       "Tagged template literals are not supported in patterns"

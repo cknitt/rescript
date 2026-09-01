@@ -60,13 +60,13 @@ let fmt_char_option f = function
 let fmt_constant f x =
   match x with
   | Pconst_integer (i, m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m
-  | Pconst_char c -> fprintf f "PConst_char %02x" c
+  | Pconst_char {source; semantic} ->
+    fprintf f "PConst_char(source=%S, semantic=%02x)" source semantic
   | Pconst_string {source; semantic} ->
     fprintf f "PConst_string (source=%S, semantic=%S)" source semantic
   | Pconst_template source -> fprintf f "PConst_template %S" source
   | Pconst_json source -> fprintf f "PConst_json %S" source
   | Pconst_raw_source source -> fprintf f "PConst_raw_source %S" source
-  | Pconst_char_source source -> fprintf f "PConst_char_source %S" source
   | Pconst_float (s, m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m
 
 let fmt_mutable_flag f x =

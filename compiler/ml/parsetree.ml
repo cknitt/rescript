@@ -24,8 +24,9 @@ type constant =
      Suffixes [g-z][G-Z] are accepted by the parser.
      Suffixes except 'l', 'L' are rejected by the typechecker
   *)
-  | Pconst_char of int
-  (* 'c' *)
+  | Pconst_char of {source: string; semantic: int}
+  (* A character literal. [source] is the body retained for printing, including
+     escape sequences; [semantic] is its decoded Unicode code point. *)
   | Pconst_string of {source: string; semantic: string}
   (* An ordinary quoted string literal. [source] is the encoded body retained
      for printing, including escape sequences; the scanner may normalize
@@ -42,8 +43,6 @@ type constant =
      expressions are rejected by the typechecker. *)
   | Pconst_raw_source of string
   (* JavaScript source carried by a compiler raw/ffi/re extension. *)
-  | Pconst_char_source of string
-  (* Printer-only source spelling of a character literal. *)
   | Pconst_float of string * char option
 (* 3.4 2e5 1.4e-4
 

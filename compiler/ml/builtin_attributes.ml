@@ -17,10 +17,7 @@ open Asttypes
 open Parsetree
 
 let string_of_cst = function
-  | Pconst_string {semantic = s}
-  | Pconst_template s
-  | Pconst_raw_source s
-  | Pconst_char_source s ->
+  | Pconst_string {semantic = s} | Pconst_template s | Pconst_raw_source s ->
     Some s
   | _ -> None
 

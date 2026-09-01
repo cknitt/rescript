@@ -142,6 +142,21 @@ let encode_js_string s =
     s;
   Buffer.contents buf
 
+let encode_char_source codepoint =
+  match codepoint with
+  | 0x08 -> {e|\b|e}
+  | 0x09 -> {e|\t|e}
+  | 0x0a -> {e|\n|e}
+  | 0x0d -> {e|\r|e}
+  | 0x27 -> {e|\'|e}
+  | 0x5c -> {e|\\|e}
+  | codepoint when (codepoint >= 0x00 && codepoint <= 0x1f) || codepoint = 0x7f
+    ->
+    Printf.sprintf {e|\x%02X|e} codepoint
+  | codepoint when codepoint >= 0x20 && codepoint <= 0x7e ->
+    String.make 1 (Char.unsafe_chr codepoint)
+  | _ -> Ext_utf8.encode_codepoint codepoint
+
 let utf16_length s =
   Ext_utf8.decode_utf8_string s
   |> List.fold_left

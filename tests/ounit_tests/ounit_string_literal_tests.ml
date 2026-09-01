@@ -44,6 +44,34 @@ let assert_parsed_string ~source ~expected_semantic =
       actual.semantic
   | _ -> OUnit.assert_failure "expected a parsed string literal"
 
+let assert_parsed_char ~for_printer ~source ~expected_semantic =
+  let result =
+    Res_driver.parse_implementation_from_source ~for_printer
+      ~display_filename:"StringLiteralTest.res"
+      ~source:("let value = '" ^ source ^ "'")
+  in
+  match result.parsetree with
+  | [
+   {
+     pstr_desc =
+       Pstr_value
+         ( _,
+           [
+             {
+               pvb_expr =
+                 {
+                   pexp_desc =
+                     Pexp_constant
+                       (Pconst_char {source = actual_source; semantic});
+                 };
+             };
+           ] );
+   };
+  ] ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") source actual_source;
+    OUnit.assert_equal ~printer:string_of_int expected_semantic semantic
+  | _ -> OUnit.assert_failure "expected a parsed character literal"
+
 let assert_parsed_template_constant ~source =
   let result =
     Res_driver.parse_implementation_from_source ~for_printer:false
@@ -329,9 +357,19 @@ let suites =
          ( "backquoted patterns reject lone surrogate escapes" >:: fun _ ->
            assert_invalid_backquoted_pattern {|\uD800|};
            assert_invalid_backquoted_pattern {|\uDC00|} );
-         ( "printer char patterns are not tagged templates" >:: fun _ ->
+         ( "character literals retain source and semantic forms" >:: fun _ ->
+           assert_parsed_char ~for_printer:false ~source:{|\u{61}|}
+             ~expected_semantic:0x61;
+           assert_parsed_char ~for_printer:true ~source:{|\u{61}|}
+             ~expected_semantic:0x61;
+           OUnit.assert_equal ~printer:(Printf.sprintf "%S") {e|\x00|e}
+             (String_literal.encode_char_source 0x00);
+           OUnit.assert_equal ~printer:(Printf.sprintf "%S") "😀"
+             (String_literal.encode_char_source 0x1f600) );
+         ( "character patterns are not tagged templates" >:: fun _ ->
            let pattern =
-             Ast_helper.Pat.constant (Parsetree.Pconst_char_source "a")
+             Ast_helper.Pat.constant
+               (Parsetree.Pconst_char {source = "a"; semantic = 0x61})
            in
            let transformed =
              Bs_builtin_ppx.mapper.pat Bs_builtin_ppx.mapper pattern

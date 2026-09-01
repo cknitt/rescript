@@ -126,8 +126,13 @@ module Sexp_ast = struct
       match c with
       | Pconst_integer (txt, tag) ->
         Sexp.list [Sexp.atom "Pconst_integer"; string txt; opt_char tag]
-      | Pconst_char _ -> Sexp.list [Sexp.atom "Pconst_char"]
-      | Pconst_char_source _ -> Sexp.list [Sexp.atom "Pconst_char"]
+      | Pconst_char {source; semantic} ->
+        Sexp.list
+          [
+            Sexp.atom "Pconst_char";
+            string source;
+            Sexp.atom (string_of_int semantic);
+          ]
       | Pconst_string {source; semantic} ->
         Sexp.list [Sexp.atom "Pconst_string"; string source; string semantic]
       | Pconst_template source ->

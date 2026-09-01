@@ -43,7 +43,9 @@ module Const = struct
   let int64 ?(suffix = 'L') i = integer ~suffix (Int64.to_string i)
   let nativeint ?(suffix = 'n') i = integer ~suffix (Nativeint.to_string i)
   let float ?suffix f = Pconst_float (f, suffix)
-  let char c = Pconst_char (Char.code c)
+  let char c =
+    let semantic = Char.code c in
+    Pconst_char {source = String_literal.encode_char_source semantic; semantic}
   let string semantic =
     Pconst_string {source = String_literal.encode_js_string semantic; semantic}
 end

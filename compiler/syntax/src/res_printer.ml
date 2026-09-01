@@ -578,25 +578,9 @@ let print_constant c =
     Doc.concat [Doc.text "json`"; print_string_contents source; Doc.text "`"]
   | Pconst_raw_source source ->
     Doc.concat [Doc.text "\""; print_string_contents source; Doc.text "\""]
-  | Pconst_char_source source ->
+  | Pconst_char {source} ->
     Doc.concat [Doc.text "'"; Doc.text source; Doc.text "'"]
   | Pconst_float (s, _) -> Doc.text s
-  | Pconst_char c ->
-    let str =
-      match Char.unsafe_chr c with
-      | '\'' -> "\\'"
-      | '\\' -> "\\\\"
-      | '\n' -> "\\n"
-      | '\t' -> "\\t"
-      | '\r' -> "\\r"
-      | '\b' -> "\\b"
-      | ' ' .. '~' as c ->
-        let s = (Bytes.create [@doesNotRaise]) 1 in
-        Bytes.unsafe_set s 0 c;
-        Bytes.unsafe_to_string s
-      | _ -> Res_utf8.encode_code_point c
-    in
-    Doc.text ("'" ^ str ^ "'")
 
 module State = struct
   let custom_layout_threshold = 2

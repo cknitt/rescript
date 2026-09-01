@@ -282,7 +282,7 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
     let sign, i = Bigint_utils.parse_bigint i in
     Ok (Const_bigint (sign, i))
   | Pconst_integer (i, Some c) -> Error (Unknown_literal (i, c))
-  | Pconst_char c -> Ok (Const_char c)
+  | Pconst_char {semantic} -> Ok (Const_char semantic)
   | Pconst_template source -> (
     match String_literal.decode_js_escapes source with
     | Some semantic -> Ok (Const_template_literal {source; semantic})
@@ -290,7 +290,6 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
   | Pconst_string {semantic} -> Ok (Const_string semantic)
   | Pconst_json _ -> Error Json_literal_outside_external
   | Pconst_raw_source s -> Ok (Const_string s)
-  | Pconst_char_source _ -> Error Invalid_string_escape_sequence
   | Pconst_float (f, None) -> Ok (Const_float f)
   | Pconst_float (f, Some c) -> Error (Unknown_literal (f, c))
 
@@ -1348,13 +1347,16 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env sp
         pat_attributes = sp.ppat_attributes;
         pat_env = !env;
       }
-  | Ppat_interval (Pconst_char c1, Pconst_char c2) ->
+  | Ppat_interval (Pconst_char {semantic = c1}, Pconst_char {semantic = c2}) ->
     let open Ast_helper.Pat in
     let gloc = {loc with Location.loc_ghost = true} in
+    let char semantic =
+      Pconst_char
+        {source = String_literal.encode_char_source semantic; semantic}
+    in
     let rec loop c1 c2 =
-      if c1 = c2 then constant ~loc:gloc (Pconst_char c1)
-      else
-        or_ ~loc:gloc (constant ~loc:gloc (Pconst_char c1)) (loop (c1 + 1) c2)
+      if c1 = c2 then constant ~loc:gloc (char c1)
+      else or_ ~loc:gloc (constant ~loc:gloc (char c1)) (loop (c1 + 1) c2)
     in
     let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
     let p = {p with ppat_loc = loc} in
