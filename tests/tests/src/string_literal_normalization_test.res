@@ -6,6 +6,12 @@ open Test_utils
 @val(`Math\x2Emax`)
 external escapedAttributeName: (int, int) => int = ""
 
+@scope(`Ma\x74h`) @val
+external escapedScopeName: (int, int) => int = "max"
+
+@module(`node\x3Apath`)
+external escapedModuleName: string => string = "basename"
+
 let escaped = "\x61\u0062\u{63}"
 let surrogatePair = "\uD83D\uDE00"
 let concatenated = "\x61" ++ "\u0062"
@@ -29,6 +35,11 @@ let rawBridgeRegex = /\\n/
 
 describe(__MODULE__, () => {
   test("attribute payloads use semantic strings", () => eq(__LOC__, escapedAttributeName(1, 2), 2))
+
+  test("scope and module payloads use semantic strings", () => {
+    eq(__LOC__, escapedScopeName(1, 2), 2)
+    eq(__LOC__, escapedModuleName("/a/b"), "b")
+  })
 
   test("ordinary escapes have one semantic representation", () => eq(__LOC__, escaped, "abc"))
 

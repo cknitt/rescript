@@ -935,17 +935,22 @@ let completion_with_parser1 ~debug ~offset ~pos_cursor ~kind_file
              {
                pstr_desc =
                  Pstr_eval
-                   ( {
-                       pexp_loc;
-                       pexp_desc = Pexp_constant (Pconst_string {semantic = s});
-                     },
+                   ( ({
+                        pexp_loc;
+                        pexp_desc =
+                          ( Pexp_constant (Pconst_string _)
+                          | Pexp_template {source_segments = [_]; values = []} );
+                      } as expression),
                      _ );
              };
            ]
-         when loc_has_cursor pexp_loc ->
-         if Debug.verbose () then
-           print_endline "[decoratorCompletion] Found @module";
-         set_result (Completable.CdecoratorPayload (Module s))
+         when loc_has_cursor pexp_loc -> (
+         match Ast_payload.semantic_string_of_expression expression with
+         | Some s ->
+           if Debug.verbose () then
+             print_endline "[decoratorCompletion] Found @module";
+           set_result (Completable.CdecoratorPayload (Module s))
+         | None -> ())
        | PStr
            [
              {
@@ -972,14 +977,14 @@ let completion_with_parser1 ~debug ~offset ~pos_cursor ~kind_file
              Completion_expressions.is_expr_hole from_expr,
              from_expr )
          with
-         | ( true,
-             _,
-             _,
-             {pexp_desc = Pexp_constant (Pconst_string {semantic = s})} ) ->
-           if Debug.verbose () then
-             print_endline
-               "[decoratorCompletion] @module `from` payload was string";
-           set_result (Completable.CdecoratorPayload (Module s))
+         | true, _, _, from_expr -> (
+           match Ast_payload.semantic_string_of_expression from_expr with
+           | Some s ->
+             if Debug.verbose () then
+               print_endline
+                 "[decoratorCompletion] @module `from` payload was string";
+             set_result (Completable.CdecoratorPayload (Module s))
+           | None -> ())
          | false, true, true, _ ->
            if Debug.verbose () then
              print_endline

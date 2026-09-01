@@ -116,7 +116,7 @@ let process_tag_type (attrs : Parsetree.attributes) =
       match txt with
       | "as" ->
         if !st = None then (
-          (match Ast_payload.is_single_semantic_string payload with
+          (match Ast_payload.semantic_string_of_payload payload with
           | None -> ()
           | Some s -> st := Some (String s));
           (match Ast_payload.is_single_int payload with
@@ -198,7 +198,7 @@ let process_tag_name (attrs : Parsetree.attributes) =
       | "tag" ->
         if !st = None then (
           Ast_payload.reject_json_literal_payload payload;
-          (match Ast_payload.is_single_semantic_string payload with
+          (match Ast_payload.semantic_string_of_payload payload with
           | None -> ()
           | Some s -> st := Some s);
           if !st = None then raise (Error (loc, InvalidVariantTagAnnotation)))

@@ -39,7 +39,7 @@ val semantic_string_of_expression : Parsetree.expression -> string option
 (** Return the decoded value when the expression is an ordinary string or a
     non-interpolated backquoted string. *)
 
-val is_single_semantic_string : t -> string option
+val semantic_string_of_payload : t -> string option
 (** Return the decoded value of an ordinary or non-interpolated backquoted string.
     Other prefixed literals, such as [json], are not semantic strings. *)
 

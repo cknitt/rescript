@@ -139,7 +139,7 @@ let iter_process_bs_string_as (attrs : t) : string option =
       match txt with
       | "as" ->
         if !st = None then (
-          match Ast_payload.is_single_semantic_string payload with
+          match Ast_payload.semantic_string_of_payload payload with
           | None -> Bs_syntaxerr.err loc Expect_string_literal
           | Some v ->
             Used_attributes.mark_used_attribute attr;
@@ -188,7 +188,7 @@ let iter_process_bs_string_or_int_as (attrs : Parsetree.attributes) =
           match Ast_payload.is_single_int payload with
           | Some v -> st := Some (Int v)
           | None -> (
-            match Ast_payload.is_single_semantic_string payload with
+            match Ast_payload.semantic_string_of_payload payload with
             | Some s -> st := Some (Str s)
             | None -> (
               match payload with

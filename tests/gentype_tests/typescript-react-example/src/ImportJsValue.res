@@ -1,7 +1,7 @@
 @ocaml.doc("
   * Wrap JS values to be used from Reason
   ")
-@genType.import("./MyMath")
+@genType.import(`./MyM\x61th`)
 external /* This is the module to import from. */
 /* Name and type of the JS value to bind to. */
 round: float => float = "round"

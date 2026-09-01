@@ -211,7 +211,7 @@ let parse_external_attributes (no_arguments : bool) (prim_name_check : string)
     (* It is okay to have [@@val] without payload *)
     | _ -> (
       Ast_payload.reject_json_literal_payload payload;
-      match Ast_payload.is_single_semantic_string payload with
+      match Ast_payload.semantic_string_of_payload payload with
       | Some val_name -> {name = val_name; source = Payload}
       | None -> Location.raise_errorf ~loc "Invalid payload")
   in
@@ -261,12 +261,15 @@ let parse_external_attributes (no_arguments : bool) (prim_name_check : string)
               let from_name = ref None in
               let with_ = ref None in
               Ext_list.iter fields (fun {lid = l; x = exp} ->
-                  match (l, exp.pexp_desc) with
-                  | ( {txt = Lident "from"},
-                      Pexp_constant (Pconst_string {semantic = s}) ) ->
-                    from_name := Some s
-                  | {txt = Lident "with"}, Pexp_record (fields, _) ->
-                    with_ := Some fields
+                  match l with
+                  | {txt = Lident "from"} -> (
+                    match Ast_payload.semantic_string_of_expression exp with
+                    | Some name -> from_name := Some name
+                    | None -> ())
+                  | {txt = Lident "with"} -> (
+                    match exp.pexp_desc with
+                    | Pexp_record (fields, _) -> with_ := Some fields
+                    | _ -> ())
                   | _ -> ());
               match (!from_name, !with_) with
               | None, _ ->
@@ -283,8 +286,8 @@ let parse_external_attributes (no_arguments : bool) (prim_name_check : string)
               | Some from_name, Some with_fields ->
                 let import_attributes_from_record =
                   Ext_list.filter_map with_fields (fun {lid = l; x = exp} ->
-                      match exp.pexp_desc with
-                      | Pexp_constant (Pconst_string {semantic = s}) -> (
+                      match Ast_payload.semantic_string_of_expression exp with
+                      | Some s -> (
                         match l.txt with
                         | Longident.Lident "type_" -> Some ("type", s)
                         | Longident.Lident txt -> Some (txt, s)

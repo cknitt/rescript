@@ -31,7 +31,7 @@ let find_name_with_loc (({txt; loc}, payload) : Parsetree.attribute) :
   if txt = "as" then
     Option.map
       (fun txt -> {Asttypes.txt; loc})
-      (Ast_payload.is_single_semantic_string payload)
+      (Ast_payload.semantic_string_of_payload payload)
   else None
 
 let check_bs_attributes_inclusion (attrs1 : Parsetree.attributes)

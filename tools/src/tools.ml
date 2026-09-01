@@ -629,22 +629,11 @@ let extract_embedded ~extension_points ~filename =
   let append item = content := item :: !content in
   let extension (iterator : Ast_iterator.iterator) (ext : Parsetree.extension) =
     (match ext with
-    | ( {txt},
-        PStr
-          [
-            {
-              pstr_desc =
-                Pstr_eval
-                  ( {
-                      pexp_loc;
-                      pexp_desc =
-                        Pexp_constant (Pconst_string {semantic = contents});
-                    },
-                    _ );
-            };
-          ] )
+    | {txt}, PStr [{pstr_desc = Pstr_eval (({pexp_loc; _} as expression), _)}]
       when extension_points |> List.exists (fun v -> v = txt) ->
-      append (pexp_loc, txt, contents)
+      Option.iter
+        (fun contents -> append (pexp_loc, txt, contents))
+        (Ast_payload.semantic_string_of_expression expression)
     | _ -> ());
     Ast_iterator.default_iterator.extension iterator ext
   in
@@ -876,7 +865,7 @@ module Format_codeblocks = struct
             | {txt = "res.doc"}, PStr [{pstr_desc = Pstr_eval ({pexp_loc}, _)}]
               -> (
               Ast_payload.reject_json_literal_payload payload;
-              match Ast_payload.is_single_semantic_string payload with
+              match Ast_payload.semantic_string_of_payload payload with
               | Some contents ->
                 let formatted_contents, had_code_blocks =
                   format_rescript_code_blocks ~transform_assert_equal ~add_error

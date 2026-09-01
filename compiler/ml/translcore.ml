@@ -993,7 +993,7 @@ let extract_directive_for_fn exp =
   |> List.find_map (fun ({txt}, payload) ->
       if txt = "directive" then (
         Ast_payload.reject_json_literal_payload payload;
-        Ast_payload.is_single_semantic_string payload)
+        Ast_payload.semantic_string_of_payload payload)
       else None)
 
 let hoisted_function_attr_name = "res.hoistedFunction"

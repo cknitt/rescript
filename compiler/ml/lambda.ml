@@ -68,7 +68,7 @@ let mutable_flag_of_tag_info (tag : tag_info) =
 type label = Types.label_description
 
 let find_name (({txt}, payload) : Parsetree.attribute) =
-  if txt = "as" then Ast_payload.is_single_semantic_string payload else None
+  if txt = "as" then Ast_payload.semantic_string_of_payload payload else None
 
 let blk_record (fields : (label * _ * _) array) mut =
   let all_labels_info =

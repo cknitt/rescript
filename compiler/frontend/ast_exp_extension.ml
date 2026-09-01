@@ -29,7 +29,7 @@ let handle_extension e (_self : Ast_mapper.mapper)
   | "todo" ->
     Ast_payload.reject_json_literal_payload payload;
     let todo_message =
-      match Ast_payload.is_single_semantic_string payload with
+      match Ast_payload.semantic_string_of_payload payload with
       | Some s -> Some s
       | None -> None
     in

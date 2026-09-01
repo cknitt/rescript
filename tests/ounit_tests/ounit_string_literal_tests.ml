@@ -371,7 +371,7 @@ let suites =
              (Typecore.constant (Parsetree.Pconst_json {|{"answer":42}|})) );
          ( "constant backquoted attribute strings become semantic" >:: fun _ ->
            OUnit.assert_equal ~printer:Ext_obj.dump (Some "a\n😀")
-             (Ast_payload.is_single_semantic_string
+             (Ast_payload.semantic_string_of_payload
                 (template_payload {|\x61\n\uD83D\uDE00|}));
            OUnit.assert_equal ~printer:Ext_obj.dump (Some "a\n😀")
              (Builtin_attributes.deprecated_of_attrs
@@ -380,10 +380,11 @@ let suites =
                     template_payload {|\x61\n\uD83D\uDE00|} );
                 ]);
            OUnit.assert_equal ~printer:Ext_obj.dump None
-             (Ast_payload.is_single_semantic_string
+             (Ast_payload.semantic_string_of_payload
                 (string_payload (Pconst_json {|{"answer":42}|})));
            match
-             Ast_payload.is_single_semantic_string (template_payload {|\uD800|})
+             Ast_payload.semantic_string_of_payload
+               (template_payload {|\uD800|})
            with
            | _ -> OUnit.assert_failure "expected an invalid string escape"
            | exception Location.Error _ -> () );

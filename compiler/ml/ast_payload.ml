@@ -56,7 +56,7 @@ let semantic_string_of_expression (expression : Parsetree.expression) =
       Location.raise_errorf ~loc:pexp_loc "Invalid string escape sequence")
   | _ -> None
 
-let is_single_semantic_string (x : t) =
+let semantic_string_of_payload (x : t) =
   match x with
   | PStr [{pstr_desc = Pstr_eval (expression, _); _}] ->
     semantic_string_of_expression expression
@@ -251,6 +251,11 @@ let ident_or_record_as_config loc (x : t) :
 
 let assert_strings loc (x : t) : string list =
   let exception Not_str in
+  let semantic_string expression =
+    match semantic_string_of_expression expression with
+    | Some semantic -> semantic
+    | None -> raise Not_str
+  in
   match x with
   | PStr
       [
@@ -260,23 +265,11 @@ let assert_strings loc (x : t) : string list =
           _;
         };
       ] -> (
-    try
-      Ext_list.map strs (fun e ->
-          match (e : Parsetree.expression) with
-          | {pexp_desc = Pexp_constant (Pconst_string {semantic}); _} ->
-            semantic
-          | _ -> raise Not_str)
+    try Ext_list.map strs semantic_string
     with Not_str -> Location.raise_errorf ~loc "expect string tuple list")
-  | PStr
-      [
-        {
-          pstr_desc =
-            Pstr_eval
-              ({pexp_desc = Pexp_constant (Pconst_string {semantic}); _}, _);
-          _;
-        };
-      ] ->
-    [semantic]
+  | PStr [{pstr_desc = Pstr_eval (expression, _); _}] -> (
+    try [semantic_string expression]
+    with Not_str -> Location.raise_errorf ~loc "expect string tuple list")
   | PStr [] -> []
   | PSig _ | PStr _ | PTyp _ | PPat _ ->
     Location.raise_errorf ~loc "expect string tuple list"

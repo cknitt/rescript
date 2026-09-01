@@ -18,7 +18,7 @@ open Parsetree
 
 let string_of_payload payload =
   Ast_payload.reject_json_literal_payload payload;
-  Ast_payload.is_single_semantic_string payload
+  Ast_payload.semantic_string_of_payload payload
 
 let string_of_opt_payload p =
   match string_of_payload p with
@@ -89,11 +89,8 @@ let rec deprecated_of_attrs_with_migrate = function
       fields
       |> List.find_map (fun field ->
           match field with
-          | {
-           lid = {txt = Lident "reason"};
-           x = {pexp_desc = Pexp_constant (Pconst_string {semantic = reason})};
-          } ->
-            Some reason
+          | {lid = {txt = Lident "reason"}; x} ->
+            Ast_payload.semantic_string_of_expression x
           | _ -> None)
     in
     let migration_template =
@@ -199,18 +196,11 @@ let warning_attribute ?(ppwarning = true) =
     process loc txt false payload
   | {txt = ("ocaml.warnerror" | "warnerror") as txt; loc}, payload ->
     process loc txt true payload
-  | ( {txt = "ocaml.ppwarning" | "ppwarning"},
-      PStr
-        [
-          {
-            pstr_desc =
-              Pstr_eval
-                ({pexp_desc = Pexp_constant (Pconst_string {semantic = s})}, _);
-            pstr_loc;
-          };
-        ] )
-    when ppwarning ->
-    Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
+  | {txt = "ocaml.ppwarning" | "ppwarning"}, (PStr [{pstr_loc; _}] as payload)
+    when ppwarning -> (
+    match string_of_payload payload with
+    | Some s -> Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
+    | None -> ())
   | _ -> ()
 
 let warning_scope ?ppwarning attrs f =

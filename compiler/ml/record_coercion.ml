@@ -30,7 +30,7 @@ let check_record_fields (fields1 : Types.label_declaration list)
                right_optional = ld2.ld_optional;
              });
       let get_as (({txt}, payload) : Parsetree.attribute) =
-        if txt = "as" then Ast_payload.is_single_semantic_string payload
+        if txt = "as" then Ast_payload.semantic_string_of_payload payload
         else None
       in
       let get_as_name (ld : Types.label_declaration) =
