@@ -311,13 +311,10 @@ type fn_exp_state =
 
 let default_fn_exp_state = No_name {single_arg = false}
 
-let interpolated_template_as_append kind segments values =
+let json_template_as_append segments values =
   let segments =
     List.map
-      (fun ({source; semantic} : Asttypes.template_segment) ->
-        match kind with
-        | Asttypes.Ptemplate_string -> E.template_literal ~semantic source
-        | Ptemplate_json -> E.str semantic)
+      (fun ({semantic} : Asttypes.template_segment) -> E.str semantic)
       segments
   in
   let rec interleave acc segments values =
@@ -780,8 +777,28 @@ and expression_desc cxt ~(level : int) f x : cxt =
     P.string f "`";
     cxt
   | Interpolated_template {kind; segments; values} ->
-    expression cxt ~level f
-      (interpolated_template_as_append kind segments values)
+    begin match kind with
+    | Ptemplate_string ->
+      P.string f "`";
+      let rec print_segments cxt segments values =
+        match (segments, values) with
+        | [({source} : Asttypes.template_segment)], [] ->
+          P.string f source;
+          cxt
+        | ({source} : Asttypes.template_segment) :: segments, value :: values ->
+          P.string f source;
+          P.string f "${";
+          let cxt = expression cxt ~level:0 f value in
+          P.string f "}";
+          print_segments cxt segments values
+        | _ -> assert false
+      in
+      let cxt = print_segments cxt segments values in
+      P.string f "`";
+      cxt
+    | Ptemplate_json ->
+      expression cxt ~level f (json_template_as_append segments values)
+    end
   | String_index (a, b) ->
     P.group f 1 (fun _ ->
         let cxt = expression ~level:15 cxt f a in

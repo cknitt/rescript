@@ -142,6 +142,17 @@ describe("tagged templates", () => {
     eq(__LOC__, `some random ${"string"} interpolation`, "some random string interpolation")
   )
 
+  test("ordinary interpolation evaluates values once from left to right", () => {
+    let calls: array<string> = []
+    let record = value => {
+      calls->Array.push(value)->ignore
+      value
+    }
+    let result = `start ${record("first")} middle ${record("second")} end`
+    eq(__LOC__, result, "start first middle second end")
+    eq(__LOC__, calls, ["first", "second"])
+  })
+
   test("invalid escapes remain valid in tagged-template segments", () => {
     let result = rawTag`\unicode`
     eq(__LOC__, result.raw, ["\\unicode"])

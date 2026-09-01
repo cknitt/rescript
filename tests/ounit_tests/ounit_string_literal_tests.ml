@@ -439,11 +439,15 @@ let suites =
          ( "interpolated templates remain explicit in JavaScript IR" >:: fun _ ->
            let segments : Asttypes.template_segment list =
              [
-               {source = {|head\n|}; semantic = "head\n"};
+               {source = {|head\n\${literal}\`|}; semantic = "head\n${literal}`"};
                {source = "tail"; semantic = "tail"};
              ]
            in
-           let value = Js_exp_make.js_global "value" in
+           let value =
+             Js_exp_make.string_append
+               (Js_exp_make.js_global "left")
+               (Js_exp_make.js_global "right")
+           in
            let template =
              Js_exp_make.interpolated_template Asttypes.Ptemplate_string
                segments [value]
@@ -459,15 +463,8 @@ let suites =
            | _ ->
              OUnit.assert_failure
                "expected an explicit JavaScript IR interpolation");
-           let previous_lowering =
-             Js_exp_make.string_append
-               (Js_exp_make.string_append
-                  (Js_exp_make.template_literal ~semantic:"head\n" {|head\n|})
-                  value)
-               (Js_exp_make.template_literal ~semantic:"tail" "tail")
-           in
            OUnit.assert_equal ~printer:(Printf.sprintf "%S")
-             (Js_dump.string_of_expression previous_lowering)
+             {|`head\n\${literal}\`${left + right}tail`|}
              (Js_dump.string_of_expression template) );
          ( "JavaScript references are not encoded as strings" >:: fun _ ->
            let value = Js_exp_make.var (Ext_ident.create "value") in

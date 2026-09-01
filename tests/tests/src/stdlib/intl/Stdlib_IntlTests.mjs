@@ -63,11 +63,11 @@ try {
       if (message === "invalid key : someinvalidkey") {
         console.log("Caught expected error");
       } else {
-        console.warn(`Unexpected error message: "` + message + `"`);
+        console.warn(`Unexpected error message: "${message}"`);
         throw e$3;
       }
     } else {
-      console.warn(`Unexpected error message: "` + message + `"`);
+      console.warn(`Unexpected error message: "${message}"`);
       throw e$3;
     }
   } else {

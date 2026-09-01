@@ -9,7 +9,7 @@ let surrogatePair = "😀";
 
 let concatenated = "ab";
 
-let interpolated = `\x61` + "b" + `\u0063`;
+let interpolated = `\x61${"b"}\u0063`;
 
 function constantSwitch() {
   return 1;

@@ -19,7 +19,7 @@ function getOrThrow(x, message) {
     return Primitive_option.valFromOption(x);
   }
   let msg = message !== undefined ? message : "Option.getOrThrow called for None value";
-  throw new Error(`Panic! ` + msg);
+  throw new Error(`Panic! ${msg}`);
 }
 
 function mapOr(opt, $$default, f) {

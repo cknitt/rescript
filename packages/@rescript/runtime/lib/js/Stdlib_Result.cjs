@@ -6,7 +6,7 @@ function getOrThrow(x, message) {
     return x._0;
   }
   let msg = message !== undefined ? message : "Result.getOrThrow called for Error value";
-  throw new Error(`Panic! ` + msg);
+  throw new Error(`Panic! ${msg}`);
 }
 
 function mapOr(opt, $$default, f) {
