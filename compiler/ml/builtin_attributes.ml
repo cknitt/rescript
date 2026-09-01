@@ -40,31 +40,17 @@ let rec error_of_extension ext =
     in
     match p with
     | PStr [] -> raise Location.Already_displayed_error
-    | PStr
-        ({
-           pstr_desc =
-             Pstr_eval
-               ({pexp_desc = Pexp_constant (Pconst_string {semantic = msg})}, _);
-         }
-        :: {
-             pstr_desc =
-               Pstr_eval
-                 ( {
-                     pexp_desc =
-                       Pexp_constant (Pconst_string {semantic = if_highlight});
-                   },
-                   _ );
-           }
-        :: inner) ->
-      Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
-    | PStr
-        ({
-           pstr_desc =
-             Pstr_eval
-               ({pexp_desc = Pexp_constant (Pconst_string {semantic = msg})}, _);
-         }
-        :: inner) ->
-      Location.error ~loc ~sub:(sub_from inner) msg
+    | PStr ({pstr_desc = Pstr_eval (message, _)} :: inner) -> (
+      match Ast_payload.semantic_string_of_expression message with
+      | Some msg -> (
+        match inner with
+        | {pstr_desc = Pstr_eval (highlight, _)} :: rest -> (
+          match Ast_payload.semantic_string_of_expression highlight with
+          | Some if_highlight ->
+            Location.error ~loc ~if_highlight ~sub:(sub_from rest) msg
+          | None -> Location.error ~loc ~sub:(sub_from inner) msg)
+        | _ -> Location.error ~loc ~sub:(sub_from inner) msg)
+      | None -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt)
     | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt)
   | {txt; loc}, _ -> Location.errorf ~loc "Uninterpreted extension '%s'." txt
 

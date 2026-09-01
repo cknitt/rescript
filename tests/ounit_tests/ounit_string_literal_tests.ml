@@ -388,6 +388,29 @@ let suites =
            with
            | _ -> OUnit.assert_failure "expected an invalid string escape"
            | exception Location.Error _ -> () );
+         ( "error extensions accept backquoted messages" >:: fun _ ->
+           let extension =
+             ( Location.mknoloc "error",
+               template_payload {|message\nwith context|} )
+           in
+           let error = Builtin_attributes.error_of_extension extension in
+           OUnit.assert_equal ~printer:(Printf.sprintf "%S")
+             "message\nwith context" error.msg;
+           let extension_with_highlight =
+             ( Location.mknoloc "error",
+               PStr
+                 [
+                   Ast_helper.Str.eval
+                     (Ast_helper.Exp.template [{|plain\nmessage|}] []);
+                   Ast_helper.Str.eval
+                     (Ast_helper.Exp.template [{|highlighted\nmessage|}] []);
+                 ] )
+           in
+           let error =
+             Builtin_attributes.error_of_extension extension_with_highlight
+           in
+           OUnit.assert_equal ~printer:(Printf.sprintf "%S")
+             "highlighted\nmessage" error.if_highlight );
          ( "external string constants have explicit representations" >:: fun _ ->
            OUnit.assert_equal ~printer:Ext_obj.dump
              (External_ffi_types.Const_string "a\n😀") (inline_string "a\n😀");
