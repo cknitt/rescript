@@ -88,6 +88,12 @@ let map_constant = function
   | Pconst_char_source s -> Pconst_string (s, Some "INTERNAL_RES_CHAR_CONTENTS")
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
 
+let template_attr = (Location.mknoloc "res.template", Pt.PStr [])
+
+let add_template_attr attrs =
+  if Ext_list.exists attrs (fun ({txt}, _) -> txt = "res.template") then attrs
+  else template_attr :: attrs
+
 let for_of_attr_name = "_res.for_of"
 let for_await_of_attr_name = "_res.for_await_of"
 
@@ -410,11 +416,7 @@ module E = struct
     | Pexp_constant x ->
       let attrs =
         match x with
-        | Pconst_template _
-          when not
-                 (Ext_list.exists attrs (fun ({txt}, _) -> txt = "res.template"))
-          ->
-          (Location.mknoloc "res.template", Pt.PStr []) :: attrs
+        | Pconst_template _ -> add_template_attr attrs
         | _ -> attrs
       in
       constant ~loc ~attrs (map_constant x)
@@ -605,7 +607,6 @@ module E = struct
         (sub.pat sub pat) start_expr end_expr Asttypes.Upto
         (sub.expr sub body_expr)
     | Pexp_template {kind; source_segments; values} ->
-      let template_attr = (Location.mknoloc "res.template", Pt.PStr []) in
       let segments =
         List.map
           (fun source ->
@@ -636,9 +637,8 @@ module E = struct
         | first :: rest -> List.fold_left concat first rest
         | [] -> assert false
       in
-      {expression with pexp_attributes = template_attr :: attrs}
+      {expression with pexp_attributes = add_template_attr attrs}
     | Pexp_tagged_template {tag; raw_sources; values} ->
-      let template_attr = (Location.mknoloc "res.template", Pt.PStr []) in
       let segments =
         List.map
           (fun source ->
@@ -782,7 +782,13 @@ module P = struct
     | Ppat_any -> any ~loc ~attrs ()
     | Ppat_var s -> var ~loc ~attrs (map_loc sub s)
     | Ppat_alias (p, s) -> alias ~loc ~attrs (sub.pat sub p) (map_loc sub s)
-    | Ppat_constant c -> constant ~loc ~attrs (map_constant c)
+    | Ppat_constant c ->
+      let attrs =
+        match c with
+        | Pconst_template _ -> add_template_attr attrs
+        | _ -> attrs
+      in
+      constant ~loc ~attrs (map_constant c)
     | Ppat_interval (c1, c2) ->
       interval ~loc ~attrs (map_constant c1) (map_constant c2)
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub.pat sub) pl)

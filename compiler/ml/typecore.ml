@@ -2458,21 +2458,13 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
       }
   | Pexp_constant cst ->
     let cst = constant_or_raise env loc cst in
-    let exp_attributes =
-      match cst with
-      | Const_template_literal _ ->
-        List.filter
-          (fun ({txt}, _) -> txt <> "res.template")
-          sexp.pexp_attributes
-      | _ -> sexp.pexp_attributes
-    in
     rue
       {
         exp_desc = Texp_constant cst;
         exp_loc = loc;
         exp_extra = [];
         exp_type = type_constant cst;
-        exp_attributes;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
   | Pexp_let

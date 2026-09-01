@@ -228,9 +228,8 @@ let filter_parsing_attrs attrs =
       | ( {
             Location.txt =
               ( "res.braces" | "ns.braces" | "res.iflet" | "res.ternary"
-              | "res.await" | "res.template" | "res.patVariantSpread"
-              | "res.dictPattern" | "res.dictSpread"
-              | "res.inlineRecordDefinition" );
+              | "res.await" | "res.patVariantSpread" | "res.dictPattern"
+              | "res.dictSpread" | "res.inlineRecordDefinition" );
           },
           _ ) ->
         false
@@ -387,7 +386,7 @@ let has_attributes attrs =
       | ( {
             Location.txt =
               ( "res.braces" | "ns.braces" | "res.iflet" | "res.ternary"
-              | "res.await" | "res.template" | "res.inlineRecordDefinition" );
+              | "res.await" | "res.inlineRecordDefinition" );
           },
           _ ) ->
         false
@@ -571,8 +570,7 @@ let is_printable_attribute attr =
   | ( {
         Location.txt =
           ( "res.iflet" | "res.braces" | "ns.braces" | "JSX" | "res.await"
-          | "res.template" | "res.ternary" | "res.inlineRecordDefinition"
-          | "res.dictSpread" );
+          | "res.ternary" | "res.inlineRecordDefinition" | "res.dictSpread" );
       },
       _ ) ->
     false
@@ -658,19 +656,9 @@ let rec collect_patterns_from_list_construct acc pattern =
     collect_patterns_from_list_construct (pat :: acc) rest
   | _ -> (List.rev acc, pattern)
 
-let has_template_literal_attr attrs =
-  List.exists
-    (fun attr ->
-      match attr with
-      | {Location.txt = "res.template"}, _ -> true
-      | _ -> false)
-    attrs
-
 let is_template_literal expr =
   match expr.pexp_desc with
-  | Pexp_template _ -> true
-  | Pexp_constant (Pconst_template _) -> true
-  | Pexp_constant _ when has_template_literal_attr expr.pexp_attributes -> true
+  | Pexp_template _ | Pexp_constant (Pconst_template _) -> true
   | _ -> false
 
 let is_tagged_template_literal expr =

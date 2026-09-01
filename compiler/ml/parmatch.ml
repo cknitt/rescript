@@ -159,8 +159,8 @@ let all_coherent column =
       | Const_int _, Const_int _
       | Const_bigint _, Const_bigint _
       | Const_float _, Const_float _
-      | Const_string _, Const_string _
-      | Const_template_literal _, Const_template_literal _ ->
+      | ( (Const_string _ | Const_template_literal _),
+          (Const_string _ | Const_template_literal _) ) ->
         true
       | ( ( Const_char _ | Const_int _ | Const_bigint _ | Const_float _
           | Const_string _ | Const_template_literal _ ),
@@ -270,9 +270,8 @@ let const_compare x y =
     compare (float_of_string f1) (float_of_string f2)
   | Const_bigint (s1, b1), Const_bigint (s2, b2) ->
     Bigint_utils.compare (s1, b1) (s2, b2)
-  | Const_string s1, Const_string s2 -> String.compare s1 s2
-  | ( Const_template_literal {semantic = s1},
-      Const_template_literal {semantic = s2} ) ->
+  | ( (Const_string s1 | Const_template_literal {semantic = s1}),
+      (Const_string s2 | Const_template_literal {semantic = s2}) ) ->
     String.compare s1 s2
   | _, _ -> compare x y
 

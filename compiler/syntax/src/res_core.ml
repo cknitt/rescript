@@ -277,7 +277,6 @@ let suppress_fragile_match_warning_attr =
           (Ast_helper.Exp.constant (Ast_helper.Const.string "-4"));
       ] )
 let make_braces_attr loc = (Location.mkloc "res.braces" loc, Parsetree.PStr [])
-let template_literal_attr = (Location.mknoloc "res.template", Parsetree.PStr [])
 let make_pat_variant_spread_attr =
   (Location.mknoloc "res.patVariantSpread", Parsetree.PStr [])
 
@@ -1058,8 +1057,14 @@ let parse_template_constant ~start_pos ~prefix (p : Parser.t) =
   | TemplateTail (txt, _) -> (
     Parser.next p;
     match prefix with
-    | None | Some "js" ->
-      parse_string_constant p ~start_pos ~end_pos:p.prev_end_pos txt
+    | None | Some "js" -> (
+      match String_literal.decode_js_escapes txt with
+      | Some _ -> Parsetree.Pconst_template txt
+      | None ->
+        if p.diagnostics = [] then
+          Parser.err ~start_pos ~end_pos:p.prev_end_pos p
+            (Diagnostics.message "Invalid string escape sequence");
+        Parsetree.Pconst_template txt)
     | Some _ ->
       Parser.err ~start_pos ~end_pos:p.prev_end_pos p
         (Diagnostics.message Error_messages.tagged_template_in_pattern);
@@ -1248,9 +1253,7 @@ let rec parse_pattern ?(alias = true) ?(or_ = true) p =
       | _ -> Ast_helper.Pat.constant ~loc:(mk_loc start_pos p.prev_end_pos) c)
     | Backtick ->
       let constant = parse_template_constant ~start_pos ~prefix:(Some "js") p in
-      Ast_helper.Pat.constant ~attrs:[template_literal_attr]
-        ~loc:(mk_loc start_pos p.prev_end_pos)
-        constant
+      Ast_helper.Pat.constant ~loc:(mk_loc start_pos p.prev_end_pos) constant
     | Lparen -> (
       Parser.next p;
       match p.token with
@@ -2525,7 +2528,7 @@ and parse_template_expr ?prefix p =
         Parser.next p;
         let loc = mk_loc start_pos last_pos in
         let str =
-          Ast_helper.Exp.constant ~attrs:[template_literal_attr] ~loc
+          Ast_helper.Exp.constant ~loc
             (if is_json then Pconst_json txt else Pconst_template txt)
         in
         List.rev ((str, None) :: acc)
@@ -2534,7 +2537,7 @@ and parse_template_expr ?prefix p =
         let loc = mk_loc start_pos last_pos in
         let expr = parse_expr_block p in
         let str =
-          Ast_helper.Exp.constant ~attrs:[template_literal_attr] ~loc
+          Ast_helper.Exp.constant ~loc
             (if is_json then Pconst_json txt else Pconst_template txt)
         in
         aux ((str, Some expr) :: acc)

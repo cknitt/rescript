@@ -564,17 +564,14 @@ let print_string_contents txt =
   let lines = String.split_on_char '\n' txt in
   Doc.join ~sep:Doc.literal_line (List.map Doc.text lines)
 
-let print_constant ?(template_literal = false) c =
+let print_constant c =
   match c with
   | Parsetree.Pconst_integer (s, suffix) -> (
     match suffix with
     | Some c -> Doc.text (s ^ Char.escaped c)
     | None -> Doc.text s)
   | Pconst_string {source} ->
-    let lquote, rquote =
-      if template_literal then ("`", "`") else ("\"", "\"")
-    in
-    Doc.concat [Doc.text lquote; print_string_contents source; Doc.text rquote]
+    Doc.concat [Doc.text "\""; print_string_contents source; Doc.text "\""]
   | Pconst_template source ->
     Doc.concat [Doc.text "`"; print_string_contents source; Doc.text "`"]
   | Pconst_json source ->
@@ -2616,17 +2613,7 @@ and print_pattern ~state (p : Parsetree.pattern) cmt_tbl =
     match p.ppat_desc with
     | Ppat_any -> Doc.text "_"
     | Ppat_var var -> print_ident_like var.txt
-    | Ppat_constant c ->
-      let template_literal =
-        Parsetree_viewer.has_template_literal_attr p.ppat_attributes
-        ||
-        match c with
-        | Pconst_string _ | Pconst_template _ | Pconst_json _
-        | Pconst_raw_source _ | Pconst_char_source _ | Pconst_integer _
-        | Pconst_char _ | Pconst_float _ ->
-          false
-      in
-      print_constant ~template_literal c
+    | Ppat_constant c -> print_constant c
     | Ppat_tuple patterns ->
       Doc.group
         (Doc.concat
@@ -3280,10 +3267,7 @@ and print_expression ~state (e : Parsetree.expression) cmt_tbl =
         (Parsetree_viewer.rewrite_underscore_apply e)
         cmt_tbl
     | Pexp_fun _ -> print_arrow e
-    | Parsetree.Pexp_constant c ->
-      print_constant
-        ~template_literal:(Parsetree_viewer.is_template_literal e)
-        c
+    | Parsetree.Pexp_constant c -> print_constant c
     | Pexp_jsx_element
         (Jsx_fragment
            {

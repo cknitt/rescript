@@ -44,6 +44,57 @@ let assert_parsed_string ~source ~expected_semantic =
       actual.semantic
   | _ -> OUnit.assert_failure "expected a parsed string literal"
 
+let assert_parsed_template_constant ~source =
+  let result =
+    Res_driver.parse_implementation_from_source ~for_printer:false
+      ~display_filename:"StringLiteralTest.res"
+      ~source:("let value = `" ^ source ^ "`")
+  in
+  match result.parsetree with
+  | [
+   {
+     pstr_desc =
+       Pstr_value
+         ( _,
+           [
+             {
+               pvb_expr =
+                 {
+                   pexp_desc = Pexp_constant (Pconst_template actual);
+                   pexp_attributes = [];
+                 };
+             };
+           ] );
+   };
+  ] ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") source actual
+  | _ -> OUnit.assert_failure "expected an explicit template constant"
+
+let assert_parsed_template_pattern ~source =
+  let result =
+    Res_driver.parse_implementation_from_source ~for_printer:false
+      ~display_filename:"StringLiteralTest.res"
+      ~source:("let f = value => switch value { | `" ^ source ^ "` => 1 }")
+  in
+  let actual = ref None in
+  let mapper =
+    {
+      Ast_mapper.default_mapper with
+      pat =
+        (fun self pattern ->
+          (match pattern.ppat_desc with
+          | Ppat_constant (Pconst_template source) ->
+            actual := Some (source, pattern.ppat_attributes)
+          | _ -> ());
+          Ast_mapper.default_mapper.pat self pattern);
+    }
+  in
+  ignore (mapper.structure mapper result.parsetree);
+  match !actual with
+  | Some (actual, []) ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") source actual
+  | _ -> OUnit.assert_failure "expected an explicit template pattern"
+
 let assert_parsed_template ~prefix ~expected_kind =
   let result =
     Res_driver.parse_implementation_from_source ~for_printer:false
@@ -241,12 +292,10 @@ let suites =
              ~expected_semantic:"a\n😀" );
          ( "template literals remain raw" >:: fun _ ->
            let encoded = {|\x61|} in
-           let template_attribute =
-             (Location.mknoloc "res.template", Parsetree.PStr [])
-           in
+           assert_parsed_template_constant ~source:encoded;
+           assert_parsed_template_pattern ~source:encoded;
            let expression =
-             Ast_helper.Exp.constant ~attrs:[template_attribute]
-               (Parsetree.Pconst_template encoded)
+             Ast_helper.Exp.constant (Parsetree.Pconst_template encoded)
            in
            match
              (Bs_builtin_ppx.mapper.expr Bs_builtin_ppx.mapper expression)

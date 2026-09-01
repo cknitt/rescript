@@ -271,7 +271,25 @@ let test_string_literals_roundtrip_through_ast0 _ =
     OUnit.assert_bool "expected the ast0 template marker"
       (List.mem "res.template" (attr_names template_expr0.pexp_attributes))
   | _ -> assert_failure "Expected ast0's template string representation");
-  assert_template_expr ~expected:encoded (map_expr0 template_expr0);
+  let template_expr = map_expr0 template_expr0 in
+  assert_template_expr ~expected:encoded template_expr;
+  OUnit.assert_bool "the ast0 template marker was consumed"
+    (not (List.mem "res.template" (attr_names template_expr.pexp_attributes)));
+  let template_pat =
+    Ast_helper.Pat.constant ~loc (Parsetree.Pconst_template encoded)
+  in
+  let template_pat0 =
+    Ast_mapper_to0.default_mapper.pat Ast_mapper_to0.default_mapper template_pat
+  in
+  OUnit.assert_bool "expected the ast0 pattern template marker"
+    (List.mem "res.template" (attr_names template_pat0.ppat_attributes));
+  let template_pat = map_pat0 template_pat0 in
+  (match template_pat.ppat_desc with
+  | Ppat_constant (Pconst_template actual) ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") encoded actual;
+    OUnit.assert_bool "the ast0 pattern template marker was consumed"
+      (not (List.mem "res.template" (attr_names template_pat.ppat_attributes)))
+  | _ -> assert_failure "Expected a template pattern after ast0 roundtrip");
   let json_expr =
     Ast_helper.Exp.constant ~loc (Parsetree.Pconst_json {|{"answer":42}|})
   in

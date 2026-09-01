@@ -82,11 +82,11 @@ let map_tuple3 f1 f2 f3 (x, y, z) = (f1 x, f2 y, f3 z)
 let map_opt f = function
   | None -> None
   | Some x -> Some (f x)
-let is_template attrs =
-  Ext_list.exists attrs (fun ({txt}, _) ->
-      match txt with
-      | "res.template" | "res.taggedTemplate" -> true
-      | _ -> false)
+let has_template_attr attrs =
+  Ext_list.exists attrs (fun ({txt}, _) -> txt = "res.template")
+
+let remove_template_attr attrs =
+  List.filter (fun ({Location.txt}, _) -> txt <> "res.template") attrs
 
 let decode_js_string ~loc s =
   match String_literal.decode_js_escapes s with
@@ -112,12 +112,12 @@ let map_constant ~loc ~is_template = function
   | Pconst_string (semantic, Some _) -> semantic_string semantic
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
 
-let map_pattern_constant ~loc = function
+let map_pattern_constant ~loc ~is_template = function
   | Pconst_string (_, Some tag)
     when tag <> "js" && tag <> "*j" && tag <> "INTERNAL_RES_CHAR_CONTENTS" ->
     Location.raise_errorf ~loc
       "Tagged template literals are not supported in patterns"
-  | constant -> map_constant ~loc ~is_template:false constant
+  | constant -> map_constant ~loc ~is_template constant
 
 let is_raw_source_extension = function
   | "raw" | "ffi" | "re" -> true
@@ -578,8 +578,9 @@ module E = struct
       await ~loc ~attrs:(sub.attributes sub await_attrs0) inner
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
     | Pexp_constant x ->
-      constant ~loc ~attrs
-        (map_constant ~loc ~is_template:(is_template attrs) x)
+      let template = has_template_attr attrs in
+      let attrs = if template then remove_template_attr attrs else attrs in
+      constant ~loc ~attrs (map_constant ~loc ~is_template:template x)
     | Pexp_let (r, vbs, e) ->
       let_ ~loc ~attrs r (List.map (sub.value_binding sub) vbs) (sub.expr sub e)
     | Pexp_fun (lab, def, p, e) ->
@@ -699,17 +700,13 @@ module E = struct
       in
       tagged_template ~loc ~attrs (sub.expr sub tag) raw_sources
         (List.map (sub.expr sub) values)
-    | Pexp_apply _ as application
-      when List.exists (fun ({Location.txt}, _) -> txt = "res.template") attrs
-      ->
+    | Pexp_apply _ as application when has_template_attr attrs ->
       let rec flatten acc (expression : Parsetree0.expression) =
         match expression.pexp_desc with
         | Pexp_apply
             ( {pexp_desc = Pexp_ident {txt = Longident.Lident "^"}},
               [(Nolabel, lhs); (Nolabel, rhs)] )
-          when List.exists
-                 (fun ({Location.txt}, _) -> txt = "res.template")
-                 expression.pexp_attributes ->
+          when has_template_attr expression.pexp_attributes ->
           flatten (rhs :: acc) lhs
         | _ -> expression :: acc
       in
@@ -747,14 +744,10 @@ module E = struct
       in
       begin match collect None [] [] parts with
       | Some (kind, sources, values) ->
-        let attrs =
-          List.filter (fun ({Location.txt}, _) -> txt <> "res.template") attrs
-        in
+        let attrs = remove_template_attr attrs in
         template ~loc ~attrs kind sources (List.map (sub.expr sub) values)
       | None ->
-        let attrs =
-          List.filter (fun ({Location.txt}, _) -> txt <> "res.template") attrs
-        in
+        let attrs = remove_template_attr attrs in
         begin match application with
         | Pexp_apply (e, l) ->
           let e =
@@ -1046,11 +1039,14 @@ module P = struct
     | Ppat_any -> any ~loc ~attrs ()
     | Ppat_var s -> var ~loc ~attrs (map_loc sub s)
     | Ppat_alias (p, s) -> alias ~loc ~attrs (sub.pat sub p) (map_loc sub s)
-    | Ppat_constant c -> constant ~loc ~attrs (map_pattern_constant ~loc c)
+    | Ppat_constant c ->
+      let template = has_template_attr attrs in
+      let attrs = if template then remove_template_attr attrs else attrs in
+      constant ~loc ~attrs (map_pattern_constant ~loc ~is_template:template c)
     | Ppat_interval (c1, c2) ->
       interval ~loc ~attrs
-        (map_pattern_constant ~loc c1)
-        (map_pattern_constant ~loc c2)
+        (map_pattern_constant ~loc ~is_template:false c1)
+        (map_pattern_constant ~loc ~is_template:false c2)
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub.pat sub) pl)
     | Ppat_construct (l, p) ->
       construct ~loc ~attrs (map_loc sub l) (map_opt (sub.pat sub) p)
