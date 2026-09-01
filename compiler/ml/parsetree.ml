@@ -49,6 +49,8 @@ type constant =
    Suffixes are rejected by the typechecker.
 *)
 
+type template_kind = Ptemplate_string | Ptemplate_json
+
 (** {1 Extension points} *)
 
 type attribute = string loc * payload
@@ -344,13 +346,20 @@ and expression_desc =
     (* for pattern of array_expr do body_expr *)
   | Pexp_for_await_of of pattern * expression * expression
   (* for await pattern of iterable_expr do body_expr *)
+  | Pexp_template of {
+      kind: template_kind;
+      sources: string list;
+      values: expression list;
+    }
+  (* An interpolated backquoted literal. [sources] contains the original
+     spelling of the segments surrounding [values]. *)
   | Pexp_tagged_template of {
       tag: expression;
       sources: string list;
       values: expression list;
     }
 (* A JavaScript tagged template. [sources] preserves each segment's raw
-       spelling because invalid escapes are legal in tagged templates. *)
+     spelling because invalid escapes are legal in tagged templates. *)
 
 (* an element of a record pattern or expression *)
 and 'a record_element = {lid: Longident.t loc; x: 'a; opt: bool (* optional *)}

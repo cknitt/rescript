@@ -212,6 +212,14 @@ module Exp : sig
 
   val object_literal :
     ?loc:loc -> ?attrs:attrs -> (str * expression) list -> expression
+
+  val template :
+    ?loc:loc ->
+    ?attrs:attrs ->
+    template_kind ->
+    string list ->
+    expression list ->
+    expression
   val letmodule :
     ?loc:loc -> ?attrs:attrs -> str -> module_expr -> expression -> expression
   val letexception :

@@ -2561,37 +2561,25 @@ and parse_template_expr ?prefix p =
     Ast_helper.Exp.tagged_template ~loc:lident_loc.loc ident sources values
   in
 
-  let hidden_operator =
-    let op = Location.mknoloc (Longident.Lident "++") in
-    Ast_helper.Exp.ident op
-  in
-  let concat (e1 : Parsetree.expression) (e2 : Parsetree.expression) =
-    let loc = mk_loc e1.pexp_loc.loc_start e2.pexp_loc.loc_end in
-    Ast_helper.Exp.apply ~attrs:[template_literal_attr] ~loc hidden_operator
-      [(Nolabel, e1); (Nolabel, e2)]
-  in
   let gen_interpolated_string () =
-    let subparts =
-      List.flatten
-        (List.map
-           (fun part ->
-             match part with
-             | string, Some value -> [string; value]
-             | string, None -> [string])
-           parts)
-    in
-    let expr_option =
-      List.fold_left
-        (fun acc subpart ->
-          Some
-            (match acc with
-            | Some expr -> concat expr subpart
-            | None -> subpart))
-        None subparts
-    in
-    match expr_option with
-    | Some expr -> expr
-    | None -> Ast_helper.Exp.constant (Ast_helper.Const.string "")
+    match (strings, values) with
+    | [string], [] -> string
+    | _ ->
+      let sources =
+        List.map
+          (fun (string : Parsetree.expression) ->
+            match string.pexp_desc with
+            | Pexp_constant (Pconst_template source | Pconst_json source) ->
+              source
+            | _ -> assert false)
+          strings
+      in
+      Ast_helper.Exp.template
+        ~loc:
+          (mk_loc (List.hd strings).pexp_loc.loc_start
+             (Ext_list.last strings).pexp_loc.loc_end)
+        (if is_json then Ptemplate_json else Ptemplate_string)
+        sources values
   in
 
   match prefix with

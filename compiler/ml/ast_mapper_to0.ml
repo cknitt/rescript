@@ -604,6 +604,39 @@ module E = struct
         ~attrs:(for_await_of_attr :: attrs)
         (sub.pat sub pat) start_expr end_expr Asttypes.Upto
         (sub.expr sub body_expr)
+    | Pexp_template {kind; sources; values} ->
+      let template_attr = (Location.mknoloc "res.template", Pt.PStr []) in
+      let segments =
+        List.map
+          (fun source ->
+            Ast_helper0.Exp.constant ~loc ~attrs:[template_attr]
+              (Pt.Pconst_string
+                 ( source,
+                   Some
+                     (match kind with
+                     | Ptemplate_string -> "js"
+                     | Ptemplate_json -> "json") )))
+          sources
+      in
+      let rec interleave acc segments values =
+        match (segments, values) with
+        | [segment], [] -> List.rev (segment :: acc)
+        | segment :: segments, value :: values ->
+          interleave (sub.expr sub value :: segment :: acc) segments values
+        | _ -> assert false
+      in
+      let parts = interleave [] segments values in
+      let concat lhs rhs =
+        apply ~loc ~attrs:[template_attr]
+          (Ast_helper0.Exp.ident ~loc (Location.mknoloc (Longident.Lident "^")))
+          [(Asttypes.Noloc.Nolabel, lhs); (Asttypes.Noloc.Nolabel, rhs)]
+      in
+      let expression =
+        match parts with
+        | first :: rest -> List.fold_left concat first rest
+        | [] -> assert false
+      in
+      {expression with pexp_attributes = template_attr :: attrs}
     | Pexp_tagged_template {tag; sources; values} ->
       let template_attr = (Location.mknoloc "res.template", Pt.PStr []) in
       let segments =

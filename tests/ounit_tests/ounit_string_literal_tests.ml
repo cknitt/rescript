@@ -44,6 +44,44 @@ let assert_parsed_string ~source ~expected_semantic =
       actual.semantic
   | _ -> OUnit.assert_failure "expected a parsed string literal"
 
+let assert_parsed_template ~prefix ~expected_kind =
+  let result =
+    Res_driver.parse_implementation_from_source ~for_printer:false
+      ~display_filename:"StringLiteralTest.res"
+      ~source:("let value = " ^ prefix ^ "`head\\n${item}tail`")
+  in
+  match result.parsetree with
+  | [
+   {
+     pstr_desc =
+       Pstr_value
+         ( _,
+           [
+             {
+               pvb_expr =
+                 {
+                   pexp_desc =
+                     Pexp_template
+                       {
+                         kind;
+                         sources;
+                         values =
+                           [
+                             {
+                               pexp_desc =
+                                 Pexp_ident {txt = Longident.Lident "item"};
+                             };
+                           ];
+                       };
+                 };
+             };
+           ] );
+   };
+  ] ->
+    OUnit.assert_equal expected_kind kind;
+    OUnit.assert_equal ~printer:Ext_obj.dump [{|head\n|}; "tail"] sources
+  | _ -> OUnit.assert_failure "expected an explicit parsed template"
+
 let assert_int_equal expected actual =
   OUnit.assert_equal ~printer:string_of_int expected actual
 
@@ -181,6 +219,12 @@ let suites =
            | Pexp_constant (Pconst_template actual) ->
              OUnit.assert_equal ~printer:(Printf.sprintf "%S") encoded actual
            | _ -> OUnit.assert_failure "expected a raw template segment" );
+         ( "interpolated templates have an explicit parser representation"
+         >:: fun _ ->
+           assert_parsed_template ~prefix:""
+             ~expected_kind:Parsetree.Ptemplate_string;
+           assert_parsed_template ~prefix:"json"
+             ~expected_kind:Parsetree.Ptemplate_json );
          ( "invalid encoded values are rejected" >:: fun _ ->
            List.iter
              (fun encoded ->

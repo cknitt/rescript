@@ -699,6 +699,79 @@ module E = struct
       in
       tagged_template ~loc ~attrs (sub.expr sub tag) sources
         (List.map (sub.expr sub) values)
+    | Pexp_apply _ as application
+      when List.exists (fun ({Location.txt}, _) -> txt = "res.template") attrs
+      ->
+      let rec flatten acc (expression : Parsetree0.expression) =
+        match expression.pexp_desc with
+        | Pexp_apply
+            ( {pexp_desc = Pexp_ident {txt = Longident.Lident "^"}},
+              [(Nolabel, lhs); (Nolabel, rhs)] )
+          when List.exists
+                 (fun ({Location.txt}, _) -> txt = "res.template")
+                 expression.pexp_attributes ->
+          flatten (rhs :: acc) lhs
+        | _ -> expression :: acc
+      in
+      let parts = flatten [] {e with pexp_desc = application} in
+      let rec collect kind sources values = function
+        | [
+            {
+              pexp_desc =
+                Pexp_constant
+                  (Pconst_string (source, Some (("js" | "json") as tag)));
+            };
+          ] ->
+          let segment_kind =
+            if tag = "json" then Pt.Ptemplate_json else Pt.Ptemplate_string
+          in
+          if kind = None || kind = Some segment_kind then
+            Some (segment_kind, List.rev (source :: sources), List.rev values)
+          else None
+        | {
+            pexp_desc =
+              Pexp_constant
+                (Pconst_string (source, Some (("js" | "json") as tag)));
+          }
+          :: value :: rest ->
+          let segment_kind =
+            if tag = "json" then Pt.Ptemplate_json else Pt.Ptemplate_string
+          in
+          if kind = None || kind = Some segment_kind then
+            collect (Some segment_kind) (source :: sources) (value :: values)
+              rest
+          else None
+        | _ -> None
+      in
+      begin match collect None [] [] parts with
+      | Some (kind, sources, values) ->
+        let attrs =
+          List.filter (fun ({Location.txt}, _) -> txt <> "res.template") attrs
+        in
+        template ~loc ~attrs kind sources (List.map (sub.expr sub) values)
+      | None ->
+        let attrs =
+          List.filter (fun ({Location.txt}, _) -> txt <> "res.template") attrs
+        in
+        begin match application with
+        | Pexp_apply (e, l) ->
+          let e =
+            match (e.pexp_desc, l) with
+            | ( Pexp_ident ({txt = Longident.Lident "^"} as lid),
+                [(Nolabel, _); (Nolabel, _)] ) ->
+              {
+                e with
+                pexp_desc = Pexp_ident {lid with txt = Longident.Lident "++"};
+              }
+            | _ -> e
+          in
+          apply ~loc ~attrs (sub.expr sub e)
+            (List.map
+               (fun (lbl, e) -> (Asttypes.to_arg_label lbl, sub.expr sub e))
+               l)
+        | _ -> assert false
+        end
+      end
     | Pexp_apply (e, l) ->
       let e =
         match (e.pexp_desc, l) with

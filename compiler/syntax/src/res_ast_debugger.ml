@@ -759,6 +759,17 @@ module Sexp_ast = struct
           ]
       | Pexp_extension ext ->
         Sexp.list [Sexp.atom "Pexp_extension"; extension ext]
+      | Pexp_template {kind; sources; values} ->
+        Sexp.list
+          [
+            Sexp.atom "Pexp_template";
+            Sexp.atom
+              (match kind with
+              | Ptemplate_string -> "string"
+              | Ptemplate_json -> "json");
+            Sexp.list (List.map string sources);
+            Sexp.list (List.map expression values);
+          ]
       | Pexp_tagged_template {tag; sources; values} ->
         Sexp.list
           [

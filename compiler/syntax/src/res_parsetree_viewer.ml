@@ -668,13 +668,7 @@ let has_template_literal_attr attrs =
 
 let is_template_literal expr =
   match expr.pexp_desc with
-  | Pexp_apply
-      {
-        funct = {pexp_desc = Pexp_ident {txt = Longident.Lident "++"}};
-        args = [(Nolabel, _); (Nolabel, _)];
-      }
-    when has_template_literal_attr expr.pexp_attributes ->
-    true
+  | Pexp_template _ -> true
   | Pexp_constant (Pconst_template _) -> true
   | Pexp_constant _ when has_template_literal_attr expr.pexp_attributes -> true
   | _ -> false

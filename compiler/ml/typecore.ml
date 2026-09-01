@@ -172,6 +172,7 @@ let iter_expression f e =
     | Pexp_apply {funct = e; args = lel} ->
       expr e;
       List.iter (fun (_, e) -> expr e) lel
+    | Pexp_template {values} -> List.iter expr values
     | Pexp_tagged_template {tag; values} ->
       expr tag;
       List.iter expr values
@@ -2534,6 +2535,40 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
   | Pexp_fun {newtypes = []; params; body = sfun_body; async} ->
     type_function ~async loc sexp.pexp_attributes env ty_expected params
       sfun_body
+  | Pexp_template {kind; sources; values} ->
+    let template_attr = (Location.mknoloc "res.template", Parsetree.PStr []) in
+    let segments =
+      List.map
+        (fun source ->
+          Ast_helper.Exp.constant ~loc ~attrs:[template_attr]
+            (match kind with
+            | Ptemplate_string -> Pconst_template source
+            | Ptemplate_json -> Pconst_json source))
+        sources
+    in
+    let rec interleave acc segments values =
+      match (segments, values) with
+      | [segment], [] -> List.rev (segment :: acc)
+      | segment :: segments, value :: values ->
+        interleave (value :: segment :: acc) segments values
+      | _ -> assert false
+    in
+    let parts = interleave [] segments values in
+    let concat lhs rhs =
+      let funct =
+        Ast_helper.Exp.ident ~loc (Location.mknoloc (Longident.Lident "++"))
+      in
+      Ast_helper.Exp.apply ~loc ~attrs:[template_attr] funct
+        [(Nolabel, lhs); (Nolabel, rhs)]
+    in
+    let expanded =
+      match parts with
+      | first :: rest -> List.fold_left concat first rest
+      | [] -> assert false
+    in
+    type_expect_ ?deprecated_context ~context ~recarg env
+      {expanded with pexp_attributes = sexp.pexp_attributes}
+      ty_expected
   | Pexp_tagged_template {tag = stag; sources; values = svalues} ->
     begin_def ();
     let tag =

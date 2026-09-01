@@ -360,6 +360,69 @@ let test_tagged_templates_roundtrip_through_ast0 _ =
       (attr_names (map_expr0 expression0).pexp_attributes)
   | _ -> assert_failure "Expected an explicit tagged template after roundtrip"
 
+let test_interpolated_templates_roundtrip_through_ast0 _ =
+  let value = Ast_helper.Exp.constant ~loc (Ast_helper.Const.integer "1") in
+  List.iter
+    (fun (kind, delimiter) ->
+      let expression =
+        Ast_helper.Exp.template ~loc
+          ~attrs:[attr "keep" (Parsetree.PStr [])]
+          kind [{|head\n|}; "tail"] [value]
+      in
+      let expression0 = map_expr_to0 expression in
+      OUnit.assert_bool "the frozen AST uses the template marker"
+        (List.mem "res.template" (attr_names expression0.pexp_attributes));
+      let rec first_segment (expression : Parsetree0.expression) =
+        match expression.pexp_desc with
+        | Pexp_apply (_, [(_, lhs); (_, _)]) -> first_segment lhs
+        | Pexp_constant (Pconst_string (source, Some actual_delimiter)) ->
+          OUnit.assert_equal delimiter actual_delimiter;
+          OUnit.assert_equal {|head\n|} source
+        | _ -> assert_failure "Expected a frozen-AST template segment"
+      in
+      first_segment expression0;
+      match map_expr0 expression0 with
+      | {
+       pexp_desc =
+         Pexp_template
+           {
+             kind = actual_kind;
+             sources;
+             values = [{pexp_desc = Pexp_constant (Pconst_integer ("1", None))}];
+           };
+       pexp_attributes;
+      } ->
+        OUnit.assert_equal kind actual_kind;
+        OUnit.assert_equal ~printer:Ext_obj.dump [{|head\n|}; "tail"] sources;
+        OUnit.assert_equal ["keep"] (attr_names pexp_attributes)
+      | _ -> assert_failure "Expected an explicit template after roundtrip")
+    [(Parsetree.Ptemplate_string, "js"); (Parsetree.Ptemplate_json, "json")]
+
+let test_string_source_reprints_after_ast0_roundtrip _ =
+  let source =
+    {|let newline = "\n"
+let slashN = "\\n"
+let quote = "\""
+let slash = "\\"|}
+  in
+  let parsed =
+    Res_driver.parse_implementation_from_source ~for_printer:false
+      ~display_filename:"StringReprintTest.res" ~source
+  in
+  OUnit.assert_bool "expected valid ReScript source" (not parsed.invalid);
+  let structure0 =
+    Ast_mapper_to0.default_mapper.structure Ast_mapper_to0.default_mapper
+      parsed.parsetree
+  in
+  let round_tripped =
+    Ast_mapper_from0.default_mapper.structure Ast_mapper_from0.default_mapper
+      structure0
+  in
+  let reprinted =
+    Res_printer.print_implementation round_tripped ~comments:[] ~width:80
+  in
+  OUnit.assert_equal ~printer:(Printf.sprintf "%S") (source ^ "\n") reprinted
+
 (* Function-node attributes such as [@this] must stay node attributes across
    the v0 bridge: the built-in PPX reads decorators from [pexp_attributes],
    so a round trip that moves them into [p_attrs] silently disables them. *)
@@ -423,6 +486,10 @@ let suites =
          >:: test_raw_extension_payloads_roundtrip_through_ast0;
          "tagged_templates_roundtrip_through_ast0"
          >:: test_tagged_templates_roundtrip_through_ast0;
+         "interpolated_templates_roundtrip_through_ast0"
+         >:: test_interpolated_templates_roundtrip_through_ast0;
+         "string_source_reprints_after_ast0_roundtrip"
+         >:: test_string_source_reprints_after_ast0_roundtrip;
          "malformed_internal_record_rest_attr_fails"
          >:: test_malformed_internal_record_rest_attr_fails;
          "record_rest_roundtrips_through_ast0"
