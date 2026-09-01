@@ -172,6 +172,9 @@ let iter_expression f e =
     | Pexp_apply {funct = e; args = lel} ->
       expr e;
       List.iter (fun (_, e) -> expr e) lel
+    | Pexp_tagged_template {tag; values} ->
+      expr tag;
+      List.iter expr values
     | Pexp_let (_, pel, e) ->
       expr e;
       List.iter binding pel
@@ -2531,7 +2534,37 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
   | Pexp_fun {newtypes = []; params; body = sfun_body; async} ->
     type_function ~async loc sexp.pexp_attributes env ty_expected params
       sfun_body
-  | Pexp_apply {funct = sfunct; args = sargs; partial; transformed_jsx} -> (
+  | Pexp_tagged_template {tag = stag; sources; values = svalues} ->
+    begin_def ();
+    let tag =
+      type_exp ~deprecated_context:FunctionCall ~context:None env stag
+    in
+    let param_ty = newvar () in
+    let output_ty = newvar () in
+    (try
+       unify env
+         (instance env tag.exp_type)
+         (newconstr Predef.path_tagged_template [param_ty; output_ty])
+     with Unify _ ->
+       raise (Error (tag.exp_loc, env, Tagged_template_non_tag tag.exp_type)));
+    let values =
+      List.map
+        (fun value ->
+          type_expect ~context:(Some TaggedTemplateValue) env value param_ty)
+        svalues
+    in
+    unify_var env (newvar ()) tag.exp_type;
+    end_def ();
+    rue
+      {
+        exp_desc = Texp_tagged_template {tag; sources; values};
+        exp_loc = loc;
+        exp_extra = [];
+        exp_type = output_ty;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env;
+      }
+  | Pexp_apply {funct = sfunct; args = sargs; partial; transformed_jsx} ->
     assert (sargs <> []);
     begin_def ();
     (* one more level for non-returning functions *)
@@ -2557,65 +2590,10 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
       if transformed_jsx then Some JsxComponent
       else type_clash_context_from_function sexp sfunct
     in
-    let is_tagged_template =
-      Ext_list.exists sexp.pexp_attributes (fun ({txt}, _) ->
-          txt = "res.taggedTemplate")
-    in
-    let tagged_template, args, ty_res, fully_applied =
-      if is_tagged_template then (
-        (* Backtick tagged-template syntax: the tag must be a value of the
-           builtin [taggedTemplate<'param, 'output>] type. The parser desugars
-           [tag`a ${x} b`] into [tag([|"a "; " b"|], [|x|])], so the two
-           arguments are the string parts and the interpolated values. *)
-        let param_ty = newvar () in
-        let output_ty = newvar () in
-        (try
-           unify env
-             (instance env funct.exp_type)
-             (newconstr Predef.path_tagged_template [param_ty; output_ty])
-         with Unify _ ->
-           raise
-             (Error (funct.exp_loc, env, Tagged_template_non_tag funct.exp_type)));
-        match sargs with
-        | [(Nolabel, strings); (Nolabel, values)] ->
-          let sources =
-            match strings.pexp_desc with
-            | Pexp_array segments ->
-              List.map
-                (fun (segment : Parsetree.expression) ->
-                  match segment.pexp_desc with
-                  | Pexp_constant (Pconst_template source) -> source
-                  | _ -> assert false)
-                segments
-            | _ -> assert false
-          in
-          (* Type each interpolated value directly against [param_ty] with a
-             tagged-template-specific clash context, rather than routing the
-             desugared values array through the generic array typing (which
-             would report a confusing "array item" type error for what the user
-             wrote as a [${...}] interpolation). *)
-          let typed_values =
-            match values.pexp_desc with
-            | Pexp_array interpolations ->
-              List.map
-                (fun interp ->
-                  type_expect ~context:(Some TaggedTemplateValue) env interp
-                    param_ty)
-                interpolations
-            (* The parser always desugars the interpolated values into an array
-               literal, so any other shape is a compiler invariant violation. *)
-            | _ -> assert false
-          in
-          (Some (sources, typed_values), [], output_ty, true)
-        | _ -> assert false)
-      else
-        match translate_unified_ops env funct sargs with
-        | Some (targs, result_type) -> (None, targs, result_type, true)
-        | None ->
-          let args, result_type, fully_applied =
-            type_application ~context total_app env funct sargs
-          in
-          (None, args, result_type, fully_applied)
+    let args, ty_res, fully_applied =
+      match translate_unified_ops env funct sargs with
+      | Some (targs, result_type) -> (targs, result_type, true)
+      | None -> type_application ~context total_app env funct sargs
     in
     end_def ();
     unify_var env (newvar ()) funct.exp_type;
@@ -2638,25 +2616,8 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
       | _ -> false
     in
 
-    match tagged_template with
-    | Some (sources, values) ->
-      let exp_attributes =
-        List.filter
-          (fun ({txt}, _) -> txt <> "res.taggedTemplate")
-          sexp.pexp_attributes
-      in
-      rue
-        {
-          exp_desc = Texp_tagged_template {tag = funct; sources; values};
-          exp_loc = loc;
-          exp_extra = [];
-          exp_type = ty_res;
-          exp_attributes;
-          exp_env = env;
-        }
-    | None ->
-      if fully_applied && not is_primitive then rue (mk_apply funct args)
-      else rue (mk_apply funct args))
+    if fully_applied && not is_primitive then rue (mk_apply funct args)
+    else rue (mk_apply funct args)
   | Pexp_match (sarg, caselist) ->
     begin_def ();
     let arg = type_exp ~context:None env sarg in

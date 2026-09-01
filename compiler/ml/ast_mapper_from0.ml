@@ -675,6 +675,30 @@ module E = struct
         in
         jsx_container_element ~loc ~attrs jsx_tag_name props Lexing.dummy_pos
           children (Some closing_tag))
+    | Pexp_apply
+        ( tag,
+          [
+            (Nolabel, {pexp_desc = Pexp_array segments});
+            (Nolabel, {pexp_desc = Pexp_array values});
+          ] )
+      when List.exists
+             (fun ({Location.txt}, _) -> txt = "res.taggedTemplate")
+             attrs ->
+      let sources =
+        List.map
+          (fun (segment : Parsetree0.expression) ->
+            match segment.pexp_desc with
+            | Pexp_constant (Pconst_string (source, Some "js")) -> source
+            | _ -> assert false)
+          segments
+      in
+      let attrs =
+        List.filter
+          (fun ({Location.txt}, _) -> txt <> "res.taggedTemplate")
+          attrs
+      in
+      tagged_template ~loc ~attrs (sub.expr sub tag) sources
+        (List.map (sub.expr sub) values)
     | Pexp_apply (e, l) ->
       let e =
         match (e.pexp_desc, l) with

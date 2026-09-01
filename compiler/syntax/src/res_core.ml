@@ -281,9 +281,6 @@ let template_literal_attr = (Location.mknoloc "res.template", Parsetree.PStr [])
 let make_pat_variant_spread_attr =
   (Location.mknoloc "res.patVariantSpread", Parsetree.PStr [])
 
-let tagged_template_literal_attr =
-  (Location.mknoloc "res.taggedTemplate", Parsetree.PStr [])
-
 let spread_attr = (Location.mknoloc "res.spread", Parsetree.PStr [])
 let dict_spread_attr = (Location.mknoloc "res.dictSpread", Parsetree.PStr [])
 
@@ -2551,18 +2548,17 @@ and parse_template_expr ?prefix p =
   let strings = List.map fst parts in
   let values = Ext_list.filter_map parts snd in
 
-  let gen_tagged_template_call (lident_loc : Longident.t Location.loc) =
+  let gen_tagged_template (lident_loc : Longident.t Location.loc) =
     let ident = Ast_helper.Exp.ident ~attrs:[] ~loc:lident_loc.loc lident_loc in
-    let strings_array =
-      Ast_helper.Exp.array ~attrs:[] ~loc:Location.none strings
+    let sources =
+      List.map
+        (fun (string : Parsetree.expression) ->
+          match string.pexp_desc with
+          | Pexp_constant (Pconst_template source) -> source
+          | _ -> assert false)
+        strings
     in
-    let values_array =
-      Ast_helper.Exp.array ~attrs:[] ~loc:Location.none values
-    in
-    Ast_helper.Exp.apply
-      ~attrs:[tagged_template_literal_attr]
-      ~loc:lident_loc.loc ident
-      [(Nolabel, strings_array); (Nolabel, values_array)]
+    Ast_helper.Exp.tagged_template ~loc:lident_loc.loc ident sources values
   in
 
   let hidden_operator =
@@ -2600,7 +2596,7 @@ and parse_template_expr ?prefix p =
 
   match prefix with
   | Some {txt = Longident.Lident "json"; _} | None -> gen_interpolated_string ()
-  | Some lident_loc -> gen_tagged_template_call lident_loc
+  | Some lident_loc -> gen_tagged_template lident_loc
 
 (* Overparse: let f = a : int => a + 1, is it (a : int) => or (a): int =>
  * Also overparse constraints:

@@ -16,13 +16,6 @@ let s =
   (((((({js|some unicode é |js})[@res.template ]) ++ bar)[@res.template ])
       ++ (({js| £ |js})[@res.template ]))
   [@res.template ])
-let s = ((x [|(({js|foo|js})[@res.template ])|] [||])[@res.taggedTemplate ])
-let s =
-  ((x [|(({js|foo |js})[@res.template ]);(({js| baz|js})[@res.template ])|]
-      [|bar|])
-  [@res.taggedTemplate ])
-let s =
-  ((x
-      [|(({js|some unicode é |js})[@res.template ]);(({js| £ |js})
-        [@res.template ])|] [|bar|])
-  [@res.taggedTemplate ])
+let s = x`foo`
+let s = x`foo ${bar} baz`
+let s = x`some unicode é ${bar} £ `

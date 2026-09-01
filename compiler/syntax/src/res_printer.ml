@@ -2525,8 +2525,7 @@ and print_value_binding ~state ~rec_flag (vb : Parsetree.value_binding) cmt_tbl
           } ->
             Parsetree_viewer.is_binary_expression if_expr
             || Parsetree_viewer.has_attributes if_expr.pexp_attributes
-          | {pexp_attributes = [({Location.txt = "res.taggedTemplate"}, _)]} ->
-            false
+          | {pexp_desc = Pexp_tagged_template _} -> false
           | {pexp_desc = Pexp_jsx_element _} -> true
           | e ->
             Parsetree_viewer.has_attributes e.pexp_attributes
@@ -3671,6 +3670,8 @@ and print_expression ~state (e : Parsetree.expression) cmt_tbl =
         Doc.text expr
       | extension ->
         print_extension ~state ~at_module_lvl:false extension cmt_tbl)
+    | Pexp_tagged_template {tag; sources; values} ->
+      print_tagged_template_literal ~state ~tag ~sources ~values cmt_tbl
     | Pexp_apply
         {funct = e; args = [(Nolabel, {pexp_desc = Pexp_array sub_lists})]}
       when Parsetree_viewer.is_spread_array e ->
@@ -3679,13 +3680,11 @@ and print_expression ~state (e : Parsetree.expression) cmt_tbl =
         {funct = e; args = [(Nolabel, {pexp_desc = Pexp_array sub_lists})]}
       when Parsetree_viewer.is_spread_list e ->
       print_list_spread_apply ~state sub_lists cmt_tbl
-    | Pexp_apply {funct = call_expr; args} ->
+    | Pexp_apply _ ->
       if Parsetree_viewer.is_unary_expression e then
         print_unary_expression ~state e cmt_tbl
       else if Parsetree_viewer.is_template_literal e then
         print_template_literal ~state e cmt_tbl
-      else if Parsetree_viewer.is_tagged_template_literal e then
-        print_tagged_template_literal ~state call_expr args cmt_tbl
       else if Parsetree_viewer.is_binary_expression e then
         print_binary_expression ~state e cmt_tbl
       else print_pexp_apply ~state e cmt_tbl
@@ -4122,27 +4121,8 @@ and print_template_literal ~state expr cmt_tbl =
       Doc.text "`";
     ]
 
-and print_tagged_template_literal ~state call_expr args cmt_tbl =
-  let strings_list, values_list =
-    match args with
-    | [
-     (_, {Parsetree.pexp_desc = Pexp_array strings});
-     (_, {Parsetree.pexp_desc = Pexp_array values});
-    ] ->
-      (strings, values)
-    | _ -> assert false
-  in
-
-  let strings =
-    List.map
-      (fun x ->
-        match x with
-        | {Parsetree.pexp_desc = Pexp_constant (Pconst_template source)} ->
-          print_string_contents source
-        | _ -> assert false)
-      strings_list
-  in
-
+and print_tagged_template_literal ~state ~tag ~sources ~values cmt_tbl =
+  let strings = List.map print_string_contents sources in
   let values =
     List.map
       (fun x ->
@@ -4152,7 +4132,7 @@ and print_tagged_template_literal ~state call_expr args cmt_tbl =
             print_expression_with_comments ~state x cmt_tbl;
             Doc.text "}";
           ])
-      values_list
+      values
   in
 
   let process strings values =
@@ -4166,8 +4146,8 @@ and print_tagged_template_literal ~state call_expr args cmt_tbl =
 
   let content : Doc.t = process strings values in
 
-  let tag = print_expression_with_comments ~state call_expr cmt_tbl in
-  Doc.concat [tag; Doc.text "`"; content; Doc.text "`"]
+  let tag_doc = print_expression_with_comments ~state tag cmt_tbl in
+  Doc.concat [tag_doc; Doc.text "`"; content; Doc.text "`"]
 
 and print_unary_expression ~state expr cmt_tbl =
   let print_unary_operator op =

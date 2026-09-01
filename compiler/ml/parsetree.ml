@@ -343,7 +343,14 @@ and expression_desc =
   | Pexp_for_of of pattern * expression * expression
     (* for pattern of array_expr do body_expr *)
   | Pexp_for_await_of of pattern * expression * expression
-(* for await pattern of iterable_expr do body_expr *)
+  (* for await pattern of iterable_expr do body_expr *)
+  | Pexp_tagged_template of {
+      tag: expression;
+      sources: string list;
+      values: expression list;
+    }
+(* A JavaScript tagged template. [sources] preserves each segment's raw
+       spelling because invalid escapes are legal in tagged templates. *)
 
 (* an element of a record pattern or expression *)
 and 'a record_element = {lid: Longident.t loc; x: 'a; opt: bool (* optional *)}

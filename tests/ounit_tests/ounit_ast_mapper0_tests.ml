@@ -335,6 +335,31 @@ let test_raw_extension_payloads_roundtrip_through_ast0 _ =
         (map_expr0 (map_expr_to0 expression)))
     ["raw"; "ffi"; "re"]
 
+let test_tagged_templates_roundtrip_through_ast0 _ =
+  let tag =
+    Ast_helper.Exp.ident ~loc (Location.mknoloc (Longident.Lident "tag"))
+  in
+  let value = Ast_helper.Exp.constant ~loc (Ast_helper.Const.integer "1") in
+  let expression =
+    Ast_helper.Exp.tagged_template ~loc
+      ~attrs:[attr "keep" (Parsetree.PStr [])]
+      tag [{|raw\unicode|}; " tail"] [value]
+  in
+  let expression0 = map_expr_to0 expression in
+  OUnit.assert_bool "the frozen AST uses the tagged-template marker"
+    (List.mem "res.taggedTemplate" (attr_names expression0.pexp_attributes));
+  match (map_expr0 expression0).pexp_desc with
+  | Pexp_tagged_template
+      {
+        tag = {pexp_desc = Pexp_ident {txt = Longident.Lident "tag"}};
+        sources;
+        values = [{pexp_desc = Pexp_constant (Pconst_integer ("1", None))}];
+      } ->
+    OUnit.assert_equal ~printer:Ext_obj.dump [{|raw\unicode|}; " tail"] sources;
+    OUnit.assert_equal ["keep"]
+      (attr_names (map_expr0 expression0).pexp_attributes)
+  | _ -> assert_failure "Expected an explicit tagged template after roundtrip"
+
 (* Function-node attributes such as [@this] must stay node attributes across
    the v0 bridge: the built-in PPX reads decorators from [pexp_attributes],
    so a round trip that moves them into [p_attrs] silently disables them. *)
@@ -396,6 +421,8 @@ let suites =
          >:: test_string_literals_roundtrip_through_ast0;
          "raw_extension_payloads_roundtrip_through_ast0"
          >:: test_raw_extension_payloads_roundtrip_through_ast0;
+         "tagged_templates_roundtrip_through_ast0"
+         >:: test_tagged_templates_roundtrip_through_ast0;
          "malformed_internal_record_rest_attr_fails"
          >:: test_malformed_internal_record_rest_attr_fails;
          "record_rest_roundtrips_through_ast0"

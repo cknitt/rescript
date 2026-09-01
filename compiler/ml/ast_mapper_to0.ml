@@ -604,6 +604,22 @@ module E = struct
         ~attrs:(for_await_of_attr :: attrs)
         (sub.pat sub pat) start_expr end_expr Asttypes.Upto
         (sub.expr sub body_expr)
+    | Pexp_tagged_template {tag; sources; values} ->
+      let template_attr = (Location.mknoloc "res.template", Pt.PStr []) in
+      let segments =
+        List.map
+          (fun source ->
+            Ast_helper0.Exp.constant ~loc ~attrs:[template_attr]
+              (Pt.Pconst_string (source, Some "js")))
+          sources
+      in
+      let tagged_attr = (Location.mknoloc "res.taggedTemplate", Pt.PStr []) in
+      apply ~loc ~attrs:(tagged_attr :: attrs) (sub.expr sub tag)
+        [
+          (Asttypes.Noloc.Nolabel, Ast_helper0.Exp.array ~loc segments);
+          ( Asttypes.Noloc.Nolabel,
+            Ast_helper0.Exp.array ~loc (List.map (sub.expr sub) values) );
+        ]
     | Pexp_coerce (e, (), t2) ->
       coerce ~loc ~attrs (sub.expr sub e) (sub.typ sub t2)
     | Pexp_constraint (e, t) ->

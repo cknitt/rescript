@@ -763,6 +763,15 @@ and expression ctxt f x =
     | Pexp_variant (l, Some eo) -> pp f "@[<2>`%s@;%a@]" l (simple_expr ctxt) eo
     | Pexp_extension e -> extension ctxt f e
     | Pexp_await e -> pp f "@[<hov2>await@ %a@]" (simple_expr ctxt) e
+    | Pexp_tagged_template {tag; sources; values} ->
+      let rec parts f (sources, values) =
+        match (sources, values) with
+        | [source], [] -> pp f "%s" source
+        | source :: sources, value :: values ->
+          pp f "%s${%a}%a" source (expression ctxt) value parts (sources, values)
+        | _ -> assert false
+      in
+      pp f "%a`%a`" (simple_expr ctxt) tag parts (sources, values)
     | _ -> expression1 ctxt f x
 
 and expression1 ctxt f x =

@@ -344,6 +344,9 @@ module E = struct
     | Pexp_for_await_of (p, e1, e2) ->
       Exp.mk ~loc ~attrs
         (Pexp_for_await_of (sub.pat sub p, sub.expr sub e1, sub.expr sub e2))
+    | Pexp_tagged_template {tag; sources; values} ->
+      Exp.tagged_template ~loc ~attrs (sub.expr sub tag) sources
+        (List.map (sub.expr sub) values)
     | Pexp_coerce (e, (), t2) ->
       coerce ~loc ~attrs (sub.expr sub e) (sub.typ sub t2)
     | Pexp_constraint (e, t) ->

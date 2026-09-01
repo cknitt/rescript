@@ -225,6 +225,13 @@ module Exp : sig
   val open_ :
     ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> expression -> expression
   val extension : ?loc:loc -> ?attrs:attrs -> extension -> expression
+  val tagged_template :
+    ?loc:loc ->
+    ?attrs:attrs ->
+    expression ->
+    string list ->
+    expression list ->
+    expression
   val jsx_fragment :
     ?loc:loc ->
     ?attrs:attrs ->

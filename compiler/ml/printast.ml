@@ -381,6 +381,11 @@ and expression i ppf x =
   | Pexp_extension (s, arg) ->
     line i ppf "Pexp_extension \"%s\"\n" s.txt;
     payload i ppf arg
+  | Pexp_tagged_template {tag; sources; values} ->
+    line i ppf "Pexp_tagged_template\n";
+    expression (i + 1) ppf tag;
+    List.iter (line (i + 1) ppf "source %S\n") sources;
+    List.iter (expression (i + 1) ppf) values
   | Pexp_await e ->
     line i ppf "Pexp_await\n";
     expression i ppf e

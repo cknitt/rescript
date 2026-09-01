@@ -263,6 +263,14 @@ and print_expr_item expr ~pos ~indentation =
     ^ ")"
   | Pexp_extension (({txt} as loc), _) ->
     "Pexp_extension(%" ^ (loc |> print_loc_denominator_loc ~pos) ^ txt ^ ")"
+  | Pexp_tagged_template {tag; sources; values} ->
+    "Pexp_tagged_template(tag="
+    ^ print_expr_item tag ~pos ~indentation
+    ^ ", sources="
+    ^ string_of_int (List.length sources)
+    ^ ", values="
+    ^ string_of_int (List.length values)
+    ^ ")"
   | Pexp_assert expr ->
     "Pexp_assert(" ^ print_expr_item expr ~pos ~indentation ^ ")"
   | Pexp_field (exp, loc) ->

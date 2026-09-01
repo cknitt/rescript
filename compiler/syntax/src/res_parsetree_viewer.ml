@@ -228,8 +228,8 @@ let filter_parsing_attrs attrs =
       | ( {
             Location.txt =
               ( "res.braces" | "ns.braces" | "res.iflet" | "res.ternary"
-              | "res.await" | "res.template" | "res.taggedTemplate"
-              | "res.patVariantSpread" | "res.dictPattern" | "res.dictSpread"
+              | "res.await" | "res.template" | "res.patVariantSpread"
+              | "res.dictPattern" | "res.dictSpread"
               | "res.inlineRecordDefinition" );
           },
           _ ) ->
@@ -571,8 +571,8 @@ let is_printable_attribute attr =
   | ( {
         Location.txt =
           ( "res.iflet" | "res.braces" | "ns.braces" | "JSX" | "res.await"
-          | "res.template" | "res.taggedTemplate" | "res.ternary"
-          | "res.inlineRecordDefinition" | "res.dictSpread" );
+          | "res.template" | "res.ternary" | "res.inlineRecordDefinition"
+          | "res.dictSpread" );
       },
       _ ) ->
     false
@@ -666,14 +666,6 @@ let has_template_literal_attr attrs =
       | _ -> false)
     attrs
 
-let has_tagged_template_literal_attr attrs =
-  List.exists
-    (fun attr ->
-      match attr with
-      | {Location.txt = "res.taggedTemplate"}, _ -> true
-      | _ -> false)
-    attrs
-
 let is_template_literal expr =
   match expr.pexp_desc with
   | Pexp_apply
@@ -688,9 +680,8 @@ let is_template_literal expr =
   | _ -> false
 
 let is_tagged_template_literal expr =
-  match expr with
-  | {pexp_desc = Pexp_apply _; pexp_attributes = attrs} ->
-    has_tagged_template_literal_attr attrs
+  match expr.pexp_desc with
+  | Pexp_tagged_template _ -> true
   | _ -> false
 
 let has_spread_attr attrs =

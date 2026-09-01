@@ -1185,7 +1185,7 @@ let completion_with_parser1 ~debug ~offset ~pos_cursor ~kind_file
           args =
             [
               (* sh`echo "meh"` *)
-              (_, ({pexp_desc = Pexp_apply _} as inner_expr));
+              (_, ({pexp_desc = Pexp_tagged_template _} as inner_expr));
               (* recovery inserted node *)
               (_, {pexp_desc = Pexp_extension ({txt = "rescript.exprhole"}, _)});
             ];
@@ -1215,7 +1215,7 @@ let completion_with_parser1 ~debug ~offset ~pos_cursor ~kind_file
           args =
             [
               (*  sh`echo "meh"` *)
-              (_, ({pexp_desc = Pexp_apply _} as inner_expr));
+              (_, ({pexp_desc = Pexp_tagged_template _} as inner_expr));
               (* foo *)
               (_, {pexp_desc = Pexp_ident {txt = Lident field_name}});
             ];
