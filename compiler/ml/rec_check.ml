@@ -209,7 +209,7 @@ let rec classify_expression : Typedtree.expression -> sd =
     Static
   | Texp_apply _ | Texp_match _ | Texp_ifthenelse _ | Texp_object_get _
   | Texp_object_set _ | Texp_field _ | Texp_assert _ | Texp_try _
-  | Texp_tagged_template _ ->
+  | Texp_tagged_template _ | Texp_template _ ->
     Dynamic
 
 let rec expression : Env.env -> Typedtree.expression -> Use.t =
@@ -264,6 +264,7 @@ let rec expression : Env.env -> Typedtree.expression -> Use.t =
   | Texp_tagged_template {tag; values} ->
     Use.(
       join (inspect (expression env tag)) (inspect (list expression env values)))
+  | Texp_template {values} -> Use.guard (list expression env values)
   | Texp_tuple exprs -> Use.guard (list expression env exprs)
   | Texp_array exprs -> Use.guard (list expression env exprs)
   | Texp_construct (_, desc, exprs) ->

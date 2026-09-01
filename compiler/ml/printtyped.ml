@@ -362,6 +362,17 @@ and expression i ppf x =
     line i ppf "Texp_for_await_of \"%a\"\n" fmt_ident s;
     expression i ppf e1;
     expression i ppf e2
+  | Texp_template {kind; segments; values} ->
+    line i ppf "Texp_template %s segments=%a\n"
+      (match kind with
+      | Ptemplate_string -> "string"
+      | Ptemplate_json -> "json")
+      (Format.pp_print_list
+         ~pp_sep:(fun ppf () -> Format.fprintf ppf ", ")
+         (fun ppf ({source; semantic} : Typedtree.template_segment) ->
+           Format.fprintf ppf "{source=%S; semantic=%S}" source semantic))
+      segments;
+    List.iter (expression i ppf) values
   | Texp_tagged_template {tag; sources; values} ->
     line i ppf "Texp_tagged_template sources=%a\n"
       (Format.pp_print_list

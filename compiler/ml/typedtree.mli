@@ -27,6 +27,12 @@ open Types
 
 type partial = Partial | Total
 
+type template_segment = {source: string; semantic: string}
+(** A segment of an interpolated template. [source] preserves its spelling for
+    JavaScript output; [semantic] is the decoded string value used downstream.
+    For legacy [json] interpolation both fields intentionally contain the raw
+    segment text. *)
+
 (** {1 Extension points} *)
 
 type attribute = Parsetree.attribute
@@ -237,13 +243,19 @@ and expression_desc =
      breaks analysis when it reads CMTs produced by older compiler versions. *)
   | Texp_for_of of Ident.t * Parsetree.pattern * expression * expression
   | Texp_for_await_of of Ident.t * Parsetree.pattern * expression * expression
+  (* A JavaScript tagged template. [sources] contains the raw spelling of
+     each segment because invalid escapes are legal in tagged templates. *)
   | Texp_tagged_template of {
       tag: expression;
       sources: string list;
       values: expression list;
     }
-      (** A JavaScript tagged template. [sources] contains the raw spelling of
-          each segment because invalid escapes are legal in tagged templates. *)
+  (* An ordinary or legacy [json] interpolated template. *)
+  | Texp_template of {
+      kind: Parsetree.template_kind;
+      segments: template_segment list;
+      values: expression list;
+    }
 
 and case = {c_lhs: pattern; c_guard: expression option; c_rhs: expression}
 

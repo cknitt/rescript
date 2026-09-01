@@ -2536,39 +2536,34 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
     type_function ~async loc sexp.pexp_attributes env ty_expected params
       sfun_body
   | Pexp_template {kind; sources; values} ->
-    let template_attr = (Location.mknoloc "res.template", Parsetree.PStr []) in
-    let segments =
+    begin_def ();
+    let segments : Typedtree.template_segment list =
       List.map
         (fun source ->
-          Ast_helper.Exp.constant ~loc ~attrs:[template_attr]
-            (match kind with
-            | Ptemplate_string -> Pconst_template source
-            | Ptemplate_json -> Pconst_json source))
+          match kind with
+          | Ptemplate_string -> (
+            match String_literal.decode_js_escapes source with
+            | Some semantic -> {source; semantic}
+            | None -> raise (Error (loc, env, Invalid_string_escape_sequence)))
+          | Ptemplate_json -> {source; semantic = source})
         sources
     in
-    let rec interleave acc segments values =
-      match (segments, values) with
-      | [segment], [] -> List.rev (segment :: acc)
-      | segment :: segments, value :: values ->
-        interleave (value :: segment :: acc) segments values
-      | _ -> assert false
+    let values =
+      List.map
+        (fun value ->
+          type_expect ~context:(Some StringConcat) env value Predef.type_string)
+        values
     in
-    let parts = interleave [] segments values in
-    let concat lhs rhs =
-      let funct =
-        Ast_helper.Exp.ident ~loc (Location.mknoloc (Longident.Lident "++"))
-      in
-      Ast_helper.Exp.apply ~loc ~attrs:[template_attr] funct
-        [(Nolabel, lhs); (Nolabel, rhs)]
-    in
-    let expanded =
-      match parts with
-      | first :: rest -> List.fold_left concat first rest
-      | [] -> assert false
-    in
-    type_expect_ ?deprecated_context ~context ~recarg env
-      {expanded with pexp_attributes = sexp.pexp_attributes}
-      ty_expected
+    end_def ();
+    rue
+      {
+        exp_desc = Texp_template {kind; segments; values};
+        exp_loc = loc;
+        exp_extra = [];
+        exp_type = instance_def Predef.type_string;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env;
+      }
   | Pexp_tagged_template {tag = stag; sources; values = svalues} ->
     begin_def ();
     let tag =

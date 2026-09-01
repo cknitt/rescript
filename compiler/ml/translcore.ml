@@ -1068,6 +1068,31 @@ and transl_exp0 (e : Typedtree.expression) : Lambda.lambda =
   | Texp_tagged_template {tag; sources; values} ->
     Lprim
       (Ptagged_template sources, transl_exp tag :: transl_list values, e.exp_loc)
+  | Texp_template {kind; segments; values} ->
+    let constants =
+      List.map
+        (fun ({source; semantic} : Typedtree.template_segment) ->
+          Lconst
+            (match kind with
+            | Parsetree.Ptemplate_string ->
+              Const_template_literal {source; semantic}
+            | Ptemplate_json -> Const_string semantic))
+        segments
+    in
+    let rec interleave acc constants values =
+      match (constants, values) with
+      | [constant], [] -> List.rev (constant :: acc)
+      | constant :: constants, value :: values ->
+        interleave (transl_exp value :: constant :: acc) constants values
+      | _ -> assert false
+    in
+    begin match interleave [] constants values with
+    | first :: rest ->
+      List.fold_left
+        (fun lhs rhs -> Lprim (Pstringadd, [lhs; rhs], e.exp_loc))
+        first rest
+    | [] -> assert false
+    end
   | Texp_apply
       {
         funct =

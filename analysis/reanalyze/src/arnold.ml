@@ -873,6 +873,8 @@ module Compile = struct
         List.map (fun value -> (Asttypes.Nolabel, Some value)) values
       in
       tag |> expression ~ctx |> eval_args ~args ~ctx
+    | Texp_template {values} ->
+      values |> List.map (expression ~ctx) |> Command.sequence
     | Texp_let
         ( Recursive,
           [{vb_pat = {pat_desc = Tpat_var (id, _); pat_loc}; vb_expr}],
