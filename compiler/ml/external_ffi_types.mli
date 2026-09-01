@@ -77,6 +77,9 @@ type return_wrapper =
    frontend parses delimiters and bigint signs before constructing this. *)
 type inline_const =
   | Const_string of string
+      (** A decoded runtime string value. For example, an inline external
+          declared with ["a\\n"] stores a string containing an actual newline;
+          source spelling is not needed after FFI processing. *)
   | Const_bool of bool
   | Const_int of int32
   | Const_bigint of {negative: bool; digits: string}

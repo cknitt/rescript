@@ -33,7 +33,12 @@ type t =
     (* Constant constructor of a nominal variant, emitted from its
          canonical runtime descriptor rather than an ordinal *)
   | Const_char of int
-  | Const_string of string (* A decoded string value. *)
+    (* The decoded Unicode code point of a character literal. For example,
+       ['\u{1F600}'] reaches this layer as [Const_char 0x1F600]. *)
+  | Const_string of string
+    (* A decoded runtime string value. For example, ["a\\n"] reaches this layer
+       with an actual newline; its original escape spelling is no longer
+       present. *)
   | Const_float of string
   | Const_bigint of bool * string
   | Const_pointer of string

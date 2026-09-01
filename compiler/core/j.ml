@@ -109,12 +109,19 @@ and expression_desc =
      [E.array_index]
   *)
   | Tagged_template of expression * string list * expression list
+      (** A JavaScript tagged template ready for emission. For
+          [sql`id = ${id}`], the first field is the [sql] expression, the
+          second is the raw-source list ["id = "; ""], and the third contains
+          the [id] expression. Segment strings preserve exact raw spelling and
+          may contain invalid escapes. *)
   | Interpolated_template of {
       segments: Asttypes.template_segment list;
       values: expression list;
     }
-      (** Compiler-provided interpolation. Unlike [Tagged_template], every
-          segment has both validated source spelling and semantic content. *)
+      (** An ordinary interpolated template ready for emission. For
+          [`a ${value}\n`], [segments] retains source and semantic forms of
+          ["a "] and ["\\n"], while [values = [value]]. Unlike
+          [Tagged_template], every segment has a valid decoded value. *)
   | Static_index of expression * string * int32 option
   (* The third argument bool indicates whether we should
      print it as
@@ -137,20 +144,28 @@ and expression_desc =
       async: bool;
       directive: string option;
     }
-  | Str of string  (** A decoded semantic string value. *)
+  | Str of string
+      (** A decoded runtime string value whose original source spelling no
+          longer needs to be preserved. For example, ["a\\n"] is stored with
+          an actual newline and is emitted using the compiler's chosen quoting
+          and escaping. *)
   | Template_literal of {source: string; semantic: string}
-      (** An ordinary backquoted literal. [source] preserves the spelling used
-          when emitting JavaScript, including escape sequences. [semantic] is
-          the decoded runtime string used for comparisons and optimizations.
-          Both are required because equivalent runtime strings can have
-          different source spellings, and preserving backquotes is an output
-          design goal. Tagged-template segments are represented separately by
-          [Tagged_template] because their escapes need not be decodable. *)
+      (** A non-interpolated ordinary backquoted literal. For [`a\n`], [source]
+          is ["a\\n"] and [semantic] contains an actual newline. [source] is
+          used for JavaScript emission; [semantic] is used for comparisons and
+          optimizations. Both are required because preserving backquoted
+          spelling is an output design goal. Tagged-template segments use
+          [Tagged_template] instead because their escapes need not be valid. *)
   | Json_literal of string
-      (** Validated JavaScript literal source from a [json`...`] payload. *)
+      (** Validated JavaScript literal source from a supported external
+          [json`...`] payload. For [json`{"ok": true}`], the string contains
+          [{"ok": true}] as JavaScript source, not as a decoded ReScript
+          string. *)
   | Raw_js_code of Js_raw_info.t
-  (* literally raw JS code 
-  *)
+      (** JavaScript source originating from [raw], [ffi], or [re]. For example,
+          [%raw("x + 1")] carries ["x + 1"] together with whether it was
+          validated as an expression, regular expression, or program. It is
+          emitted as code rather than as a JavaScript string value. *)
   | Array of expression list
   | Optional_block of expression * bool
   (* [true] means [identity] *)

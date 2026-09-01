@@ -307,13 +307,19 @@ type primitive =
   | Pval_from_option
   | Pval_from_option_not_nest
   | Pis_poly_var_block
+  (* Validated JavaScript source from [raw], [ffi], or [re], together with its
+     expression/program kind. For example, [%raw("x + 1")] carries ["x + 1"]
+     as code, not as a decoded runtime string. *)
   | Praw_js_code of Js_raw_info.t
   | Pjs_fn_method
-  (* Tagged template literal. The payload contains the raw source text of each
-     segment; the arguments are the tag followed by the interpolated values. *)
+  (* A JavaScript tagged template operation. For [sql`id = ${id}`], the payload
+     is ["id = "; ""] and the primitive arguments are [sql; id]. Segment text
+     remains raw and may contain invalid escapes. *)
   | Ptagged_template of string list
-  (* Compiler-provided interpolation. The payload contains the validated
-     segments; the arguments are the interpolated string values. *)
+  (* An ordinary backquoted-template operation. For [`a ${value}\n`], the
+     payload contains the source and semantic forms of ["a "] and ["\\n"],
+     and the primitive arguments contain [value]. The source forms are retained
+     for JavaScript output; semantic forms are used by optimizations. *)
   | Ptemplate of Asttypes.template_segment list
 
 and comparison = Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -330,7 +336,11 @@ type pointer_info =
 type structured_constant =
   | Const_int of int32
   | Const_char of int
+    (* The decoded Unicode code point; literal source spelling is no longer
+       present at this layer. *)
   | Const_string of string
+    (* A decoded runtime string value; literal source spelling is no longer
+       present at this layer. *)
   | Const_float of string
   | Const_bigint of bool * string
   | Const_pointer of pointer_info

@@ -34,11 +34,13 @@ type t =
   | Psetfield of int * Lam_compat.set_field_dbg_info
   (* could have field info at least for record *)
   | Pduprecord
-  (* Tagged template literal. The payload contains raw segment source; the
-     arguments are the tag followed by the interpolated values. *)
+  (* A JavaScript tagged template operation. For [sql`id = ${id}`], the payload
+     is ["id = "; ""] and the arguments are [sql; id]. Segment text remains raw
+     and may contain invalid escapes. *)
   | Ptagged_template of string list
-  (* Compiler-provided interpolation. The payload retains both output spelling
-     and decoded meaning until JavaScript IR generation. *)
+  (* An ordinary backquoted-template operation. For [`a ${value}\n`], the
+     payload retains both source and semantic forms of the two segments and the
+     arguments contain [value]. JavaScript IR generation uses both forms. *)
   | Ptemplate of Asttypes.template_segment list
   | Precord_rest of string list
   (* External call *)
@@ -153,6 +155,9 @@ type t =
   | Pjs_object_set of string
   | Pinit_mod
   | Pupdate_mod
+  (* Validated JavaScript source from [raw], [ffi], or [re], together with its
+     expression/program kind. For example, [%raw("x + 1")] carries ["x + 1"]
+     as code for JavaScript IR generation. *)
   | Praw_js_code of Js_raw_info.t
   (* we wrap it when do the conversion to prevent
      accendential optimization

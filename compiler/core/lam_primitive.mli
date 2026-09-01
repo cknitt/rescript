@@ -30,9 +30,13 @@ type t =
   | Pfield of int * Lambda.field_dbg_info
   | Psetfield of int * Lambda.set_field_dbg_info
   | Pduprecord
+  (* A JavaScript tagged template operation. For [sql`id = ${id}`], the payload
+     is ["id = "; ""] and the arguments are [sql; id]. Segment text remains raw
+     and may contain invalid escapes. *)
   | Ptagged_template of string list
-  (* Compiler-provided interpolation. The payload retains both output spelling
-     and decoded meaning until JavaScript IR generation. *)
+  (* An ordinary backquoted-template operation. For [`a ${value}\n`], the
+     payload retains both source and semantic forms of the two segments and the
+     arguments contain [value]. JavaScript IR generation uses both forms. *)
   | Ptemplate of Asttypes.template_segment list
   | Precord_rest of string list
   | Pjs_call of {
@@ -146,6 +150,9 @@ type t =
   | Pjs_object_set of string
   | Pinit_mod
   | Pupdate_mod
+  (* Validated JavaScript source from [raw], [ffi], or [re], together with its
+     expression/program kind. For example, [%raw("x + 1")] carries ["x + 1"]
+     as code for JavaScript IR generation. *)
   | Praw_js_code of Js_raw_info.t
   | Pjs_fn_method
   | Pnull_to_opt
