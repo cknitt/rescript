@@ -50,11 +50,6 @@ let inline_const (c : External_ffi_types.inline_const) :
 
 let inline_string semantic = inline_const (Const_string semantic)
 
-let inline_template ~loc source =
-  match String_literal.decode_js_escapes source with
-  | Some semantic -> inline_string semantic
-  | None -> Location.raise_errorf ~loc "Invalid string escape sequence"
-
 let inline_bool b = inline_const (Const_bool b)
 
 let inline_int i = inline_const (Const_int i)

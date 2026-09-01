@@ -991,7 +991,10 @@ let pack_trywith_exn id handler =
 let extract_directive_for_fn exp =
   exp.exp_attributes
   |> List.find_map (fun ({txt}, payload) ->
-      if txt = "directive" then Ast_payload.is_single_string payload else None)
+      if txt = "directive" then (
+        Ast_payload.reject_json_literal_payload payload;
+        Ast_payload.is_single_semantic_string payload)
+      else None)
 
 let hoisted_function_attr_name = "res.hoistedFunction"
 

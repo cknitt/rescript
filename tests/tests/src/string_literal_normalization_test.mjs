@@ -25,18 +25,19 @@ let rawBridgeFunction = (() => '\\n');
 let rawBridgeRegex = /\\n/;
 
 Mocha.describe("String_literal_normalization_test", () => {
-  Mocha.test("ordinary escapes have one semantic representation", () => Test_utils.eq("File \"string_literal_normalization_test.res\", line 28, characters 69-76", escaped, "abc"));
-  Mocha.test("surrogate-pair escapes have one semantic representation", () => Test_utils.eq("File \"string_literal_normalization_test.res\", line 31, characters 7-14", surrogatePair, "😀"));
+  Mocha.test("attribute payloads use semantic strings", () => Test_utils.eq("File \"string_literal_normalization_test.res\", line 31, characters 59-66", Math.max(1, 2), 2));
+  Mocha.test("ordinary escapes have one semantic representation", () => Test_utils.eq("File \"string_literal_normalization_test.res\", line 33, characters 69-76", escaped, "abc"));
+  Mocha.test("surrogate-pair escapes have one semantic representation", () => Test_utils.eq("File \"string_literal_normalization_test.res\", line 36, characters 7-14", surrogatePair, "😀"));
   Mocha.test("ordinary literals participate in constant folding", () => {
-    Test_utils.eq("File \"string_literal_normalization_test.res\", line 35, characters 7-14", concatenated, "ab");
-    Test_utils.eq("File \"string_literal_normalization_test.res\", line 36, characters 7-14", 1, 1);
+    Test_utils.eq("File \"string_literal_normalization_test.res\", line 40, characters 7-14", concatenated, "ab");
+    Test_utils.eq("File \"string_literal_normalization_test.res\", line 41, characters 7-14", 1, 1);
   });
-  Mocha.test("template segments survive the ast0 bridge", () => Test_utils.eq("File \"string_literal_normalization_test.res\", line 39, characters 61-68", interpolated, "abc"));
+  Mocha.test("template segments survive the ast0 bridge", () => Test_utils.eq("File \"string_literal_normalization_test.res\", line 44, characters 61-68", interpolated, "abc"));
   Mocha.test("raw extension payloads preserve source spelling through ast0", () => {
-    Test_utils.eq("File \"string_literal_normalization_test.res\", line 42, characters 7-14", rawBridgeExpression, "\\n");
-    Test_utils.eq("File \"string_literal_normalization_test.res\", line 43, characters 7-14", rawBridgeFunction(), "\\n");
-    Test_utils.eq("File \"string_literal_normalization_test.res\", line 44, characters 7-14", rawBridgeProgramValue, "\\n");
-    Test_utils.eq("File \"string_literal_normalization_test.res\", line 45, characters 7-14", rawBridgeRegex.test("\\n"), true);
+    Test_utils.eq("File \"string_literal_normalization_test.res\", line 47, characters 7-14", rawBridgeExpression, "\\n");
+    Test_utils.eq("File \"string_literal_normalization_test.res\", line 48, characters 7-14", rawBridgeFunction(), "\\n");
+    Test_utils.eq("File \"string_literal_normalization_test.res\", line 49, characters 7-14", rawBridgeProgramValue, "\\n");
+    Test_utils.eq("File \"string_literal_normalization_test.res\", line 50, characters 7-14", rawBridgeRegex.test("\\n"), true);
   });
 });
 

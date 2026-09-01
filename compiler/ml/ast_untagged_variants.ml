@@ -197,7 +197,8 @@ let process_tag_name (attrs : Parsetree.attributes) =
       match txt with
       | "tag" ->
         if !st = None then (
-          (match Ast_payload.is_single_string payload with
+          Ast_payload.reject_json_literal_payload payload;
+          (match Ast_payload.is_single_semantic_string payload with
           | None -> ()
           | Some s -> st := Some s);
           if !st = None then raise (Error (loc, InvalidVariantTagAnnotation)))

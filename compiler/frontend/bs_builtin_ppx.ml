@@ -442,10 +442,17 @@ let signature_item_mapper (self : mapper) (sigi : Parsetree.signature_item) :
     else
       match Ast_attributes.has_inline_payload pval_attributes with
       | Some
-          ((_, PStr [{pstr_desc = Pstr_eval ({pexp_desc; pexp_loc}, _)}]) as
-           attr) -> (
+          (( _,
+             PStr [{pstr_desc = Pstr_eval (({pexp_desc; _} as expression), _)}]
+           ) as attr) -> (
         match pexp_desc with
-        | Pexp_constant (Pconst_string {semantic}) ->
+        | Pexp_constant (Pconst_string _)
+        | Pexp_template {source_segments = [_]; values = []} ->
+          let semantic =
+            match Ast_payload.semantic_string_of_expression expression with
+            | Some semantic -> semantic
+            | None -> assert false
+          in
           succeed attr pval_attributes;
           {
             sigi with
@@ -454,19 +461,6 @@ let signature_item_mapper (self : mapper) (sigi : Parsetree.signature_item) :
                 {
                   value_desc with
                   pval_prim = Some (Ast_external_mk.inline_string semantic);
-                  pval_attributes = [];
-                };
-          }
-        | Pexp_template {source_segments = [source]; values = []} ->
-          succeed attr pval_attributes;
-          {
-            sigi with
-            psig_desc =
-              Psig_value
-                {
-                  value_desc with
-                  pval_prim =
-                    Some (Ast_external_mk.inline_template ~loc:pexp_loc source);
                   pval_attributes = [];
                 };
           }
@@ -572,7 +566,14 @@ let structure_item_mapper (self : mapper) (str : Parsetree.structure_item) :
       (fun (_, payload) -> Ast_payload.reject_json_literal_payload payload)
       has_inline_property;
     match (has_inline_property, pvb_expr.pexp_desc) with
-    | Some attr, Pexp_constant (Pconst_string {semantic}) ->
+    | ( Some attr,
+        ( Pexp_constant (Pconst_string _)
+        | Pexp_template {source_segments = [_]; values = []} ) ) ->
+      let semantic =
+        match Ast_payload.semantic_string_of_expression pvb_expr with
+        | Some semantic -> semantic
+        | None -> assert false
+      in
       succeed attr pvb_attributes;
       {
         str with
@@ -584,22 +585,6 @@ let structure_item_mapper (self : mapper) (str : Parsetree.structure_item) :
               pval_loc = pvb_loc;
               pval_attributes = [];
               pval_prim = Some (Ast_external_mk.inline_string semantic);
-            };
-      }
-    | Some attr, Pexp_template {source_segments = [source]; values = []} ->
-      succeed attr pvb_attributes;
-      {
-        str with
-        pstr_desc =
-          Pstr_primitive
-            {
-              pval_name;
-              pval_type = Ast_literal.type_string ();
-              pval_loc = pvb_loc;
-              pval_attributes = [];
-              pval_prim =
-                Some
-                  (Ast_external_mk.inline_template ~loc:pvb_expr.pexp_loc source);
             };
       }
     | Some attr, Pexp_constant (Pconst_integer (s, None)) ->

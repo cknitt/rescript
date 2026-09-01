@@ -35,7 +35,9 @@ val json_literal_outside_external_message : string
 val reject_json_literal : loc:Location.t -> 'a
 val reject_json_literal_payload : t -> unit
 
-val is_single_string : t -> string option
+val semantic_string_of_expression : Parsetree.expression -> string option
+(** Return the decoded value when the expression is an ordinary string or a
+    non-interpolated backquoted string. *)
 
 val is_single_semantic_string : t -> string option
 (** Return the decoded value of an ordinary or non-interpolated backquoted string.

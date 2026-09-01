@@ -43,75 +43,23 @@ let reject_json_literal_payload (payload : t) =
     reject_json_literal ~loc:pexp_loc
   | _ -> ()
 
-let is_single_string (x : t) =
-  match x with
-  (* TODO also need detect empty phrase case *)
-  | PStr
-      [
-        {
-          pstr_desc =
-            Pstr_eval
-              ( {
-                  pexp_desc =
-                    Pexp_template {source_segments = [source]; values = []};
-                },
-                _ );
-        };
-      ] ->
-    Some source
-  | PStr
-      [
-        {
-          pstr_desc =
-            Pstr_eval
-              ({pexp_desc = Pexp_constant (Pconst_string {source}); _}, _);
-          _;
-        };
-      ] ->
-    Some source
-  | PStr
-      [
-        {
-          pstr_desc =
-            Pstr_eval ({pexp_desc = Pexp_constant constant; pexp_loc; _}, _);
-          _;
-        };
-      ] -> (
-    match constant with
-    | Pconst_raw_source source -> Some source
-    | Pconst_json _ -> reject_json_literal ~loc:pexp_loc
-    | _ -> None)
-  | _ -> None
-
-let is_single_semantic_string (x : t) =
-  match x with
-  | PStr
-      [
-        {
-          pstr_desc =
-            Pstr_eval
-              ({pexp_desc = Pexp_constant (Pconst_string {semantic}); _}, _);
-          _;
-        };
-      ] ->
-    Some semantic
-  | PStr
-      [
-        {
-          pstr_desc =
-            Pstr_eval
-              ( {
-                  pexp_desc =
-                    Pexp_template {source_segments = [source]; values = []};
-                  pexp_loc;
-                },
-                _ );
-        };
-      ] -> (
+let semantic_string_of_expression (expression : Parsetree.expression) =
+  match expression with
+  | {pexp_desc = Pexp_constant (Pconst_string {semantic}); _} -> Some semantic
+  | {
+   pexp_desc = Pexp_template {source_segments = [source]; values = []};
+   pexp_loc;
+  } -> (
     match String_literal.decode_js_escapes source with
     | Some semantic -> Some semantic
     | None ->
       Location.raise_errorf ~loc:pexp_loc "Invalid string escape sequence")
+  | _ -> None
+
+let is_single_semantic_string (x : t) =
+  match x with
+  | PStr [{pstr_desc = Pstr_eval (expression, _); _}] ->
+    semantic_string_of_expression expression
   | _ -> None
 
 let is_single_int (x : t) : int option =

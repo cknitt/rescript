@@ -872,25 +872,28 @@ module Format_codeblocks = struct
         Ast_mapper.default_mapper with
         attribute =
           (fun mapper ((name, payload) as attr) ->
-            match (name, Ast_payload.is_single_string payload, payload) with
-            | ( {txt = "res.doc"},
-                Some (contents, None),
-                PStr [{pstr_desc = Pstr_eval ({pexp_loc}, _)}] ) ->
-              let formatted_contents, had_code_blocks =
-                format_rescript_code_blocks ~transform_assert_equal ~add_error
-                  ~display_filename
-                  ~markdown_block_start_line:pexp_loc.loc_start.pos_lnum
-                  contents
-              in
-              if had_code_blocks && formatted_contents <> contents then
-                ( name,
-                  PStr
-                    [
-                      Ast_helper.Str.eval
-                        (Ast_helper.Exp.constant
-                           (Ast_helper.Const.string formatted_contents));
-                    ] )
-              else attr
+            match (name, payload) with
+            | {txt = "res.doc"}, PStr [{pstr_desc = Pstr_eval ({pexp_loc}, _)}]
+              -> (
+              Ast_payload.reject_json_literal_payload payload;
+              match Ast_payload.is_single_semantic_string payload with
+              | Some contents ->
+                let formatted_contents, had_code_blocks =
+                  format_rescript_code_blocks ~transform_assert_equal ~add_error
+                    ~display_filename
+                    ~markdown_block_start_line:pexp_loc.loc_start.pos_lnum
+                    contents
+                in
+                if had_code_blocks && formatted_contents <> contents then
+                  ( name,
+                    PStr
+                      [
+                        Ast_helper.Str.eval
+                          (Ast_helper.Exp.constant
+                             (Ast_helper.Const.string formatted_contents));
+                      ] )
+                else attr
+              | None -> Ast_mapper.default_mapper.attribute mapper attr)
             | _ -> Ast_mapper.default_mapper.attribute mapper attr);
       }
     in

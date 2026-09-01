@@ -16,31 +16,9 @@
 open Asttypes
 open Parsetree
 
-let string_of_cst = function
-  | Pconst_string {semantic = s} | Pconst_raw_source s -> Some s
-  | _ -> None
-
-let string_of_payload = function
-  | PStr
-      [
-        {
-          pstr_desc =
-            Pstr_eval
-              ( {
-                  pexp_desc =
-                    Pexp_template {source_segments = [source]; values = []};
-                },
-                _ );
-        };
-      ] ->
-    Some source
-  | PStr
-      [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant c; pexp_loc; _}, _)}]
-    -> (
-    match c with
-    | Pconst_json _ -> Ast_payload.reject_json_literal ~loc:pexp_loc
-    | _ -> string_of_cst c)
-  | _ -> None
+let string_of_payload payload =
+  Ast_payload.reject_json_literal_payload payload;
+  Ast_payload.is_single_semantic_string payload
 
 let string_of_opt_payload p =
   match string_of_payload p with

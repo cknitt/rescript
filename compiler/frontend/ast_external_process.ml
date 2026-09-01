@@ -210,7 +210,8 @@ let parse_external_attributes (no_arguments : bool) (prim_name_check : string)
     | PStr [] -> prim_name_or_pval_prim
     (* It is okay to have [@@val] without payload *)
     | _ -> (
-      match Ast_payload.is_single_string payload with
+      Ast_payload.reject_json_literal_payload payload;
+      match Ast_payload.is_single_semantic_string payload with
       | Some val_name -> {name = val_name; source = Payload}
       | None -> Location.raise_errorf ~loc "Invalid payload")
   in

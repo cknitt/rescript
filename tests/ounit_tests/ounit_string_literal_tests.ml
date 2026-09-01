@@ -248,8 +248,8 @@ let assert_external_json_literal ~expected constant =
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a JavaScript JSON literal expression"
 
-let inline_template source =
-  match Ast_external_mk.inline_template ~loc:Location.none source with
+let inline_string semantic =
+  match Ast_external_mk.inline_string semantic with
   | Prim_inline_const constant -> constant
   | _ -> OUnit.assert_failure "expected an inline constant"
 
@@ -373,6 +373,12 @@ let suites =
            OUnit.assert_equal ~printer:Ext_obj.dump (Some "a\n😀")
              (Ast_payload.is_single_semantic_string
                 (template_payload {|\x61\n\uD83D\uDE00|}));
+           OUnit.assert_equal ~printer:Ext_obj.dump (Some "a\n😀")
+             (Builtin_attributes.deprecated_of_attrs
+                [
+                  ( Location.mkloc "deprecated" Location.none,
+                    template_payload {|\x61\n\uD83D\uDE00|} );
+                ]);
            OUnit.assert_equal ~printer:Ext_obj.dump None
              (Ast_payload.is_single_semantic_string
                 (string_payload (Pconst_json {|{"answer":42}|})));
@@ -383,8 +389,7 @@ let suites =
            | exception Location.Error _ -> () );
          ( "external string constants have explicit representations" >:: fun _ ->
            OUnit.assert_equal ~printer:Ext_obj.dump
-             (External_ffi_types.Const_string "a\n😀")
-             (inline_template {|\x61\n\uD83D\uDE00|});
+             (External_ffi_types.Const_string "a\n😀") (inline_string "a\n😀");
            assert_external_js_string ~expected:{|\x61|}
              (External_arg_spec.cst_string {|\x61|});
            assert_external_json_literal ~expected:{|{"answer":42}|}
@@ -405,10 +410,7 @@ let suites =
                (json == argument)
            | _ -> OUnit.assert_failure "expected a runtime typeof expression");
            OUnit.assert_equal ~printer:(Printf.sprintf "%S") {| {answer: 42} |}
-             (Js_dump.string_of_expression json);
-           match inline_template {|\uD800|} with
-           | _ -> OUnit.assert_failure "expected an invalid string escape"
-           | exception Location.Error _ -> () );
+             (Js_dump.string_of_expression json) );
          ( "Lambda constants contain semantic strings" >:: fun _ ->
            let semantic =
              convert_typed_constant (Asttypes.Const_string "a\n😀")

@@ -27,8 +27,9 @@ let handle_extension e (_self : Ast_mapper.mapper)
     (({txt; loc}, payload) : Parsetree.extension) =
   match txt with
   | "todo" ->
+    Ast_payload.reject_json_literal_payload payload;
     let todo_message =
-      match Ast_payload.is_single_string payload with
+      match Ast_payload.is_single_semantic_string payload with
       | Some s -> Some s
       | None -> None
     in

@@ -3,6 +3,9 @@
 open Mocha
 open Test_utils
 
+@val(`Math\x2Emax`)
+external escapedAttributeName: (int, int) => int = ""
+
 let escaped = "\x61\u0062\u{63}"
 let surrogatePair = "\uD83D\uDE00"
 let concatenated = "\x61" ++ "\u0062"
@@ -25,6 +28,8 @@ let rawBridgeFunction: unit => string = %ffi("() => '\\n'")
 let rawBridgeRegex = /\\n/
 
 describe(__MODULE__, () => {
+  test("attribute payloads use semantic strings", () => eq(__LOC__, escapedAttributeName(1, 2), 2))
+
   test("ordinary escapes have one semantic representation", () => eq(__LOC__, escaped, "abc"))
 
   test("surrogate-pair escapes have one semantic representation", () =>
