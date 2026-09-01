@@ -26,6 +26,4 @@ let decodeUser [arity:1](json : json) =
            }
      | _ -> (Console.log {js|Not an object.|js}; None))
   [@res.braces ]) : user option)
-;;Console.log
-    (decodeUser
-       (jsonParse (({js|{"name": "John", "age": 30}|js})[@res.template ])))
+;;Console.log (decodeUser (jsonParse {js|{"name": "John", "age": 30}|js}))
