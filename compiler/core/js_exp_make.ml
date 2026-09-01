@@ -76,6 +76,13 @@ let tagged_template ?comment call_expr string_args value_args : t =
     source_loc = None;
   }
 
+let interpolated_template ?comment kind segments values : t =
+  {
+    expression_desc = Interpolated_template {kind; segments; values};
+    comment;
+    source_loc = None;
+  }
+
 let runtime_var_dot ?comment (x : string) (e1 : string) : J.expression =
   {
     expression_desc =

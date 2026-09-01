@@ -346,11 +346,11 @@ and expression_desc =
   (* for await pattern of iterable_expr do body_expr *)
   | Pexp_template of {
       kind: template_kind;
-      sources: string list;
+      source_segments: string list;
       values: expression list;
     }
-  (* An interpolated backquoted literal. [sources] contains the original
-     spelling of the segments surrounding [values]. *)
+  (* An interpolated backquoted literal. [source_segments] contains the
+     validated source spelling of the segments surrounding [values]. *)
   | Pexp_tagged_template of {
       tag: expression;
       raw_sources: string list;

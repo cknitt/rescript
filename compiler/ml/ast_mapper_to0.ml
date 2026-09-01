@@ -604,7 +604,7 @@ module E = struct
         ~attrs:(for_await_of_attr :: attrs)
         (sub.pat sub pat) start_expr end_expr Asttypes.Upto
         (sub.expr sub body_expr)
-    | Pexp_template {kind; sources; values} ->
+    | Pexp_template {kind; source_segments; values} ->
       let template_attr = (Location.mknoloc "res.template", Pt.PStr []) in
       let segments =
         List.map
@@ -616,7 +616,7 @@ module E = struct
                      (match kind with
                      | Ptemplate_string -> "js"
                      | Ptemplate_json -> "json") )))
-          sources
+          source_segments
       in
       let rec interleave acc segments values =
         match (segments, values) with

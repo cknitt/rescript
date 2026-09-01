@@ -170,7 +170,7 @@ let rec exp_need_paren ?(arrow = false) (e : J.expression) =
     false
   | Await _ -> false
   | Spread _ -> false
-  | Tagged_template _ -> false
+  | Tagged_template _ | Interpolated_template _ -> false
   | Record_rest _ -> false
   | Optional_block (e, true) when arrow -> exp_need_paren ~arrow e
   | Optional_block _ -> false
@@ -310,6 +310,26 @@ type fn_exp_state =
 (* true means for sure, false -- not sure *)
 
 let default_fn_exp_state = No_name {single_arg = false}
+
+let interpolated_template_as_append kind segments values =
+  let segments =
+    List.map
+      (fun ({source; semantic} : Asttypes.template_segment) ->
+        match kind with
+        | Asttypes.Ptemplate_string -> E.template_literal ~semantic source
+        | Ptemplate_json -> E.str semantic)
+      segments
+  in
+  let rec interleave acc segments values =
+    match (segments, values) with
+    | [segment], [] -> List.rev (segment :: acc)
+    | segment :: segments, value :: values ->
+      interleave (value :: segment :: acc) segments values
+    | _ -> assert false
+  in
+  match interleave [] segments values with
+  | first :: rest -> List.fold_left E.string_append first rest
+  | [] -> assert false
 
 (* TODO: refactoring
    Note that {!pp_function} could print both statement and expression when [No_name] is given
@@ -759,6 +779,9 @@ and expression_desc cxt ~(level : int) f x : cxt =
     aux cxt string_args value_args;
     P.string f "`";
     cxt
+  | Interpolated_template {kind; segments; values} ->
+    expression cxt ~level f
+      (interpolated_template_as_append kind segments values)
   | String_index (a, b) ->
     P.group f 1 (fun _ ->
         let cxt = expression ~level:15 cxt f a in

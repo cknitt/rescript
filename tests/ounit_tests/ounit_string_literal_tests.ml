@@ -64,7 +64,7 @@ let assert_parsed_template ~prefix ~expected_kind =
                      Pexp_template
                        {
                          kind;
-                         sources;
+                         source_segments;
                          values =
                            [
                              {
@@ -79,7 +79,8 @@ let assert_parsed_template ~prefix ~expected_kind =
    };
   ] ->
     OUnit.assert_equal expected_kind kind;
-    OUnit.assert_equal ~printer:Ext_obj.dump [{|head\n|}; "tail"] sources
+    OUnit.assert_equal ~printer:Ext_obj.dump [{|head\n|}; "tail"]
+      source_segments
   | _ -> OUnit.assert_failure "expected an explicit parsed template"
 
 let assert_int_equal expected actual =
@@ -118,9 +119,9 @@ let typed_json source =
   | Ok constant -> constant
   | Error _ -> OUnit.assert_failure "expected a typed JSON-tagged string"
 
-let assert_typed_template ~kind ~sources ~expected_semantics =
+let assert_typed_template ~kind ~source_segments ~expected_semantics =
   let value = Ast_helper.Exp.constant (Ast_helper.Const.string "value") in
-  let expression = Ast_helper.Exp.template kind sources [value] in
+  let expression = Ast_helper.Exp.template kind source_segments [value] in
   let typed =
     Typecore.type_exp Env.initial_safe_string expression
       ~context:(Some Error_message_utils.StringConcat)
@@ -133,7 +134,7 @@ let assert_typed_template ~kind ~sources ~expected_semantics =
         values = [{exp_desc = Texp_constant (Const_string "value")}];
       } ->
     OUnit.assert_equal kind actual_kind;
-    OUnit.assert_equal ~printer:Ext_obj.dump sources
+    OUnit.assert_equal ~printer:Ext_obj.dump source_segments
       (List.map (fun ({source} : Asttypes.template_segment) -> source) segments);
     OUnit.assert_equal ~printer:Ext_obj.dump expected_semantics
       (List.map
@@ -145,7 +146,7 @@ let assert_typed_template ~kind ~sources ~expected_semantics =
   | Lprim (Ptemplate (actual_kind, segments), [Lconst (Const_string "value")], _)
     ->
     OUnit.assert_equal kind actual_kind;
-    OUnit.assert_equal ~printer:Ext_obj.dump sources
+    OUnit.assert_equal ~printer:Ext_obj.dump source_segments
       (List.map (fun ({source} : Asttypes.template_segment) -> source) segments);
     OUnit.assert_equal ~printer:Ext_obj.dump expected_semantics
       (List.map
@@ -263,10 +264,10 @@ let suites =
          ( "interpolated templates have an explicit typed representation"
          >:: fun _ ->
            assert_typed_template ~kind:Asttypes.Ptemplate_string
-             ~sources:[{|head\n|}; {|\u0061|}]
+             ~source_segments:[{|head\n|}; {|\u0061|}]
              ~expected_semantics:["head\n"; "a"];
            assert_typed_template ~kind:Asttypes.Ptemplate_json
-             ~sources:[{|head\n|}; {|\u0061|}]
+             ~source_segments:[{|head\n|}; {|\u0061|}]
              ~expected_semantics:[{|head\n|}; {|\u0061|}] );
          ( "invalid encoded values are rejected" >:: fun _ ->
            List.iter
@@ -435,6 +436,39 @@ let suites =
                "expected tagged templates to own their encoded segments");
            OUnit.assert_equal ~printer:(Printf.sprintf "%S") {|tag`a\n${1} b`|}
              (Js_dump.string_of_expression tagged) );
+         ( "interpolated templates remain explicit in JavaScript IR" >:: fun _ ->
+           let segments : Asttypes.template_segment list =
+             [
+               {source = {|head\n|}; semantic = "head\n"};
+               {source = "tail"; semantic = "tail"};
+             ]
+           in
+           let value = Js_exp_make.js_global "value" in
+           let template =
+             Js_exp_make.interpolated_template Asttypes.Ptemplate_string
+               segments [value]
+           in
+           (match template.expression_desc with
+           | Interpolated_template
+               {
+                 kind = Ptemplate_string;
+                 segments = actual_segments;
+                 values = [_];
+               } ->
+             OUnit.assert_equal ~printer:Ext_obj.dump segments actual_segments
+           | _ ->
+             OUnit.assert_failure
+               "expected an explicit JavaScript IR interpolation");
+           let previous_lowering =
+             Js_exp_make.string_append
+               (Js_exp_make.string_append
+                  (Js_exp_make.template_literal ~semantic:"head\n" {|head\n|})
+                  value)
+               (Js_exp_make.template_literal ~semantic:"tail" "tail")
+           in
+           OUnit.assert_equal ~printer:(Printf.sprintf "%S")
+             (Js_dump.string_of_expression previous_lowering)
+             (Js_dump.string_of_expression template) );
          ( "JavaScript references are not encoded as strings" >:: fun _ ->
            let value = Js_exp_make.var (Ext_ident.create "value") in
            (match (Js_exp_make.is_array value).expression_desc with

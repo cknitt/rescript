@@ -2535,7 +2535,7 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
   | Pexp_fun {newtypes = []; params; body = sfun_body; async} ->
     type_function ~async loc sexp.pexp_attributes env ty_expected params
       sfun_body
-  | Pexp_template {kind; sources; values} ->
+  | Pexp_template {kind; source_segments; values} ->
     begin_def ();
     let segments : Asttypes.template_segment list =
       List.map
@@ -2546,7 +2546,7 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
             | Some semantic -> {source; semantic}
             | None -> raise (Error (loc, env, Invalid_string_escape_sequence)))
           | Ptemplate_json -> {source; semantic = source})
-        sources
+        source_segments
     in
     let values =
       List.map

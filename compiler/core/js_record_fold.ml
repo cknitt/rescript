@@ -132,6 +132,7 @@ let expression_desc : 'a. ('a, expression_desc) fn =
     let st = _self.expression _self st _xo in
     let st = list _self.expression _self st _x2 in
     st
+  | Interpolated_template {values} -> list _self.expression _self st values
   | String_index (_x0, _x1) ->
     let st = _self.expression _self st _x0 in
     let st = _self.expression _self st _x1 in

@@ -114,6 +114,7 @@ let rec no_side_effect_expression_desc (x : J.expression_desc) =
     no_side_effect a && no_side_effect b
   | Is_null_or_undefined b -> no_side_effect b
   | Str _ | Template_literal _ -> true
+  | Interpolated_template {values} -> Ext_list.for_all values no_side_effect
   | Array xs | Caml_block (xs, _, _) ->
     (* create [immutable] block,
         does not really mean that this opreation itself is [pure].
@@ -257,8 +258,8 @@ let rec eq_expression ({expression_desc = x0} : J.expression)
     | _ -> false)
   | Length _ | Is_null_or_undefined _ | String_append _ | Typeof _ | Js_not _
   | Js_bnot _ | In _ | Cond _ | New _ | Fun _ | Json_literal _ | Raw_js_code _
-  | Array _ | Caml_block_tag _ | Object _ | Tagged_template _ | Await _
-  | Record_rest _ ->
+  | Array _ | Caml_block_tag _ | Object _ | Tagged_template _
+  | Interpolated_template _ | Await _ | Record_rest _ ->
     false
   | Spread _ -> false
 

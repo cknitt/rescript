@@ -109,6 +109,13 @@ and expression_desc =
      [E.array_index]
   *)
   | Tagged_template of expression * string list * expression list
+  | Interpolated_template of {
+      kind: Asttypes.template_kind;
+      segments: Asttypes.template_segment list;
+      values: expression list;
+    }
+      (** Compiler-provided interpolation. Unlike [Tagged_template], every
+          segment has both validated source spelling and semantic content. *)
   | Static_index of expression * string * int32 option
   (* The third argument bool indicates whether we should
      print it as
