@@ -254,8 +254,6 @@ let constant f = function
   | Pconst_char {source} -> pp f "'%s'" source
   | Pconst_string {source} ->
     pp f "{js|%a|js}" print_string_with_byte_width source
-  | Pconst_template source ->
-    pp f "{js|%a|js}" print_string_with_byte_width source
   | Pconst_json source ->
     pp f "{json|%a|json}" print_string_with_byte_width source
   | Pconst_raw_source source ->

@@ -72,7 +72,7 @@ let assert_parsed_char ~for_printer ~source ~expected_semantic =
     OUnit.assert_equal ~printer:string_of_int expected_semantic semantic
   | _ -> OUnit.assert_failure "expected a parsed character literal"
 
-let assert_parsed_template_constant ~source =
+let assert_parsed_template_literal ~source =
   let result =
     Res_driver.parse_implementation_from_source ~for_printer:false
       ~display_filename:"StringLiteralTest.res"
@@ -88,7 +88,8 @@ let assert_parsed_template_constant ~source =
              {
                pvb_expr =
                  {
-                   pexp_desc = Pexp_constant (Pconst_template actual);
+                   pexp_desc =
+                     Pexp_template {source_segments = [actual]; values = []};
                    pexp_attributes = [];
                  };
              };
@@ -96,9 +97,9 @@ let assert_parsed_template_constant ~source =
    };
   ] ->
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") source actual
-  | _ -> OUnit.assert_failure "expected an explicit template constant"
+  | _ -> OUnit.assert_failure "expected an explicit template expression"
 
-let assert_parsed_template_pattern ~source =
+let assert_parsed_template_pattern ~source ~expected_semantic =
   let result =
     Res_driver.parse_implementation_from_source ~for_printer:false
       ~display_filename:"StringLiteralTest.res"
@@ -111,17 +112,20 @@ let assert_parsed_template_pattern ~source =
       pat =
         (fun self pattern ->
           (match pattern.ppat_desc with
-          | Ppat_constant (Pconst_template source) ->
-            actual := Some (source, pattern.ppat_attributes)
+          | Ppat_constant (Pconst_string {source; semantic}) ->
+            actual := Some (source, semantic, pattern.ppat_attributes)
           | _ -> ());
           Ast_mapper.default_mapper.pat self pattern);
     }
   in
   ignore (mapper.structure mapper result.parsetree);
   match !actual with
-  | Some (actual, []) ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") source actual
-  | _ -> OUnit.assert_failure "expected an explicit template pattern"
+  | Some (actual_source, semantic, []) ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S")
+      (String_literal.encode_js_string expected_semantic)
+      actual_source;
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_semantic semantic
+  | _ -> OUnit.assert_failure "expected a normalized string pattern"
 
 let assert_parsed_template () =
   let result =
@@ -194,11 +198,6 @@ let typed_string s =
   | Ok constant -> constant
   | Error _ -> OUnit.assert_failure "expected a typed string constant"
 
-let typed_template source =
-  match Typecore.constant (Parsetree.Pconst_template source) with
-  | Ok constant -> constant
-  | Error _ -> OUnit.assert_failure "expected a typed template constant"
-
 let assert_typed_template ~source_segments ~expected_semantics =
   let value = Ast_helper.Exp.constant (Ast_helper.Const.string "value") in
   let expression = Ast_helper.Exp.template source_segments [value] in
@@ -243,13 +242,6 @@ let assert_external_js_string ~expected constant =
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a JavaScript string expression"
 
-let assert_js_template_literal ~expected_source ~expected_semantic constant =
-  match (Lam_compile_const.translate constant).J.expression_desc with
-  | Template_literal {source; semantic} ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_source source;
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected_semantic semantic
-  | _ -> OUnit.assert_failure "expected a JavaScript template literal"
-
 let assert_external_json_literal ~expected constant =
   match (Lam_compile_const.translate_arg_cst constant).J.expression_desc with
   | Json_literal actual ->
@@ -257,10 +249,7 @@ let assert_external_json_literal ~expected constant =
   | _ -> OUnit.assert_failure "expected a JavaScript JSON literal expression"
 
 let inline_template source =
-  match
-    Ast_external_mk.inline_string ~loc:Location.none
-      (Parsetree.Pconst_template source)
-  with
+  match Ast_external_mk.inline_template ~loc:Location.none source with
   | Prim_inline_const constant -> constant
   | _ -> OUnit.assert_failure "expected an inline constant"
 
@@ -275,11 +264,7 @@ let string_payload constant =
   Parsetree.PStr [Ast_helper.Str.eval (Ast_helper.Exp.constant constant)]
 
 let template_payload source =
-  Parsetree.PStr
-    [
-      Ast_helper.Str.eval
-        (Ast_helper.Exp.constant (Parsetree.Pconst_template source));
-    ]
+  Parsetree.PStr [Ast_helper.Str.eval (Ast_helper.Exp.template [source] [])]
 
 let suites =
   __FILE__
@@ -308,20 +293,18 @@ let suites =
          ( "ordinary literals become semantic strings" >:: fun _ ->
            assert_parsed_string ~source:{|\x61\n\uD83D\uDE00|}
              ~expected_semantic:"a\n😀" );
-         ( "template literals remain raw" >:: fun _ ->
+         ( "template expressions preserve source spelling" >:: fun _ ->
            let encoded = {|\x61|} in
-           assert_parsed_template_constant ~source:encoded;
-           assert_parsed_template_pattern ~source:encoded;
-           let expression =
-             Ast_helper.Exp.constant (Parsetree.Pconst_template encoded)
-           in
+           assert_parsed_template_literal ~source:encoded;
+           assert_parsed_template_pattern ~source:encoded ~expected_semantic:"a";
+           let expression = Ast_helper.Exp.template [encoded] [] in
            match
              (Bs_builtin_ppx.mapper.expr Bs_builtin_ppx.mapper expression)
                .pexp_desc
            with
-           | Pexp_constant (Pconst_template actual) ->
+           | Pexp_template {source_segments = [actual]; values = []} ->
              OUnit.assert_equal ~printer:(Printf.sprintf "%S") encoded actual
-           | _ -> OUnit.assert_failure "expected a raw template segment" );
+           | _ -> OUnit.assert_failure "expected a template expression" );
          ( "interpolated templates have an explicit parser representation"
          >:: fun _ ->
            assert_parsed_template ();
@@ -376,29 +359,16 @@ let suites =
            in
            OUnit.assert_equal ~printer:Ext_obj.dump pattern.ppat_desc
              transformed.ppat_desc );
-         ( "typed tree separates strings from template literals" >:: fun _ ->
+         ( "typed constants contain only semantic strings" >:: fun _ ->
            let semantic = typed_string "a\n😀" in
-           let template = typed_template {|a\n\uD83D\uDE00|} in
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Asttypes.Const_string "a\n😀") semantic;
-           OUnit.assert_equal ~printer:Ext_obj.dump
-             (Asttypes.Const_template_literal
-                {source = {|a\n\uD83D\uDE00|}; semantic = "a\n😀"})
-             template;
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Ast_helper.Const.string "a\n😀")
              (Untypeast.constant semantic);
            OUnit.assert_equal ~printer:Ext_obj.dump
-             (Parsetree.Pconst_template {|a\n\uD83D\uDE00|})
-             (Untypeast.constant template);
-           OUnit.assert_equal ~printer:Ext_obj.dump
              (Error Typecore.Json_literal_outside_external)
-             (Typecore.constant (Parsetree.Pconst_json {|{"answer":42}|}));
-           match Typecore.constant (Parsetree.Pconst_template {|\unicode|}) with
-           | Error Typecore.Invalid_string_escape_sequence -> ()
-           | _ ->
-             OUnit.assert_failure "expected an invalid ordinary template escape"
-         );
+             (Typecore.constant (Parsetree.Pconst_json {|{"answer":42}|})) );
          ( "constant backquoted attribute strings become semantic" >:: fun _ ->
            OUnit.assert_equal ~printer:Ext_obj.dump (Some "a\n😀")
              (Ast_payload.is_single_semantic_string
@@ -439,32 +409,15 @@ let suites =
            match inline_template {|\uD800|} with
            | _ -> OUnit.assert_failure "expected an invalid string escape"
            | exception Location.Error _ -> () );
-         ( "Lambda separates strings from template literals" >:: fun _ ->
+         ( "Lambda constants contain semantic strings" >:: fun _ ->
            let semantic =
              convert_typed_constant (Asttypes.Const_string "a\n😀")
            in
-           let template =
-             Lam_constant_convert.convert_constant
-               (Lambda.Const_template_literal
-                  {source = {|a\n\uD83D\uDE00|}; semantic = "a\n😀"})
-           in
            OUnit.assert_equal ~printer:Ext_obj.dump
-             (Lam_constant.Const_string "a\n😀") semantic;
-           OUnit.assert_equal ~printer:Ext_obj.dump
-             (Lam_constant.Const_template_literal
-                {source = {|a\n\uD83D\uDE00|}; semantic = "a\n😀"})
-             template;
-           OUnit.assert_bool "semantic and template strings stay distinct"
-             (not
-                (Lam_constant.eq_approx (Lam_constant.Const_string {|a\n|})
-                   (Lam_constant.Const_template_literal
-                      {source = {|a\n|}; semantic = "a\n"}))) );
-         ( "Lambda string kinds lower differently" >:: fun _ ->
+             (Lam_constant.Const_string "a\n😀") semantic );
+         ( "JavaScript IR distinguishes strings and template literals"
+         >:: fun _ ->
            assert_js_string ~expected:"a\n😀" (Lam_constant.Const_string "a\n😀");
-           assert_js_template_literal ~expected_source:{|a\n\uD83D\uDE00|}
-             ~expected_semantic:"a\n😀"
-             (Lam_constant.Const_template_literal
-                {source = {|a\n\uD83D\uDE00|}; semantic = "a\n😀"});
            let semantic = Js_exp_make.str "a" in
            let template = Js_exp_make.template_literal ~semantic:"a" {|\x61|} in
            OUnit.assert_equal ~printer:(Printf.sprintf "%S") {|`\x61`|}

@@ -47,7 +47,6 @@ let print_constant const =
     ^ ")"
   | Pconst_string {source; semantic} ->
     "Pconst_string(source=" ^ source ^ ", semantic=" ^ semantic ^ ")"
-  | Pconst_template source -> "Pconst_template(" ^ source ^ ")"
   | Pconst_json source -> "Pconst_json(" ^ source ^ ")"
   | Pconst_raw_source source -> "Pconst_raw_source(" ^ source ^ ")"
   | Pconst_float (s, _) -> "Pconst_float(" ^ s ^ ")"

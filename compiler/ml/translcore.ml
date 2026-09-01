@@ -1032,8 +1032,6 @@ and transl_exp0 (e : Typedtree.expression) : Lambda.lambda =
     transl_primitive e.exp_loc p e.exp_env e.exp_type ~val_type:vd.val_type
   | Texp_ident (path, _, {val_kind = Val_reg}) ->
     transl_value_path ~loc:e.exp_loc e.exp_env path
-  | Texp_constant (Const_template_literal {source; semantic}) ->
-    Lconst (Const_template_literal {source; semantic})
   | Texp_constant cst -> Lconst (const_of_typed cst)
   | Texp_let (rec_flag, pat_expr_list, body) ->
     transl_let ~js_hoist:None rec_flag pat_expr_list (transl_exp body)

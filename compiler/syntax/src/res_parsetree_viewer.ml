@@ -265,7 +265,7 @@ let is_huggable_expression expr =
   match expr.pexp_desc with
   | Pexp_array _ | Pexp_tuple _
   | Pexp_constant (Pconst_json _ | Pconst_char _)
-  | Pexp_constant (Pconst_template _)
+  | Pexp_template {values = []}
   | Pexp_construct ({txt = Longident.Lident ("::" | "[]")}, _)
   | Pexp_object_literal _ | Pexp_record _ ->
     true
@@ -658,7 +658,7 @@ let rec collect_patterns_from_list_construct acc pattern =
 
 let is_template_literal expr =
   match expr.pexp_desc with
-  | Pexp_template _ | Pexp_constant (Pconst_template _) -> true
+  | Pexp_template _ -> true
   | _ -> false
 
 let is_tagged_template_literal expr =

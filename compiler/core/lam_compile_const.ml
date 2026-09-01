@@ -61,8 +61,6 @@ and translate (x : Lam_constant.t) : J.expression =
   | Const_bigint (sign, i) -> E.bigint sign i
   | Const_float f -> E.float f (* TODO: preserve float *)
   | Const_string s -> E.str s
-  | Const_template_literal {source; semantic} ->
-    E.template_literal ~semantic source
   | Const_pointer name -> E.str name
   | Const_block (tag_info, xs) ->
     Js_of_lam_block.make_block NA tag_info (Ext_list.map xs translate)

@@ -79,9 +79,6 @@ let map_opt f = function
 let map_constant = function
   | Pconst_integer (s, suffix) -> Pt.Pconst_integer (s, suffix)
   | Pconst_char {semantic} -> Pconst_char semantic
-  (* The PPX bridge uses parser-form ast0, where template segments are [js]
-     strings distinguished by a template attribute. *)
-  | Pconst_template s -> Pconst_string (s, Some "js")
   | Pconst_string {source} -> Pconst_string (source, Some "js")
   | Pconst_raw_source s -> Pconst_string (s, Some "js")
   | Pconst_json s -> Pconst_string (s, Some "json")
@@ -412,13 +409,7 @@ module E = struct
     let attrs = sub.attributes sub attrs in
     match desc with
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
-    | Pexp_constant x ->
-      let attrs =
-        match x with
-        | Pconst_template _ -> add_template_attr attrs
-        | _ -> attrs
-      in
-      constant ~loc ~attrs (map_constant x)
+    | Pexp_constant x -> constant ~loc ~attrs (map_constant x)
     | Pexp_let (r, vbs, e) ->
       let_ ~loc ~attrs r (List.map (sub.value_binding sub) vbs) (sub.expr sub e)
     | Pexp_fun {newtypes; params; body; async} -> (
@@ -776,13 +767,7 @@ module P = struct
     | Ppat_any -> any ~loc ~attrs ()
     | Ppat_var s -> var ~loc ~attrs (map_loc sub s)
     | Ppat_alias (p, s) -> alias ~loc ~attrs (sub.pat sub p) (map_loc sub s)
-    | Ppat_constant c ->
-      let attrs =
-        match c with
-        | Pconst_template _ -> add_template_attr attrs
-        | _ -> attrs
-      in
-      constant ~loc ~attrs (map_constant c)
+    | Ppat_constant c -> constant ~loc ~attrs (map_constant c)
     | Ppat_interval (c1, c2) ->
       interval ~loc ~attrs (map_constant c1) (map_constant c2)
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub.pat sub) pl)

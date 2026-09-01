@@ -24,8 +24,6 @@ let rec struct_const ppf (cst : Lam_constant.t) =
   | Const_assertfalse -> fprintf ppf "assertfalse"
   | Const_char i -> fprintf ppf "%s" (Ext_util.string_of_int_as_char i)
   | Const_string s -> fprintf ppf "%S" s
-  | Const_template_literal {source; semantic} ->
-    fprintf ppf "template(source=%S, semantic=%S)" source semantic
   | Const_float f -> fprintf ppf "%s" f
   | Const_bigint (sign, i) -> fprintf ppf "%sn" (Bigint_utils.to_string sign i)
   | Const_pointer name -> fprintf ppf "`%s" name

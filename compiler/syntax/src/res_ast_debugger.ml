@@ -135,8 +135,6 @@ module Sexp_ast = struct
           ]
       | Pconst_string {source; semantic} ->
         Sexp.list [Sexp.atom "Pconst_string"; string source; string semantic]
-      | Pconst_template source ->
-        Sexp.list [Sexp.atom "Pconst_template"; string source]
       | Pconst_json source -> Sexp.list [Sexp.atom "Pconst_json"; string source]
       | Pconst_raw_source source ->
         Sexp.list [Sexp.atom "Pconst_raw_source"; string source]

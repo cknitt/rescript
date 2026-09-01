@@ -99,13 +99,12 @@ let semantic_string semantic =
 let source_string ~loc source =
   Pt.Pconst_string {source; semantic = decode_js_string ~loc source}
 
-let map_constant ~loc ~is_template = function
+let map_constant ~loc = function
   | Pconst_integer (s, suffix) -> Pt.Pconst_integer (s, suffix)
   | Pconst_char semantic ->
     (* Ast0 stores only the code point, so source spelling cannot survive the
        PPX bridge. Reconstruct a valid canonical spelling on the way back. *)
     Pconst_char {source = String_literal.encode_char_source semantic; semantic}
-  | Pconst_string (s, Some "js") when is_template -> Pconst_template s
   | Pconst_string (s, Some ("js" | "*j")) -> source_string ~loc s
   | Pconst_string (s, None) -> semantic_string s
   | Pconst_string (s, Some "json") -> Pconst_json s
@@ -114,11 +113,11 @@ let map_constant ~loc ~is_template = function
   | Pconst_string (semantic, Some _) -> semantic_string semantic
   | Pconst_float (s, suffix) -> Pconst_float (s, suffix)
 
-let map_pattern_constant ~loc ~is_template = function
+let map_pattern_constant ~loc = function
   | Pconst_string (_, Some tag) when tag <> "js" && tag <> "*j" ->
     Location.raise_errorf ~loc
       "Tagged template literals are not supported in patterns"
-  | constant -> map_constant ~loc ~is_template constant
+  | constant -> map_constant ~loc constant
 
 let is_raw_source_extension = function
   | "raw" | "ffi" | "re" -> true
@@ -578,10 +577,14 @@ module E = struct
       let inner = sub.expr sub {e with pexp_attributes = inner_attrs0} in
       await ~loc ~attrs:(sub.attributes sub await_attrs0) inner
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
+    | Pexp_constant (Pconst_string (source, Some "js"))
+      when has_template_attr attrs ->
+      let attrs = remove_template_attr attrs in
+      template ~loc ~attrs [source] []
     | Pexp_constant x ->
       let template = has_template_attr attrs in
       let attrs = if template then remove_template_attr attrs else attrs in
-      constant ~loc ~attrs (map_constant ~loc ~is_template:template x)
+      constant ~loc ~attrs (map_constant ~loc x)
     | Pexp_let (r, vbs, e) ->
       let_ ~loc ~attrs r (List.map (sub.value_binding sub) vbs) (sub.expr sub e)
     | Pexp_fun (lab, def, p, e) ->
@@ -1029,11 +1032,11 @@ module P = struct
     | Ppat_constant c ->
       let template = has_template_attr attrs in
       let attrs = if template then remove_template_attr attrs else attrs in
-      constant ~loc ~attrs (map_pattern_constant ~loc ~is_template:template c)
+      constant ~loc ~attrs (map_pattern_constant ~loc c)
     | Ppat_interval (c1, c2) ->
       interval ~loc ~attrs
-        (map_pattern_constant ~loc ~is_template:false c1)
-        (map_pattern_constant ~loc ~is_template:false c2)
+        (map_pattern_constant ~loc c1)
+        (map_pattern_constant ~loc c2)
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub.pat sub) pl)
     | Ppat_construct (l, p) ->
       construct ~loc ~attrs (map_loc sub l) (map_opt (sub.pat sub) p)

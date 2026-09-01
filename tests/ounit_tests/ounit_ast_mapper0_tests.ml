@@ -196,7 +196,7 @@ let assert_string_pat ~expected_source ~expected_semantic pat =
 
 let assert_template_expr ~expected expr =
   match expr.Parsetree.pexp_desc with
-  | Pexp_constant (Pconst_template actual) ->
+  | Pexp_template {source_segments = [actual]; values = []} ->
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> assert_failure "Expected a template expression"
 
@@ -261,9 +261,7 @@ let test_string_literals_roundtrip_through_ast0 _ =
   assert_string_expr ~expected_source:{|a\n😀|} ~expected_semantic:semantic
     (map_expr0 (map_expr_to0 expr));
   let encoded = {|a\n\uD83D\uDE00|} in
-  let template_expr =
-    Ast_helper.Exp.constant ~loc (Parsetree.Pconst_template encoded)
-  in
+  let template_expr = Ast_helper.Exp.template ~loc [encoded] [] in
   let template_expr0 = map_expr_to0 template_expr in
   (match template_expr0.Parsetree0.pexp_desc with
   | Pexp_constant (Pconst_string (actual, Some "js")) ->
@@ -276,20 +274,18 @@ let test_string_literals_roundtrip_through_ast0 _ =
   OUnit.assert_bool "the ast0 template marker was consumed"
     (not (List.mem "res.template" (attr_names template_expr.pexp_attributes)));
   let template_pat =
-    Ast_helper.Pat.constant ~loc (Parsetree.Pconst_template encoded)
+    Ast_helper.Pat.constant ~loc (Ast_helper.Const.string "a\n😀")
   in
   let template_pat0 =
     Ast_mapper_to0.default_mapper.pat Ast_mapper_to0.default_mapper template_pat
   in
-  OUnit.assert_bool "expected the ast0 pattern template marker"
-    (List.mem "res.template" (attr_names template_pat0.ppat_attributes));
+  OUnit.assert_bool "ordinary string patterns need no ast0 template marker"
+    (not (List.mem "res.template" (attr_names template_pat0.ppat_attributes)));
   let template_pat = map_pat0 template_pat0 in
   (match template_pat.ppat_desc with
-  | Ppat_constant (Pconst_template actual) ->
-    OUnit.assert_equal ~printer:(Printf.sprintf "%S") encoded actual;
-    OUnit.assert_bool "the ast0 pattern template marker was consumed"
-      (not (List.mem "res.template" (attr_names template_pat.ppat_attributes)))
-  | _ -> assert_failure "Expected a template pattern after ast0 roundtrip");
+  | Ppat_constant (Pconst_string {semantic; _}) ->
+    OUnit.assert_equal ~printer:(Printf.sprintf "%S") "a\n😀" semantic
+  | _ -> assert_failure "Expected a string pattern after ast0 roundtrip");
   let json_expr =
     Ast_helper.Exp.constant ~loc (Parsetree.Pconst_json {|{"answer":42}|})
   in

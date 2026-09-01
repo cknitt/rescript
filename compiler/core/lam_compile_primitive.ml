@@ -91,6 +91,8 @@ let translate output_prefix loc (cxt : Lam_compile_context.t)
     match args with
     | fn :: values -> E.tagged_template fn strings values
     | [] -> assert false)
+  | Ptemplate [{source; semantic}] when args = [] ->
+    E.template_literal ~semantic source
   | Ptemplate segments -> E.interpolated_template segments args
   | Pnull_to_opt -> (
     match args with

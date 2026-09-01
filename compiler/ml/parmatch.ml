@@ -159,11 +159,10 @@ let all_coherent column =
       | Const_int _, Const_int _
       | Const_bigint _, Const_bigint _
       | Const_float _, Const_float _
-      | ( (Const_string _ | Const_template_literal _),
-          (Const_string _ | Const_template_literal _) ) ->
+      | Const_string _, Const_string _ ->
         true
       | ( ( Const_char _ | Const_int _ | Const_bigint _ | Const_float _
-          | Const_string _ | Const_template_literal _ ),
+          | Const_string _ ),
           _ ) ->
         false)
     | Tpat_tuple l1, Tpat_tuple l2 -> List.length l1 = List.length l2
@@ -270,9 +269,7 @@ let const_compare x y =
     compare (float_of_string f1) (float_of_string f2)
   | Const_bigint (s1, b1), Const_bigint (s2, b2) ->
     Bigint_utils.compare (s1, b1) (s2, b2)
-  | ( (Const_string s1 | Const_template_literal {semantic = s1}),
-      (Const_string s2 | Const_template_literal {semantic = s2}) ) ->
-    String.compare s1 s2
+  | Const_string s1, Const_string s2 -> String.compare s1 s2
   | _, _ -> compare x y
 
 let records_args l1 l2 =
@@ -374,7 +371,6 @@ let pretty_const c =
   | Const_int i -> Printf.sprintf "%d" i
   | Const_char i -> Printf.sprintf "%s" (Pprintast.string_of_int_as_char i)
   | Const_string s -> Printf.sprintf "%S" s
-  | Const_template_literal {source} -> Printf.sprintf "`%s`" source
   | Const_float f -> Printf.sprintf "%s" f
   | Const_bigint (sign, i) ->
     Printf.sprintf "%s" (Bigint_utils.to_string sign i)
@@ -2253,8 +2249,7 @@ let inactive ~partial pat =
       | Tpat_any | Tpat_var _ | Tpat_variant (_, None, _) -> true
       | Tpat_constant c -> (
         match c with
-        | Const_string _ | Const_template_literal _ ->
-          true (*Config.safe_string*)
+        | Const_string _ -> true (*Config.safe_string*)
         | Const_int _ | Const_char _ | Const_float _ | Const_bigint _ -> true)
       | Tpat_tuple ps | Tpat_construct (_, _, ps) ->
         List.for_all (fun p -> loop p) ps

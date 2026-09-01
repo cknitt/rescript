@@ -25,8 +25,8 @@ let f = %raw("/*hello*/ 0 ")
 let hh = List.length
 let f = x => {
   ignore(
-    %raw("//eslint-disable
-  0"),
+    %raw(`//eslint-disable
+  0`),
   )
   ignore(%raw(`/*hgosgh */0 `))
   x

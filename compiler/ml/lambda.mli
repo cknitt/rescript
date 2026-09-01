@@ -296,9 +296,6 @@ type structured_constant =
   | Const_int of int32
   | Const_char of int
   | Const_string of string
-  | Const_template_literal of {source: string; semantic: string}
-    (* Ordinary backquoted literal: [source] preserves output spelling and
-       [semantic] is the decoded runtime string. *)
   | Const_float of string
   | Const_bigint of bool * string
   | Const_pointer of pointer_info

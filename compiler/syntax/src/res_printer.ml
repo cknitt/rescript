@@ -564,6 +564,23 @@ let print_string_contents txt =
   let lines = String.split_on_char '\n' txt in
   Doc.join ~sep:Doc.literal_line (List.map Doc.text lines)
 
+let raw_source_fits_double_quotes source =
+  let rec loop index =
+    if index >= String.length source then true
+    else
+      match String.unsafe_get source index with
+      | '\n' | '\r' -> false
+      | '"' -> false
+      | '\\' -> (
+        index + 1 < String.length source
+        &&
+        match String.unsafe_get source (index + 1) with
+        | '\n' | '\r' -> false
+        | _ -> loop (index + 2))
+      | _ -> loop (index + 1)
+  in
+  loop 0
+
 let print_constant c =
   match c with
   | Parsetree.Pconst_integer (s, suffix) -> (
@@ -572,12 +589,14 @@ let print_constant c =
     | None -> Doc.text s)
   | Pconst_string {source} ->
     Doc.concat [Doc.text "\""; print_string_contents source; Doc.text "\""]
-  | Pconst_template source ->
-    Doc.concat [Doc.text "`"; print_string_contents source; Doc.text "`"]
   | Pconst_json source ->
     Doc.concat [Doc.text "json`"; print_string_contents source; Doc.text "`"]
   | Pconst_raw_source source ->
-    Doc.concat [Doc.text "\""; print_string_contents source; Doc.text "\""]
+    let delimiter =
+      if raw_source_fits_double_quotes source then "\"" else "`"
+    in
+    Doc.concat
+      [Doc.text delimiter; print_string_contents source; Doc.text delimiter]
   | Pconst_char {source} ->
     Doc.concat [Doc.text "'"; Doc.text source; Doc.text "'"]
   | Pconst_float (s, _) -> Doc.text s

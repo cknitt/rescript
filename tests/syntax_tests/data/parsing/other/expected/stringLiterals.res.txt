@@ -4,10 +4,10 @@ let s =
   | {js|bar|js} -> {js|bar|js}
   | {js|foo|js} -> {js|foo|js}
   | _ -> {js|baz|js}
-let s = {js|你好，
-世界|js}
-let s = {js|"|js}
-let s = {js|foo|js}
+let s = `你好，
+世界`
+let s = `"`
+let s = `foo`
 let s = `foo ${bar} baz`
 let s = `some unicode é ${bar} £ `
 let s = x`foo`

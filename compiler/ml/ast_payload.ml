@@ -51,6 +51,19 @@ let is_single_string (x : t) =
         {
           pstr_desc =
             Pstr_eval
+              ( {
+                  pexp_desc =
+                    Pexp_template {source_segments = [source]; values = []};
+                },
+                _ );
+        };
+      ] ->
+    Some (source, Some "js")
+  | PStr
+      [
+        {
+          pstr_desc =
+            Pstr_eval
               ({pexp_desc = Pexp_constant (Pconst_string {source}); _}, _);
           _;
         };
@@ -67,7 +80,6 @@ let is_single_string (x : t) =
     match constant with
     | Pconst_raw_source name -> Some (name, Some "js")
     | Pconst_json _ -> reject_json_literal ~loc:pexp_loc
-    | Pconst_template name -> Some (name, Some "js")
     | _ -> None)
   | _ -> None
 
@@ -88,9 +100,12 @@ let is_single_semantic_string (x : t) =
         {
           pstr_desc =
             Pstr_eval
-              ( {pexp_desc = Pexp_constant (Pconst_template source); pexp_loc; _},
+              ( {
+                  pexp_desc =
+                    Pexp_template {source_segments = [source]; values = []};
+                  pexp_loc;
+                },
                 _ );
-          _;
         };
       ] -> (
     match String_literal.decode_js_escapes source with
@@ -180,12 +195,25 @@ let raw_as_string_exp_exn ~(kind : Js_raw_info.raw_kind) ?is_function (x : t) :
           {
             pstr_desc =
               Pstr_eval
+                ( ({
+                     pexp_desc =
+                       Pexp_template {source_segments = [source]; values = []};
+                   } as expression),
+                  _ );
+          };
+        ] ->
+      Some (source, Bs_flow_ast_utils.flow_deli_offset (Some "js"), expression)
+    | PStr
+        [
+          {
+            pstr_desc =
+              Pstr_eval
                 (({pexp_desc = Pexp_constant constant; _} as expression), _);
             _;
           };
         ] -> (
       match constant with
-      | Pconst_template source | Pconst_raw_source source ->
+      | Pconst_raw_source source ->
         Some (source, Bs_flow_ast_utils.flow_deli_offset (Some "js"), expression)
       | Pconst_string {semantic} -> Some (semantic, 0, expression)
       | _ -> None)

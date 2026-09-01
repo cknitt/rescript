@@ -42,8 +42,8 @@ val local_external_apply :
    ]}
 *)
 
-val inline_string :
-  loc:Location.t -> Parsetree.constant -> Parsetree.primitive_repr
+val inline_string : string -> Parsetree.primitive_repr
+val inline_template : loc:Location.t -> string -> Parsetree.primitive_repr
 
 val inline_bool : bool -> Parsetree.primitive_repr
 

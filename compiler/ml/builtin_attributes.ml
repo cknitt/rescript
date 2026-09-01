@@ -17,11 +17,23 @@ open Asttypes
 open Parsetree
 
 let string_of_cst = function
-  | Pconst_string {semantic = s} | Pconst_template s | Pconst_raw_source s ->
-    Some s
+  | Pconst_string {semantic = s} | Pconst_raw_source s -> Some s
   | _ -> None
 
 let string_of_payload = function
+  | PStr
+      [
+        {
+          pstr_desc =
+            Pstr_eval
+              ( {
+                  pexp_desc =
+                    Pexp_template {source_segments = [source]; values = []};
+                },
+                _ );
+        };
+      ] ->
+    Some source
   | PStr
       [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant c; pexp_loc; _}, _)}]
     -> (

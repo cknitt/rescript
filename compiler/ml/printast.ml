@@ -64,7 +64,6 @@ let fmt_constant f x =
     fprintf f "PConst_char(source=%S, semantic=%02x)" source semantic
   | Pconst_string {source; semantic} ->
     fprintf f "PConst_string (source=%S, semantic=%S)" source semantic
-  | Pconst_template source -> fprintf f "PConst_template %S" source
   | Pconst_json source -> fprintf f "PConst_json %S" source
   | Pconst_raw_source source -> fprintf f "PConst_raw_source %S" source
   | Pconst_float (s, m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m

@@ -47,12 +47,6 @@ type constant =
      legacy three-digit decimal escapes to hexadecimal escapes. Compiler-created
      strings use [String_literal.encode_js_string] to derive a canonical
      [source] from [semantic]. *)
-  | Pconst_template of string
-  (* A non-interpolated ordinary backquoted literal. The string is the text
-     between the backticks, including escape spelling. For example, [`a\n`]
-     stores ["a\\n"]. Its runtime value is decoded later, when the typechecker
-     constructs [Const_template_literal]. Interpolated ordinary templates use
-     [Pexp_template] instead. *)
   | Pconst_json of string
   (* The JavaScript source inside a non-interpolated [json`...`] literal. For
      example, [@as(json`{"ok": true}`)] stores ["{\"ok\": true}"]. Built-in
@@ -367,9 +361,10 @@ and expression_desc =
   | Pexp_for_await_of of pattern * expression * expression
   (* for await pattern of iterable_expr do body_expr *)
   | Pexp_template of {source_segments: string list; values: expression list}
-  (* An interpolated ordinary backquoted literal. [source_segments] contains
-     the validated text between and around the interpolations, including escape
-     spelling; [values] contains the interpolated expressions. For example,
+  (* An ordinary backquoted expression. [source_segments] contains the validated
+     text between and around the interpolations, including escape spelling;
+     [values] contains the interpolated expressions. For example, [`plain`]
+     produces [{source_segments = ["plain"]; values = []}], while
      [`hello ${name}!`] produces
      [{source_segments = ["hello "; "!"]; values = [name]}]. There is always
      one more source segment than value. *)

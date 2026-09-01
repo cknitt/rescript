@@ -20,7 +20,6 @@ let constant = function
   | Const_char semantic ->
     Pconst_char {source = String_literal.encode_char_source semantic; semantic}
   | Const_string semantic -> Ast_helper.Const.string semantic
-  | Const_template_literal {source} -> Pconst_template source
   | Const_int i -> Pconst_integer (string_of_int i, None)
   | Const_bigint (sign, i) ->
     Pconst_integer (Bigint_utils.to_string sign i, Some 'n')

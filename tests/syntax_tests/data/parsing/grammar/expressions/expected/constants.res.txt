@@ -3,11 +3,11 @@ let y = false
 let txt = {js|a string|js}
 let txtWithEscapedChar = {js|foo\nbar|js}
 let number = 1
-let template = {js|amazing
+let template = `amazing
   multine
   template
      string
-|js}
+`
 let complexNumber = 1.6
 let x = 0b0000_0001
 let int32 = 42l

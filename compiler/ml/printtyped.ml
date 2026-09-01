@@ -52,8 +52,6 @@ let fmt_constant f x =
   | Const_int i -> fprintf f "Const_int %d" i
   | Const_char c -> fprintf f "Const_char %02x" c
   | Const_string s -> fprintf f "Const_string(%S)" s
-  | Const_template_literal {source; semantic} ->
-    fprintf f "Const_template_literal(source=%S, semantic=%S)" source semantic
   | Const_float s -> fprintf f "Const_float %s" s
   | Const_bigint (sign, i) ->
     fprintf f "Const_bigint %s" (Bigint_utils.to_string sign i)

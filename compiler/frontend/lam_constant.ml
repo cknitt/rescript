@@ -34,9 +34,6 @@ type t =
          canonical runtime descriptor rather than an ordinal *)
   | Const_char of int
   | Const_string of string (* A decoded string value. *)
-  | Const_template_literal of {source: string; semantic: string}
-    (* An ordinary backquoted literal. [source] is retained for JavaScript
-       output, while [semantic] is used by compiler analyses and folding. *)
   | Const_float of string
   | Const_bigint of bool * string
   | Const_pointer of string
@@ -71,11 +68,6 @@ let rec eq_approx (x : t) (y : t) =
     match y with
     | Const_string sy -> sx = sy
     | _ -> false)
-  | Const_template_literal sx -> (
-    match y with
-    | Const_template_literal sy ->
-      sx.source = sy.source && sx.semantic = sy.semantic
-    | _ -> false)
   | Const_float ix -> (
     match y with
     | Const_float iy -> ix = iy
@@ -106,6 +98,6 @@ let rec is_allocating (c : t) : bool =
   | Const_block _ -> true
   | Const_js_null | Const_js_undefined _ | Const_js_true | Const_js_false
   | Const_int _ | Const_assertfalse | Const_constructor _ | Const_char _
-  | Const_string _ | Const_template_literal _ | Const_float _ | Const_bigint _
-  | Const_pointer _ | Const_module_alias ->
+  | Const_string _ | Const_float _ | Const_bigint _ | Const_pointer _
+  | Const_module_alias ->
     false

@@ -269,7 +269,7 @@ let all_idents_cases el =
 let type_constant = function
   | Const_int _ -> instance_def Predef.type_int
   | Const_char _ -> instance_def Predef.type_char
-  | Const_string _ | Const_template_literal _ -> instance_def Predef.type_string
+  | Const_string _ -> instance_def Predef.type_string
   | Const_float _ -> instance_def Predef.type_float
   | Const_bigint _ -> instance_def Predef.type_bigint
 
@@ -283,10 +283,6 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
     Ok (Const_bigint (sign, i))
   | Pconst_integer (i, Some c) -> Error (Unknown_literal (i, c))
   | Pconst_char {semantic} -> Ok (Const_char semantic)
-  | Pconst_template source -> (
-    match String_literal.decode_js_escapes source with
-    | Some semantic -> Ok (Const_template_literal {source; semantic})
-    | None -> Error Invalid_string_escape_sequence)
   | Pconst_string {semantic} -> Ok (Const_string semantic)
   | Pconst_json _ -> Error Json_literal_outside_external
   | Pconst_raw_source s -> Ok (Const_string s)

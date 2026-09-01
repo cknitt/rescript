@@ -1,9 +1,9 @@
-let s = {js|foo|js}
-let s = {js|multi
+let s = `foo`
+let s = `multi
   line
 
 string
-|js}
+`
 let s = `${foo}`
 let s = `before${foo}`
 let s = `before ${foo}`
@@ -18,7 +18,7 @@ let s = `${foo} ${bar} ${baz}`
 let s = ` before ${foo} ${bar} after `
 let s = `before ${foo} middle ${bar} ${baz} wow `
 let s =
-  {js|
+  `
   multiline
 
   es6
@@ -30,13 +30,13 @@ let s =
   so convenient
 
   :)
-|js}
-let s = {js|$dollar without $braces $interpolation|js}
+`
+let s = `$dollar without $braces $interpolation`
 let s = {json|null|json}
-let x = {js|foo\`bar\$\\foo|js}
+let x = `foo\`bar\$\\foo`
 let x = `foo\`bar\$\\foo${a} \` ${b} \` xx`
-let thisIsFine = {js|$something|js}
-let thisIsAlsoFine = {js|fine\$|js}
-let isThisFine = {js|shouldBeFine$|js}
+let thisIsFine = `$something`
+let thisIsAlsoFine = `fine\$`
+let isThisFine = `shouldBeFine$`
 ;;`$${dollarAmountInt}`
 ;;`\$${dollarAmountInt}`

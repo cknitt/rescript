@@ -1053,12 +1053,12 @@ let parse_template_constant ~start_pos ~prefix (p : Parser.t) =
     match prefix with
     | None | Some "js" -> (
       match String_literal.decode_js_escapes txt with
-      | Some _ -> Parsetree.Pconst_template txt
+      | Some semantic -> Ast_helper.Const.string semantic
       | None ->
         if p.diagnostics = [] then
           Parser.err ~start_pos ~end_pos:p.prev_end_pos p
             (Diagnostics.message "Invalid string escape sequence");
-        Parsetree.Pconst_template txt)
+        Ast_helper.Const.string "")
     | Some _ ->
       Parser.err ~start_pos ~end_pos:p.prev_end_pos p
         (Diagnostics.message Error_messages.tagged_template_in_pattern);
@@ -2507,12 +2507,6 @@ and parse_binary_expr ?(context = OrdinaryExpr) ?a p prec =
 (* ) *)
 
 and parse_template_expr ?prefix p =
-  let is_json =
-    match prefix with
-    | Some {txt = Longident.Lident "json"; _} -> true
-    | _ -> false
-  in
-
   let parse_parts p =
     let rec aux acc =
       let start_pos = p.Parser.start_pos in
@@ -2521,20 +2515,12 @@ and parse_template_expr ?prefix p =
       | TemplateTail (txt, last_pos) ->
         Parser.next p;
         let loc = mk_loc start_pos last_pos in
-        let str =
-          Ast_helper.Exp.constant ~loc
-            (if is_json then Pconst_json txt else Pconst_template txt)
-        in
-        List.rev ((str, None) :: acc)
+        List.rev ((txt, loc, None) :: acc)
       | TemplatePart (txt, last_pos) ->
         Parser.next p;
         let loc = mk_loc start_pos last_pos in
         let expr = parse_expr_block p in
-        let str =
-          Ast_helper.Exp.constant ~loc
-            (if is_json then Pconst_json txt else Pconst_template txt)
-        in
-        aux ((str, Some expr) :: acc)
+        aux ((txt, loc, Some expr) :: acc)
       | token ->
         Parser.err p (Diagnostics.unexpected token p.breadcrumbs);
         []
@@ -2542,51 +2528,30 @@ and parse_template_expr ?prefix p =
     aux []
   in
   let parts = parse_parts p in
-  let strings = List.map fst parts in
-  let values = Ext_list.filter_map parts snd in
+  let sources = List.map (fun (source, _, _) -> source) parts in
+  let values = Ext_list.filter_map parts (fun (_, _, value) -> value) in
   let template_loc =
-    mk_loc (List.hd strings).pexp_loc.loc_start
-      (Ext_list.last strings).pexp_loc.loc_end
+    let _, first_loc, _ = List.hd parts in
+    let _, last_loc, _ = Ext_list.last parts in
+    mk_loc first_loc.loc_start last_loc.loc_end
   in
   let gen_tagged_template (lident_loc : Longident.t Location.loc) =
     let ident = Ast_helper.Exp.ident ~attrs:[] ~loc:lident_loc.loc lident_loc in
-    let raw_sources =
-      List.map
-        (fun (string : Parsetree.expression) ->
-          match string.pexp_desc with
-          | Pexp_constant (Pconst_template source) -> source
-          | _ -> assert false)
-        strings
-    in
-    Ast_helper.Exp.tagged_template ~loc:lident_loc.loc ident raw_sources values
-  in
-
-  let gen_interpolated_string () =
-    match (strings, values) with
-    | [string], [] -> string
-    | _ ->
-      let sources =
-        List.map
-          (fun (string : Parsetree.expression) ->
-            match string.pexp_desc with
-            | Pexp_constant (Pconst_template source) -> source
-            | _ -> assert false)
-          strings
-      in
-      Ast_helper.Exp.template ~loc:template_loc sources values
+    Ast_helper.Exp.tagged_template ~loc:lident_loc.loc ident sources values
   in
 
   match prefix with
   | Some {txt = Longident.Lident "json"; _} -> (
-    match (strings, values) with
-    | [string], [] -> string
-    | first :: _, _ ->
+    match (parts, values) with
+    | [(source, loc, None)], [] ->
+      Ast_helper.Exp.constant ~loc (Pconst_json source)
+    | (source, loc, _) :: _, _ ->
       Parser.err ~start_pos:template_loc.loc_start ~end_pos:template_loc.loc_end
         p
         (Diagnostics.message "`json` literals do not support interpolation");
-      first
+      Ast_helper.Exp.constant ~loc (Pconst_json source)
     | [], _ -> assert false)
-  | None -> gen_interpolated_string ()
+  | None -> Ast_helper.Exp.template ~loc:template_loc sources values
   | Some lident_loc -> gen_tagged_template lident_loc
 
 (* Overparse: let f = a : int => a + 1, is it (a : int) => or (a): int =>
