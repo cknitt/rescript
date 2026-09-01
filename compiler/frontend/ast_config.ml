@@ -48,7 +48,7 @@ let process_directives str =
       match item.pstr_desc with
       | Pstr_attribute ({txt = "directive"}, payload) -> (
         match Ast_payload.is_single_string payload with
-        | Some (d, _) -> Js_config.directives := !Js_config.directives @ [d]
+        | Some d -> Js_config.directives := !Js_config.directives @ [d]
         | None -> Bs_syntaxerr.err item.pstr_loc Expect_string_literal)
       | _ -> ())
 

@@ -211,7 +211,7 @@ let parse_external_attributes (no_arguments : bool) (prim_name_check : string)
     (* It is okay to have [@@val] without payload *)
     | _ -> (
       match Ast_payload.is_single_string payload with
-      | Some (val_name, _) -> {name = val_name; source = Payload}
+      | Some val_name -> {name = val_name; source = Payload}
       | None -> Location.raise_errorf ~loc "Invalid payload")
   in
 

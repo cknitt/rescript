@@ -199,7 +199,7 @@ let process_tag_name (attrs : Parsetree.attributes) =
         if !st = None then (
           (match Ast_payload.is_single_string payload with
           | None -> ()
-          | Some (s, _dec) -> st := Some s);
+          | Some s -> st := Some s);
           if !st = None then raise (Error (loc, InvalidVariantTagAnnotation)))
         else raise (Error (loc, Duplicated_bs_as))
       | _ -> ());

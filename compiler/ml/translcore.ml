@@ -1036,11 +1036,7 @@ and transl_exp0 (e : Typedtree.expression) : Lambda.lambda =
   | Texp_let (rec_flag, pat_expr_list, body) ->
     transl_let ~js_hoist:None rec_flag pat_expr_list (transl_exp body)
   | Texp_function {params = fparams; body; async} ->
-    let directive =
-      match extract_directive_for_fn e with
-      | None -> None
-      | Some (directive, _) -> Some directive
-    in
+    let directive = extract_directive_for_fn e in
     let params, lbody, return_unit = transl_function e.exp_loc fparams body in
     let one_unit_arg =
       match (fparams, (Ctype.expand_head e.exp_env e.exp_type).desc) with

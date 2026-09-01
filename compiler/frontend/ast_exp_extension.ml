@@ -29,7 +29,7 @@ let handle_extension e (_self : Ast_mapper.mapper)
   | "todo" ->
     let todo_message =
       match Ast_payload.is_single_string payload with
-      | Some (s, _) -> Some s
+      | Some s -> Some s
       | None -> None
     in
     Location.prerr_warning e.Parsetree.pexp_loc (Bs_todo todo_message);

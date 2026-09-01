@@ -58,7 +58,7 @@ let is_single_string (x : t) =
                 _ );
         };
       ] ->
-    Some (source, Some "js")
+    Some source
   | PStr
       [
         {
@@ -68,7 +68,7 @@ let is_single_string (x : t) =
           _;
         };
       ] ->
-    Some (source, None)
+    Some source
   | PStr
       [
         {
@@ -78,7 +78,7 @@ let is_single_string (x : t) =
         };
       ] -> (
     match constant with
-    | Pconst_raw_source name -> Some (name, Some "js")
+    | Pconst_raw_source source -> Some source
     | Pconst_json _ -> reject_json_literal ~loc:pexp_loc
     | _ -> None)
   | _ -> None
