@@ -244,12 +244,7 @@ and expression_desc =
       raw_sources: string list;
       values: expression list;
     }
-  (* An ordinary or legacy [json] interpolated template. *)
-  | Texp_template of {
-      kind: Asttypes.template_kind;
-      segments: template_segment list;
-      values: expression list;
-    }
+  | Texp_template of {segments: template_segment list; values: expression list}
 
 and case = {c_lhs: pattern; c_guard: expression option; c_rhs: expression}
 

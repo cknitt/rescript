@@ -24,6 +24,25 @@
 
 type t = Parsetree.payload
 
+let json_literal_outside_external_message =
+  "A `json` literal can only be used in an external attribute such as `@as`"
+
+let reject_json_literal ~loc =
+  Location.raise_errorf ~loc "%s" json_literal_outside_external_message
+
+let reject_json_literal_payload (payload : t) =
+  match payload with
+  | PStr
+      [
+        {
+          pstr_desc =
+            Pstr_eval
+              ({pexp_desc = Pexp_constant (Pconst_json _); pexp_loc; _}, _);
+        };
+      ] ->
+    reject_json_literal ~loc:pexp_loc
+  | _ -> ()
+
 let is_single_string (x : t) =
   match x with
   (* TODO also need detect empty phrase case *)
@@ -38,11 +57,16 @@ let is_single_string (x : t) =
       ] ->
     Some (source, None)
   | PStr
-      [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant constant; _}, _); _}]
-    -> (
+      [
+        {
+          pstr_desc =
+            Pstr_eval ({pexp_desc = Pexp_constant constant; pexp_loc; _}, _);
+          _;
+        };
+      ] -> (
     match constant with
     | Pconst_raw_source name -> Some (name, Some "js")
-    | Pconst_json name -> Some (name, Some "json")
+    | Pconst_json _ -> reject_json_literal ~loc:pexp_loc
     | Pconst_template name -> Some (name, Some "js")
     | _ -> None)
   | _ -> None

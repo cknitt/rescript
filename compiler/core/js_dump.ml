@@ -311,23 +311,6 @@ type fn_exp_state =
 
 let default_fn_exp_state = No_name {single_arg = false}
 
-let json_template_as_append segments values =
-  let segments =
-    List.map
-      (fun ({semantic} : Asttypes.template_segment) -> E.str semantic)
-      segments
-  in
-  let rec interleave acc segments values =
-    match (segments, values) with
-    | [segment], [] -> List.rev (segment :: acc)
-    | segment :: segments, value :: values ->
-      interleave (value :: segment :: acc) segments values
-    | _ -> assert false
-  in
-  match interleave [] segments values with
-  | first :: rest -> List.fold_left E.string_append first rest
-  | [] -> assert false
-
 (* TODO: refactoring
    Note that {!pp_function} could print both statement and expression when [No_name] is given
 *)
@@ -776,29 +759,24 @@ and expression_desc cxt ~(level : int) f x : cxt =
     aux cxt string_args value_args;
     P.string f "`";
     cxt
-  | Interpolated_template {kind; segments; values} ->
-    begin match kind with
-    | Ptemplate_string ->
-      P.string f "`";
-      let rec print_segments cxt segments values =
-        match (segments, values) with
-        | [({source} : Asttypes.template_segment)], [] ->
-          P.string f source;
-          cxt
-        | ({source} : Asttypes.template_segment) :: segments, value :: values ->
-          P.string f source;
-          P.string f "${";
-          let cxt = expression cxt ~level:0 f value in
-          P.string f "}";
-          print_segments cxt segments values
-        | _ -> assert false
-      in
-      let cxt = print_segments cxt segments values in
-      P.string f "`";
-      cxt
-    | Ptemplate_json ->
-      expression cxt ~level f (json_template_as_append segments values)
-    end
+  | Interpolated_template {segments; values} ->
+    P.string f "`";
+    let rec print_segments cxt segments values =
+      match (segments, values) with
+      | [({source} : Asttypes.template_segment)], [] ->
+        P.string f source;
+        cxt
+      | ({source} : Asttypes.template_segment) :: segments, value :: values ->
+        P.string f source;
+        P.string f "${";
+        let cxt = expression cxt ~level:0 f value in
+        P.string f "}";
+        print_segments cxt segments values
+      | _ -> assert false
+    in
+    let cxt = print_segments cxt segments values in
+    P.string f "`";
+    cxt
   | String_index (a, b) ->
     P.group f 1 (fun _ ->
         let cxt = expression ~level:15 cxt f a in

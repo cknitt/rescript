@@ -2550,7 +2550,10 @@ and parse_template_expr ?prefix p =
   let parts = parse_parts p in
   let strings = List.map fst parts in
   let values = Ext_list.filter_map parts snd in
-
+  let template_loc =
+    mk_loc (List.hd strings).pexp_loc.loc_start
+      (Ext_list.last strings).pexp_loc.loc_end
+  in
   let gen_tagged_template (lident_loc : Longident.t Location.loc) =
     let ident = Ast_helper.Exp.ident ~attrs:[] ~loc:lident_loc.loc lident_loc in
     let raw_sources =
@@ -2572,21 +2575,24 @@ and parse_template_expr ?prefix p =
         List.map
           (fun (string : Parsetree.expression) ->
             match string.pexp_desc with
-            | Pexp_constant (Pconst_template source | Pconst_json source) ->
-              source
+            | Pexp_constant (Pconst_template source) -> source
             | _ -> assert false)
           strings
       in
-      Ast_helper.Exp.template
-        ~loc:
-          (mk_loc (List.hd strings).pexp_loc.loc_start
-             (Ext_list.last strings).pexp_loc.loc_end)
-        (if is_json then Ptemplate_json else Ptemplate_string)
-        sources values
+      Ast_helper.Exp.template ~loc:template_loc sources values
   in
 
   match prefix with
-  | Some {txt = Longident.Lident "json"; _} | None -> gen_interpolated_string ()
+  | Some {txt = Longident.Lident "json"; _} -> (
+    match (strings, values) with
+    | [string], [] -> string
+    | first :: _, _ ->
+      Parser.err ~start_pos:template_loc.loc_start ~end_pos:template_loc.loc_end
+        p
+        (Diagnostics.message "`json` literals do not support interpolation");
+      first
+    | [], _ -> assert false)
+  | None -> gen_interpolated_string ()
   | Some lident_loc -> gen_tagged_template lident_loc
 
 (* Overparse: let f = a : int => a + 1, is it (a : int) => or (a): int =>

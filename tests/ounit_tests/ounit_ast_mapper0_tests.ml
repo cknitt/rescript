@@ -381,42 +381,56 @@ let test_tagged_templates_roundtrip_through_ast0 _ =
 
 let test_interpolated_templates_roundtrip_through_ast0 _ =
   let value = Ast_helper.Exp.constant ~loc (Ast_helper.Const.integer "1") in
-  List.iter
-    (fun (kind, delimiter) ->
-      let expression =
-        Ast_helper.Exp.template ~loc
-          ~attrs:[attr "keep" (Parsetree.PStr [])]
-          kind [{|head\n|}; "tail"] [value]
-      in
-      let expression0 = map_expr_to0 expression in
-      OUnit.assert_bool "the frozen AST uses the template marker"
-        (List.mem "res.template" (attr_names expression0.pexp_attributes));
-      let rec first_segment (expression : Parsetree0.expression) =
-        match expression.pexp_desc with
-        | Pexp_apply (_, [(_, lhs); (_, _)]) -> first_segment lhs
-        | Pexp_constant (Pconst_string (source, Some actual_delimiter)) ->
-          OUnit.assert_equal delimiter actual_delimiter;
-          OUnit.assert_equal {|head\n|} source
-        | _ -> assert_failure "Expected a frozen-AST template segment"
-      in
-      first_segment expression0;
-      match map_expr0 expression0 with
-      | {
-       pexp_desc =
-         Pexp_template
-           {
-             kind = actual_kind;
-             source_segments;
-             values = [{pexp_desc = Pexp_constant (Pconst_integer ("1", None))}];
-           };
-       pexp_attributes;
-      } ->
-        OUnit.assert_equal kind actual_kind;
-        OUnit.assert_equal ~printer:Ext_obj.dump [{|head\n|}; "tail"]
-          source_segments;
-        OUnit.assert_equal ["keep"] (attr_names pexp_attributes)
-      | _ -> assert_failure "Expected an explicit template after roundtrip")
-    [(Asttypes.Ptemplate_string, "js"); (Asttypes.Ptemplate_json, "json")]
+  let expression =
+    Ast_helper.Exp.template ~loc
+      ~attrs:[attr "keep" (Parsetree.PStr [])]
+      [{|head\n|}; "tail"] [value]
+  in
+  let expression0 = map_expr_to0 expression in
+  OUnit.assert_bool "the frozen AST uses the template marker"
+    (List.mem "res.template" (attr_names expression0.pexp_attributes));
+  let rec first_segment (expression : Parsetree0.expression) =
+    match expression.pexp_desc with
+    | Pexp_apply (_, [(_, lhs); (_, _)]) -> first_segment lhs
+    | Pexp_constant (Pconst_string (source, Some actual_delimiter)) ->
+      OUnit.assert_equal "js" actual_delimiter;
+      OUnit.assert_equal {|head\n|} source
+    | _ -> assert_failure "Expected a frozen-AST template segment"
+  in
+  first_segment expression0;
+  match map_expr0 expression0 with
+  | {
+   pexp_desc =
+     Pexp_template
+       {
+         source_segments;
+         values = [{pexp_desc = Pexp_constant (Pconst_integer ("1", None))}];
+       };
+   pexp_attributes;
+  } ->
+    OUnit.assert_equal ~printer:Ext_obj.dump [{|head\n|}; "tail"]
+      source_segments;
+    OUnit.assert_equal ["keep"] (attr_names pexp_attributes)
+  | _ -> assert_failure "Expected an explicit template after roundtrip"
+
+let test_ast0_json_interpolation_is_rejected _ =
+  let template_attr = attr "res.template" (Parsetree0.PStr []) in
+  let segment source =
+    Ast_helper0.Exp.constant ~loc ~attrs:[template_attr]
+      (Parsetree0.Pconst_string (source, Some "json"))
+  in
+  let concat lhs rhs =
+    Ast_helper0.Exp.apply ~loc ~attrs:[template_attr]
+      (Ast_helper0.Exp.ident ~loc (Location.mknoloc (Longident.Lident "^")))
+      [(Asttypes.Noloc.Nolabel, lhs); (Asttypes.Noloc.Nolabel, rhs)]
+  in
+  let value =
+    Ast_helper0.Exp.constant ~loc (Parsetree0.Pconst_integer ("1", None))
+  in
+  let expression = concat (concat (segment "head") value) (segment "tail") in
+  match map_expr0 expression with
+  | _ -> assert_failure "Expected ast0 JSON interpolation to be rejected"
+  | exception Location.Error _ -> ()
 
 let test_string_source_reprints_after_ast0_roundtrip _ =
   let source =
@@ -508,6 +522,8 @@ let suites =
          >:: test_tagged_templates_roundtrip_through_ast0;
          "interpolated_templates_roundtrip_through_ast0"
          >:: test_interpolated_templates_roundtrip_through_ast0;
+         "ast0_json_interpolation_is_rejected"
+         >:: test_ast0_json_interpolation_is_rejected;
          "string_source_reprints_after_ast0_roundtrip"
          >:: test_string_source_reprints_after_ast0_roundtrip;
          "malformed_internal_record_rest_attr_fails"

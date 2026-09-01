@@ -263,12 +263,8 @@ and print_expr_item expr ~pos ~indentation =
     ^ ")"
   | Pexp_extension (({txt} as loc), _) ->
     "Pexp_extension(%" ^ (loc |> print_loc_denominator_loc ~pos) ^ txt ^ ")"
-  | Pexp_template {kind; source_segments; values} ->
-    "Pexp_template(kind="
-    ^ (match kind with
-      | Ptemplate_string -> "string"
-      | Ptemplate_json -> "json")
-    ^ ", source_segments=["
+  | Pexp_template {source_segments; values} ->
+    "Pexp_template(source_segments=["
     ^ String.concat ", " source_segments
     ^ "], values=["
     ^ String.concat ", "

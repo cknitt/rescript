@@ -344,9 +344,8 @@ module E = struct
     | Pexp_for_await_of (p, e1, e2) ->
       Exp.mk ~loc ~attrs
         (Pexp_for_await_of (sub.pat sub p, sub.expr sub e1, sub.expr sub e2))
-    | Pexp_template {kind; source_segments; values} ->
-      Exp.template ~loc ~attrs kind source_segments
-        (List.map (sub.expr sub) values)
+    | Pexp_template {source_segments; values} ->
+      Exp.template ~loc ~attrs source_segments (List.map (sub.expr sub) values)
     | Pexp_tagged_template {tag; raw_sources; values} ->
       Exp.tagged_template ~loc ~attrs (sub.expr sub tag) raw_sources
         (List.map (sub.expr sub) values)

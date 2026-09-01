@@ -31,6 +31,10 @@ type lid = string Asttypes.loc
 
 type action = lid * Parsetree.expression option
 
+val json_literal_outside_external_message : string
+val reject_json_literal : loc:Location.t -> 'a
+val reject_json_literal_payload : t -> unit
+
 val is_single_string : t -> (string * string option) option
 
 val is_single_semantic_string : t -> string option

@@ -39,7 +39,7 @@ type t =
   | Ptagged_template of string list
   (* Compiler-provided interpolation. The payload retains both output spelling
      and decoded meaning until JavaScript IR generation. *)
-  | Ptemplate of Asttypes.template_kind * Asttypes.template_segment list
+  | Ptemplate of Asttypes.template_segment list
   | Precord_rest of string list
   (* External call *)
   | Pjs_call of {

@@ -286,7 +286,7 @@ type primitive =
   | Ptagged_template of string list
   (* Compiler-provided interpolation. [source] in each segment preserves output
      spelling; [semantic] is the decoded string value used by the compiler. *)
-  | Ptemplate of template_kind * template_segment list
+  | Ptemplate of template_segment list
 
 and comparison = Ceq | Cneq | Clt | Cgt | Cle | Cge
 

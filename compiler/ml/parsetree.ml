@@ -37,7 +37,9 @@ type constant =
   (* Source spelling of a backquoted template segment. Semantic decoding is
      deferred until the segment is known to belong to an ordinary template. *)
   | Pconst_json of string
-  (* Source spelling of a [json`...`] segment. *)
+  (* JavaScript literal source from a constant [json`...`] payload. This
+     representation exists for external attributes such as [@as]; ordinary
+     expressions are rejected by the typechecker. *)
   | Pconst_raw_source of string
   (* JavaScript source carried by a compiler raw/ffi/re extension. *)
   | Pconst_char_source of string
@@ -344,11 +346,7 @@ and expression_desc =
     (* for pattern of array_expr do body_expr *)
   | Pexp_for_await_of of pattern * expression * expression
   (* for await pattern of iterable_expr do body_expr *)
-  | Pexp_template of {
-      kind: template_kind;
-      source_segments: string list;
-      values: expression list;
-    }
+  | Pexp_template of {source_segments: string list; values: expression list}
   (* An interpolated backquoted literal. [source_segments] contains the
      validated source spelling of the segments surrounding [values]. *)
   | Pexp_tagged_template of {

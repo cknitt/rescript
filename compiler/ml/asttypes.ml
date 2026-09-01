@@ -25,13 +25,9 @@ type constant =
   | Const_float of string
   | Const_bigint of bool * string
 
-type template_kind = Ptemplate_string | Ptemplate_json
-
 type template_segment = {source: string; semantic: string}
 (** A segment of an interpolated template. [source] preserves its spelling for
-    JavaScript output; [semantic] is the decoded string value used downstream.
-    For legacy [json] interpolation both fields intentionally contain the raw
-    segment text. *)
+    JavaScript output; [semantic] is the decoded string value used downstream. *)
 
 type rec_flag = Nonrecursive | Recursive
 

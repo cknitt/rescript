@@ -711,41 +711,27 @@ module E = struct
         | _ -> expression :: acc
       in
       let parts = flatten [] {e with pexp_desc = application} in
-      let rec collect kind sources values = function
-        | [
-            {
-              pexp_desc =
-                Pexp_constant
-                  (Pconst_string (source, Some (("js" | "json") as tag)));
-            };
-          ] ->
-          let segment_kind =
-            if tag = "json" then Asttypes.Ptemplate_json
-            else Asttypes.Ptemplate_string
-          in
-          if kind = None || kind = Some segment_kind then
-            Some (segment_kind, List.rev (source :: sources), List.rev values)
-          else None
-        | {
-            pexp_desc =
-              Pexp_constant
-                (Pconst_string (source, Some (("js" | "json") as tag)));
-          }
+      let reject_json_interpolation () =
+        Location.raise_errorf ~loc
+          "`json` literals do not support interpolation"
+      in
+      let rec collect sources values = function
+        | [{pexp_desc = Pexp_constant (Pconst_string (source, Some "js"))}] ->
+          Some (List.rev (source :: sources), List.rev values)
+        | [{pexp_desc = Pexp_constant (Pconst_string (_, Some "json"))}] ->
+          reject_json_interpolation ()
+        | {pexp_desc = Pexp_constant (Pconst_string (source, Some "js"))}
           :: value :: rest ->
-          let segment_kind =
-            if tag = "json" then Asttypes.Ptemplate_json
-            else Asttypes.Ptemplate_string
-          in
-          if kind = None || kind = Some segment_kind then
-            collect (Some segment_kind) (source :: sources) (value :: values)
-              rest
-          else None
+          collect (source :: sources) (value :: values) rest
+        | {pexp_desc = Pexp_constant (Pconst_string (_, Some "json"))}
+          :: _value :: _rest ->
+          reject_json_interpolation ()
         | _ -> None
       in
-      begin match collect None [] [] parts with
-      | Some (kind, sources, values) ->
+      begin match collect [] [] parts with
+      | Some (sources, values) ->
         let attrs = remove_template_attr attrs in
-        template ~loc ~attrs kind sources (List.map (sub.expr sub) values)
+        template ~loc ~attrs sources (List.map (sub.expr sub) values)
       | None ->
         let attrs = remove_template_attr attrs in
         begin match application with

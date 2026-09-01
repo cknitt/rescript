@@ -82,6 +82,7 @@ type error =
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Invalid_string_escape_sequence
+  | Json_literal_outside_external
   | Illegal_letrec_pat
   | Empty_record_literal
   | Uncurried_arity_mismatch of {
@@ -287,7 +288,7 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
     | Some semantic -> Ok (Const_template_literal {source; semantic})
     | None -> Error Invalid_string_escape_sequence)
   | Pconst_string {semantic} -> Ok (Const_string semantic)
-  | Pconst_json source -> Ok (Const_string source)
+  | Pconst_json _ -> Error Json_literal_outside_external
   | Pconst_raw_source s -> Ok (Const_string s)
   | Pconst_char_source _ -> Error Invalid_string_escape_sequence
   | Pconst_float (f, None) -> Ok (Const_float f)
@@ -2527,17 +2528,14 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
   | Pexp_fun {newtypes = []; params; body = sfun_body; async} ->
     type_function ~async loc sexp.pexp_attributes env ty_expected params
       sfun_body
-  | Pexp_template {kind; source_segments; values} ->
+  | Pexp_template {source_segments; values} ->
     begin_def ();
     let segments : Asttypes.template_segment list =
       List.map
         (fun source ->
-          match kind with
-          | Ptemplate_string -> (
-            match String_literal.decode_js_escapes source with
-            | Some semantic -> {source; semantic}
-            | None -> raise (Error (loc, env, Invalid_string_escape_sequence)))
-          | Ptemplate_json -> {source; semantic = source})
+          match String_literal.decode_js_escapes source with
+          | Some semantic -> {source; semantic}
+          | None -> raise (Error (loc, env, Invalid_string_escape_sequence)))
         source_segments
     in
     let values =
@@ -2549,7 +2547,7 @@ and type_expect_ ?deprecated_context ~context ?(recarg = Rejected) env sexp
     end_def ();
     rue
       {
-        exp_desc = Texp_template {kind; segments; values};
+        exp_desc = Texp_template {segments; values};
         exp_loc = loc;
         exp_extra = [];
         exp_type = instance_def Predef.type_string;
@@ -5245,6 +5243,8 @@ let report_error env loc ppf error =
     fprintf ppf "Unknown modifier '%c' for literal %s%c" m n m
   | Invalid_string_escape_sequence ->
     fprintf ppf "Invalid string escape sequence"
+  | Json_literal_outside_external ->
+    fprintf ppf "%s" Ast_payload.json_literal_outside_external_message
   | Illegal_letrec_pat ->
     fprintf ppf "Only variables are allowed as left-hand side of `let rec`"
   | Empty_record_literal ->

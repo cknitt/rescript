@@ -446,9 +446,7 @@ let signature_item_mapper (self : mapper) (sigi : Parsetree.signature_item) :
           ((_, PStr [{pstr_desc = Pstr_eval ({pexp_desc; pexp_loc}, _)}]) as
            attr) -> (
         match pexp_desc with
-        | Pexp_constant
-            ((Pconst_string _ | Pconst_json _ | Pconst_template _) as constant)
-          ->
+        | Pexp_constant ((Pconst_string _ | Pconst_template _) as constant) ->
           succeed attr pval_attributes;
           {
             sigi with
@@ -559,11 +557,12 @@ let structure_item_mapper (self : mapper) (str : Parsetree.structure_item) :
     let has_inline_property =
       Ast_attributes.has_inline_payload pvb_attributes
     in
+    Option.iter
+      (fun (_, payload) -> Ast_payload.reject_json_literal_payload payload)
+      has_inline_property;
     match (has_inline_property, pvb_expr.pexp_desc) with
     | ( Some attr,
-        Pexp_constant
-          ((Pconst_string _ | Pconst_json _ | Pconst_template _) as constant) )
-      ->
+        Pexp_constant ((Pconst_string _ | Pconst_template _) as constant) ) ->
       succeed attr pvb_attributes;
       {
         str with

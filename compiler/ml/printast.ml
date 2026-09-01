@@ -381,11 +381,8 @@ and expression i ppf x =
   | Pexp_extension (s, arg) ->
     line i ppf "Pexp_extension \"%s\"\n" s.txt;
     payload i ppf arg
-  | Pexp_template {kind; source_segments; values} ->
-    line i ppf "Pexp_template %s\n"
-      (match kind with
-      | Ptemplate_string -> "string"
-      | Ptemplate_json -> "json");
+  | Pexp_template {source_segments; values} ->
+    line i ppf "Pexp_template\n";
     List.iter (line (i + 1) ppf "source_segment %S\n") source_segments;
     List.iter (expression (i + 1) ppf) values
   | Pexp_tagged_template {tag; raw_sources; values} ->

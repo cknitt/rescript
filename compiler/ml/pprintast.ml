@@ -763,7 +763,7 @@ and expression ctxt f x =
     | Pexp_variant (l, Some eo) -> pp f "@[<2>`%s@;%a@]" l (simple_expr ctxt) eo
     | Pexp_extension e -> extension ctxt f e
     | Pexp_await e -> pp f "@[<hov2>await@ %a@]" (simple_expr ctxt) e
-    | Pexp_template {kind; source_segments; values} ->
+    | Pexp_template {source_segments; values} ->
       let rec parts f (source_segments, values) =
         match (source_segments, values) with
         | [source], [] -> pp f "%s" source
@@ -772,11 +772,7 @@ and expression ctxt f x =
             (source_segments, values)
         | _ -> assert false
       in
-      pp f "%s`%a`"
-        (match kind with
-        | Ptemplate_string -> ""
-        | Ptemplate_json -> "json")
-        parts (source_segments, values)
+      pp f "`%a`" parts (source_segments, values)
     | Pexp_tagged_template {tag; raw_sources; values} ->
       let rec parts f (sources, values) =
         match (sources, values) with

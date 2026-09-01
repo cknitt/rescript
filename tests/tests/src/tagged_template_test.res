@@ -133,11 +133,6 @@ describe("tagged templates", () => {
     () => eq(__LOC__, greeting, "hello Ada you're 36 years old!"),
   )
 
-  test(
-    "a template literal tagged with json should generate a regular string interpolation for now",
-    () => eq(__LOC__, json`some random ${"string"}`, "some random string"),
-  )
-
   test("a regular string interpolation should continue working", () =>
     eq(__LOC__, `some random ${"string"} interpolation`, "some random string interpolation")
   )

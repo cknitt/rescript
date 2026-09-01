@@ -77,7 +77,6 @@ type return_wrapper =
    frontend parses delimiters and bigint signs before constructing this. *)
 type inline_const =
   | Const_string of string
-  | Const_json of string
   | Const_bool of bool
   | Const_int of int32
   | Const_bigint of {negative: bool; digits: string}

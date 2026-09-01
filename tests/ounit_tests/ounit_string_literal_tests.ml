@@ -95,11 +95,11 @@ let assert_parsed_template_pattern ~source =
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") source actual
   | _ -> OUnit.assert_failure "expected an explicit template pattern"
 
-let assert_parsed_template ~prefix ~expected_kind =
+let assert_parsed_template () =
   let result =
     Res_driver.parse_implementation_from_source ~for_printer:false
       ~display_filename:"StringLiteralTest.res"
-      ~source:("let value = " ^ prefix ^ "`head\\n${item}tail`")
+      ~source:"let value = `head\\n${item}tail`"
   in
   match result.parsetree with
   | [
@@ -114,7 +114,6 @@ let assert_parsed_template ~prefix ~expected_kind =
                    pexp_desc =
                      Pexp_template
                        {
-                         kind;
                          source_segments;
                          values =
                            [
@@ -129,10 +128,17 @@ let assert_parsed_template ~prefix ~expected_kind =
            ] );
    };
   ] ->
-    OUnit.assert_equal expected_kind kind;
     OUnit.assert_equal ~printer:Ext_obj.dump [{|head\n|}; "tail"]
       source_segments
   | _ -> OUnit.assert_failure "expected an explicit parsed template"
+
+let assert_invalid_json_interpolation () =
+  let result =
+    Res_driver.parse_implementation_from_source ~for_printer:false
+      ~display_filename:"StringLiteralTest.res"
+      ~source:{|let value = json`head${item}tail`|}
+  in
+  OUnit.assert_bool "expected JSON interpolation to be rejected" result.invalid
 
 let assert_int_equal expected actual =
   OUnit.assert_equal ~printer:string_of_int expected actual
@@ -165,26 +171,17 @@ let typed_template source =
   | Ok constant -> constant
   | Error _ -> OUnit.assert_failure "expected a typed template constant"
 
-let typed_json source =
-  match Typecore.constant (Parsetree.Pconst_json source) with
-  | Ok constant -> constant
-  | Error _ -> OUnit.assert_failure "expected a typed JSON-tagged string"
-
-let assert_typed_template ~kind ~source_segments ~expected_semantics =
+let assert_typed_template ~source_segments ~expected_semantics =
   let value = Ast_helper.Exp.constant (Ast_helper.Const.string "value") in
-  let expression = Ast_helper.Exp.template kind source_segments [value] in
+  let expression = Ast_helper.Exp.template source_segments [value] in
   let typed =
     Typecore.type_exp Env.initial_safe_string expression
       ~context:(Some Error_message_utils.StringConcat)
   in
   begin match typed.exp_desc with
   | Texp_template
-      {
-        kind = actual_kind;
-        segments;
-        values = [{exp_desc = Texp_constant (Const_string "value")}];
-      } ->
-    OUnit.assert_equal kind actual_kind;
+      {segments; values = [{exp_desc = Texp_constant (Const_string "value")}]}
+    ->
     OUnit.assert_equal ~printer:Ext_obj.dump source_segments
       (List.map (fun ({source} : Asttypes.template_segment) -> source) segments);
     OUnit.assert_equal ~printer:Ext_obj.dump expected_semantics
@@ -194,9 +191,7 @@ let assert_typed_template ~kind ~source_segments ~expected_semantics =
   | _ -> OUnit.assert_failure "expected an explicit typed template"
   end;
   match Translcore.transl_exp typed with
-  | Lprim (Ptemplate (actual_kind, segments), [Lconst (Const_string "value")], _)
-    ->
-    OUnit.assert_equal kind actual_kind;
+  | Lprim (Ptemplate segments, [Lconst (Const_string "value")], _) ->
     OUnit.assert_equal ~printer:Ext_obj.dump source_segments
       (List.map (fun ({source} : Asttypes.template_segment) -> source) segments);
     OUnit.assert_equal ~printer:Ext_obj.dump expected_semantics
@@ -232,11 +227,6 @@ let assert_external_json_literal ~expected constant =
   | Json_literal actual ->
     OUnit.assert_equal ~printer:(Printf.sprintf "%S") expected actual
   | _ -> OUnit.assert_failure "expected a JavaScript JSON literal expression"
-
-let inline_string constant =
-  match Ast_external_mk.inline_string ~loc:Location.none constant with
-  | Prim_inline_const constant -> constant
-  | _ -> OUnit.assert_failure "expected an inline constant"
 
 let inline_template source =
   match
@@ -306,18 +296,12 @@ let suites =
            | _ -> OUnit.assert_failure "expected a raw template segment" );
          ( "interpolated templates have an explicit parser representation"
          >:: fun _ ->
-           assert_parsed_template ~prefix:""
-             ~expected_kind:Asttypes.Ptemplate_string;
-           assert_parsed_template ~prefix:"json"
-             ~expected_kind:Asttypes.Ptemplate_json );
+           assert_parsed_template ();
+           assert_invalid_json_interpolation () );
          ( "interpolated templates have an explicit typed representation"
          >:: fun _ ->
-           assert_typed_template ~kind:Asttypes.Ptemplate_string
-             ~source_segments:[{|head\n|}; {|\u0061|}]
-             ~expected_semantics:["head\n"; "a"];
-           assert_typed_template ~kind:Asttypes.Ptemplate_json
-             ~source_segments:[{|head\n|}; {|\u0061|}]
-             ~expected_semantics:[{|head\n|}; {|\u0061|}] );
+           assert_typed_template ~source_segments:[{|head\n|}; {|\u0061|}]
+             ~expected_semantics:["head\n"; "a"] );
          ( "invalid encoded values are rejected" >:: fun _ ->
            List.iter
              (fun encoded ->
@@ -357,7 +341,6 @@ let suites =
          ( "typed tree separates strings from template literals" >:: fun _ ->
            let semantic = typed_string "a\n😀" in
            let template = typed_template {|a\n\uD83D\uDE00|} in
-           let json = typed_json {|{"answer":42}|} in
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Asttypes.Const_string "a\n😀") semantic;
            OUnit.assert_equal ~printer:Ext_obj.dump
@@ -365,13 +348,14 @@ let suites =
                 {source = {|a\n\uD83D\uDE00|}; semantic = "a\n😀"})
              template;
            OUnit.assert_equal ~printer:Ext_obj.dump
-             (Asttypes.Const_string {|{"answer":42}|}) json;
-           OUnit.assert_equal ~printer:Ext_obj.dump
              (Ast_helper.Const.string "a\n😀")
              (Untypeast.constant semantic);
            OUnit.assert_equal ~printer:Ext_obj.dump
              (Parsetree.Pconst_template {|a\n\uD83D\uDE00|})
              (Untypeast.constant template);
+           OUnit.assert_equal ~printer:Ext_obj.dump
+             (Error Typecore.Json_literal_outside_external)
+             (Typecore.constant (Parsetree.Pconst_json {|{"answer":42}|}));
            match Typecore.constant (Parsetree.Pconst_template {|\unicode|}) with
            | Error Typecore.Invalid_string_escape_sequence -> ()
            | _ ->
@@ -393,9 +377,6 @@ let suites =
            OUnit.assert_equal ~printer:Ext_obj.dump
              (External_ffi_types.Const_string "a\n😀")
              (inline_template {|\x61\n\uD83D\uDE00|});
-           OUnit.assert_equal ~printer:Ext_obj.dump
-             (External_ffi_types.Const_json {|{"answer":42}|})
-             (inline_string (Pconst_json {|{"answer":42}|}));
            assert_external_js_string ~expected:{|\x61|}
              (External_arg_spec.cst_string {|\x61|});
            assert_external_json_literal ~expected:{|{"answer":42}|}
@@ -497,17 +478,9 @@ let suites =
                (Js_exp_make.js_global "left")
                (Js_exp_make.js_global "right")
            in
-           let template =
-             Js_exp_make.interpolated_template Asttypes.Ptemplate_string
-               segments [value]
-           in
+           let template = Js_exp_make.interpolated_template segments [value] in
            (match template.expression_desc with
-           | Interpolated_template
-               {
-                 kind = Ptemplate_string;
-                 segments = actual_segments;
-                 values = [_];
-               } ->
+           | Interpolated_template {segments = actual_segments; values = [_]} ->
              OUnit.assert_equal ~printer:Ext_obj.dump segments actual_segments
            | _ ->
              OUnit.assert_failure

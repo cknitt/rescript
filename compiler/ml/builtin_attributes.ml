@@ -19,15 +19,18 @@ open Parsetree
 let string_of_cst = function
   | Pconst_string {semantic = s}
   | Pconst_template s
-  | Pconst_json s
   | Pconst_raw_source s
   | Pconst_char_source s ->
     Some s
   | _ -> None
 
 let string_of_payload = function
-  | PStr [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant c}, _)}] ->
-    string_of_cst c
+  | PStr
+      [{pstr_desc = Pstr_eval ({pexp_desc = Pexp_constant c; pexp_loc; _}, _)}]
+    -> (
+    match c with
+    | Pconst_json _ -> Ast_payload.reject_json_literal ~loc:pexp_loc
+    | _ -> string_of_cst c)
   | _ -> None
 
 let string_of_opt_payload p =

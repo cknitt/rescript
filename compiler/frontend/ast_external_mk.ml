@@ -56,7 +56,6 @@ let inline_string ~loc = function
       | None -> Location.raise_errorf ~loc "Invalid string escape sequence"
     in
     inline_const (Const_string semantic)
-  | Pconst_json source -> inline_const (External_ffi_types.Const_json source)
   | Pconst_string {semantic} -> inline_const (Const_string semantic)
   | _ -> invalid_arg "Ast_external_mk.inline_string"
 

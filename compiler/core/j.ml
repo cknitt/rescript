@@ -110,7 +110,6 @@ and expression_desc =
   *)
   | Tagged_template of expression * string list * expression list
   | Interpolated_template of {
-      kind: Asttypes.template_kind;
       segments: Asttypes.template_segment list;
       values: expression list;
     }

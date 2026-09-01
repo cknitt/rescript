@@ -314,7 +314,7 @@ type primitive =
   | Ptagged_template of string list
   (* Compiler-provided interpolation. The payload contains the validated
      segments; the arguments are the interpolated string values. *)
-  | Ptemplate of Asttypes.template_kind * Asttypes.template_segment list
+  | Ptemplate of Asttypes.template_segment list
 
 and comparison = Ceq | Cneq | Clt | Cgt | Cle | Cge
 

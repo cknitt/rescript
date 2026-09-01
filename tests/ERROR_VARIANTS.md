@@ -242,6 +242,7 @@ Source: [typecore.ml:27](../compiler/ml/typecore.ml).
 | `Literal_overflow` | ✓ | `intoverflow.res` | |
 | `Unknown_literal` | ✓ | `unknown_literal.res` | |
 | `Invalid_string_escape_sequence` | ✓ | `invalid_ordinary_template_escape.res` | |
+| `Json_literal_outside_external` | ✓ | `json_literal_outside_external.res` | Constant `json` payloads are reserved for external attributes such as `@as`. |
 | `Illegal_letrec_pat` | ✓ | `illegal_letrec_pat.res` | |
 | `Empty_record_literal` | ✓ | `empty_record_literal.res` | |
 | `Uncurried_arity_mismatch` | ✓ | `arity_mismatch3.res` etc. | |

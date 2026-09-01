@@ -264,11 +264,7 @@ val call : ?comment:string -> info:Js_call_info.t -> t -> t list -> t
 val tagged_template : ?comment:string -> t -> string list -> t list -> t
 
 val interpolated_template :
-  ?comment:string ->
-  Asttypes.template_kind ->
-  Asttypes.template_segment list ->
-  t list ->
-  t
+  ?comment:string -> Asttypes.template_segment list -> t list -> t
 
 val new_ : ?comment:string -> J.expression -> J.expression list -> t
 

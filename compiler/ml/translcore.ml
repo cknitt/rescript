@@ -451,7 +451,7 @@ let warn_polymorphic_comparison loc prim args =
 let lambda_of_inline_const (c : External_ffi_types.inline_const) :
     Lambda.structured_constant =
   match c with
-  | External_ffi_types.Const_string s | Const_json s -> Const_string s
+  | External_ffi_types.Const_string s -> Const_string s
   | Const_bool true -> Const_true
   | Const_bool false -> Const_false
   | Const_int i -> Const_int i
@@ -1070,8 +1070,8 @@ and transl_exp0 (e : Typedtree.expression) : Lambda.lambda =
       ( Ptagged_template raw_sources,
         transl_exp tag :: transl_list values,
         e.exp_loc )
-  | Texp_template {kind; segments; values} ->
-    Lprim (Ptemplate (kind, segments), transl_list values, e.exp_loc)
+  | Texp_template {segments; values} ->
+    Lprim (Ptemplate segments, transl_list values, e.exp_loc)
   | Texp_apply
       {
         funct =

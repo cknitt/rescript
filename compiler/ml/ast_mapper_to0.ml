@@ -606,17 +606,12 @@ module E = struct
         ~attrs:(for_await_of_attr :: attrs)
         (sub.pat sub pat) start_expr end_expr Asttypes.Upto
         (sub.expr sub body_expr)
-    | Pexp_template {kind; source_segments; values} ->
+    | Pexp_template {source_segments; values} ->
       let segments =
         List.map
           (fun source ->
             Ast_helper0.Exp.constant ~loc ~attrs:[template_attr]
-              (Pt.Pconst_string
-                 ( source,
-                   Some
-                     (match kind with
-                     | Ptemplate_string -> "js"
-                     | Ptemplate_json -> "json") )))
+              (Pt.Pconst_string (source, Some "js")))
           source_segments
       in
       let rec interleave acc segments values =

@@ -362,11 +362,8 @@ and expression i ppf x =
     line i ppf "Texp_for_await_of \"%a\"\n" fmt_ident s;
     expression i ppf e1;
     expression i ppf e2
-  | Texp_template {kind; segments; values} ->
-    line i ppf "Texp_template %s segments=%a\n"
-      (match kind with
-      | Ptemplate_string -> "string"
-      | Ptemplate_json -> "json")
+  | Texp_template {segments; values} ->
+    line i ppf "Texp_template segments=%a\n"
       (Format.pp_print_list
          ~pp_sep:(fun ppf () -> Format.fprintf ppf ", ")
          (fun ppf ({source; semantic} : Asttypes.template_segment) ->

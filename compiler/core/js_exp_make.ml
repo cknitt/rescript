@@ -76,9 +76,9 @@ let tagged_template ?comment call_expr string_args value_args : t =
     source_loc = None;
   }
 
-let interpolated_template ?comment kind segments values : t =
+let interpolated_template ?comment segments values : t =
   {
-    expression_desc = Interpolated_template {kind; segments; values};
+    expression_desc = Interpolated_template {segments; values};
     comment;
     source_loc = None;
   }
