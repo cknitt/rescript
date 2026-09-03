@@ -22,6 +22,7 @@
 
 #### :rocket: New Feature
 
+- Add `%raw(...)` arguments for externals, for example `external assign: (%raw("{}"), t) => t = "Object.assign"`. The string contains the raw JavaScript value supplied by the binding, and the argument is omitted at call sites. The legacy `` @as(json`...`) _ ``, `@as("...") _`, and `@as(1) _` forms now emit a deprecation warning and are formatted as `%raw(...)`. https://github.com/rescript-lang/rescript/pull/8609
 - Support Windows 11 on ARM by installing the x64 binaries, which Windows runs through its x64 emulation. https://github.com/rescript-lang/rescript/pull/8776
 - Allow `$` in identifiers, e.g. `let count$ = signal(0)`. https://github.com/rescript-lang/rescript/pull/8791
 - Allow an untagged variant to have both a boolean literal case and a boolean payload case, e.g. `@unboxed type t = | @as(true) A | B(bool)`, like for strings and numbers. https://github.com/rescript-lang/rescript/pull/8777
