@@ -255,6 +255,7 @@ let required_modules (lam : Lambda.t) : unit Lam_module_ident.Hash_set.t =
   required
 
 let compile (output_prefix : string) export_idents hoisted (lam : Lambda.t) =
+  Perf_timer.time "lam_compile" @@ fun () ->
   let debug_ir = !((Js_config.current ()).debug_ir) in
   let diagnostics =
     if debug_ir then Some (Ir_diagnostics.create ~output_prefix) else None

@@ -631,8 +631,53 @@ let run_argv ?run_external ~capture ~cwd argv =
         in
         {exit_code; stdout = ""; stderr = ""})
 
+let () =
+  if Sys.getenv_opt "RESCRIPT_PERF_WALL" <> None then
+    Perf_timer.clock := Unix.gettimeofday
+
+let request_log =
+  Option.map
+    (fun path ->
+      let channel = open_out path in
+      at_exit (fun () -> close_out channel);
+      channel)
+    (Sys.getenv_opt "RESCRIPT_PERF_REQUESTS")
+
+let request_log_lock = Mutex.create ()
+
 let run_request ~run_external ~cwd ~argv ~input =
   let logical_argv = Array.of_list ("bsc" :: (argv @ [input])) in
-  run_argv ?run_external ~capture:true ~cwd logical_argv
+  let kind =
+    if List.mem "-bs-ast" argv then "request_parse"
+    else if Filename.check_suffix input ".mlmap" then "request_mlmap"
+    else "request_compile"
+  in
+  let started = Unix.gettimeofday () in
+  let minor_collections = (Gc.quick_stat ()).minor_collections in
+  let minor0, promoted0, major0 = Gc.counters () in
+  Fun.protect
+    ~finally:(fun () ->
+      let wall = Unix.gettimeofday () -. started in
+      (match request_log with
+      | None -> ()
+      | Some channel ->
+        let minor1, promoted1, major1 = Gc.counters () in
+        Mutex.lock request_log_lock;
+        Printf.fprintf channel "%d\t%s\t%s\t%.6f\t%.6f\t%.0f\t%.0f\t%.0f\t%d\n"
+          (Domain.self () :> int)
+          kind input started (started +. wall) (minor1 -. minor0)
+          (promoted1 -. promoted0) (major1 -. major0)
+          (Gc.get ()).minor_heap_size;
+        Mutex.unlock request_log_lock);
+      Perf_timer.record ("wall_" ^ kind) ~time:wall ~words:0. ~excl_time:wall
+        ~excl_words:0.;
+      let gcs =
+        float_of_int ((Gc.quick_stat ()).minor_collections - minor_collections)
+      in
+      Perf_timer.record ("minor_gcs_" ^ kind) ~time:gcs ~words:0. ~excl_time:gcs
+        ~excl_words:0.)
+    (fun () ->
+      Perf_timer.time kind (fun () ->
+          run_argv ?run_external ~capture:true ~cwd logical_argv))
 
 let run argv = (run_argv ~capture:false ~cwd:(Sys.getcwd ()) argv).exit_code

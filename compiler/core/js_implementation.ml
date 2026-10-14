@@ -114,6 +114,7 @@ let after_parsing_impl ppf outputprefix (ast : Parsetree.structure) =
     in
     (if !((Js_config.current ()).binary_ast) then
        let sourcefile = Location.get_input_name () in
+       Perf_timer.time "write_ast" @@ fun () ->
        Binary_ast.write_ast ~sourcefile Ml
          ~output:(outputprefix ^ Literals.suffix_ast)
          ast);
@@ -129,6 +130,7 @@ let after_parsing_impl ppf outputprefix (ast : Parsetree.structure) =
       let env = Res_compmisc.initial_env ~modulename () in
       Env.set_unit_name modulename;
       let typedtree, coercion, _, _ =
+        Perf_timer.time "typing" @@ fun () ->
         Typemod.type_implementation_more
           ?check_exists:
             (if !((Js_config.current ()).force_cmi) then None else Some ())
@@ -141,7 +143,8 @@ let after_parsing_impl ppf outputprefix (ast : Parsetree.structure) =
       (if !((Js_config.current ()).cmi_only) then Warnings.check_fatal ()
        else
          let {Translmod.lambda; exports; hoisted_functions} =
-           Translmod.transl_implementation modulename typedtree_coercion
+           Perf_timer.time "translmod" (fun () ->
+               Translmod.transl_implementation modulename typedtree_coercion)
          in
          let js_program =
            print_if_pipe ppf (Clflags.current ()).dump_rawlambda
@@ -149,8 +152,10 @@ let after_parsing_impl ppf outputprefix (ast : Parsetree.structure) =
            |> Lam_compile_main.compile outputprefix exports hoisted_functions
          in
          if not !((Js_config.current ()).cmj_only) then
-           Lam_compile_main.lambda_as_module js_program outputprefix);
-      process_with_gentype (outputprefix ^ ".cmt"))
+           Perf_timer.time "js_emit" (fun () ->
+               Lam_compile_main.lambda_as_module js_program outputprefix));
+      Perf_timer.time "gentype" (fun () ->
+          process_with_gentype (outputprefix ^ ".cmt")))
 
 let implementation ~parser ppf ?outputprefix fname =
   let outputprefix =
@@ -159,8 +164,10 @@ let implementation ~parser ppf ?outputprefix fname =
     | Some x -> x
   in
   Res_compmisc.init_path ();
-  parser fname
-  |> Cmd_ppx_apply.apply_rewriters ~tool_name:Js_config.tool_name Ml
+  Perf_timer.time "parse" (fun () -> parser fname)
+  |> (fun ast ->
+  Perf_timer.time "ppx" (fun () ->
+      Cmd_ppx_apply.apply_rewriters ~tool_name:Js_config.tool_name Ml ast))
   |> Ppx_entry.rewrite_implementation
   |> print_if_pipe ppf (Clflags.current ()).dump_parsetree
        Printast.implementation

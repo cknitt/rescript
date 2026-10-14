@@ -29,6 +29,7 @@ type 'a kind = 'a Ml_binary.kind =
   | Mli : Parsetree.signature kind
 
 let read_ast_exn (type t) ~fname (_ : t kind) : t =
+  Perf_timer.time "read_ast" @@ fun () ->
   let ic = open_in_bin (Compiler_request_state.resolve_path fname) in
   Fun.protect
     ~finally:(fun () -> close_in_noerr ic)

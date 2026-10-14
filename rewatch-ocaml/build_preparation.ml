@@ -17,11 +17,13 @@ let runtime_path root =
 
 let run ~(root_config : Config.t) ~prod ~features ~warn_error ~filter ~watch
     ~(attempt : Build_attempt.t) ~parse_step ~on_cleanup =
+  Perf_timer.lap ~now:(Unix.gettimeofday ()) "wall0:start";
   let workspace_config = Project_context.workspace_config_for root_config in
   let package_plans =
     Package_graph.discover ~root_config ~workspace_config ~prod ~features
       ~warn_error ~filter ~attempt
   in
+  Perf_timer.lap ~now:(Unix.gettimeofday ()) "wall1:discover";
   Module_graph.validate_visible_namespaces ~root_config package_plans;
   let runtime = runtime_path root_config.root in
   let source_map_args = Compiler_args.source_map_args workspace_config ~watch in
@@ -155,6 +157,7 @@ let run ~(root_config : Config.t) ~prod ~features ~warn_error ~filter ~watch
       |> Compile_assets.create
     else previous_compile_assets
   in
+  Perf_timer.lap ~now:(Unix.gettimeofday ()) "wall2:cleanup";
   on_cleanup (Unix.gettimeofday () -. cleanup_started);
   let parse_started = Unix.gettimeofday () in
   let parse_entries =
@@ -193,6 +196,7 @@ let run ~(root_config : Config.t) ~prod ~features ~warn_error ~filter ~watch
     |> Compiler_process.run_requests ?poll:attempt.process_poll
          ~on_complete:parse_completed
   in
+  Perf_timer.lap ~now:(Unix.gettimeofday ()) "wall3:parse";
   let failed_parse_paths = Hashtbl.create 8 in
   List.iter2
     (fun ((package : Package_plan.t), path, _) result ->

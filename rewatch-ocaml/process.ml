@@ -246,7 +246,14 @@ let create_worker_pool ~max_jobs notifier =
        heap makes busy compiler workers stall each other. 2M words (16 MB per
        worker) cut clean-build time by about 15%; larger heaps added memory
        without speed. *)
-    Gc.set {(Gc.get ()) with minor_heap_size = 2 * 1024 * 1024};
+    Gc.set
+      {
+        (Gc.get ()) with
+        minor_heap_size =
+          (match Sys.getenv_opt "REWATCH_MINOR_HEAP_WORDS" with
+          | Some words -> int_of_string words
+          | None -> 2 * 1024 * 1024);
+      };
     try worker_loop pool
     with exn ->
       Child.with_lock pool.mutex (fun () ->

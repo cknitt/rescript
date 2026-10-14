@@ -667,14 +667,18 @@ let find_pers_struct check name =
     | Cannot_load_cmis _ -> raise Not_found
     | Can_load_cmis ->
       let ps =
-        match !Persistent_signature.load ~unit_name:name with
+        match
+          Perf_timer.time "cmi_load" (fun () ->
+              !Persistent_signature.load ~unit_name:name)
+        with
         | Some ps -> ps
         | None ->
           Hashtbl.add (persistent_structures ()) name None;
           raise Not_found
       in
       add_import name;
-      acknowledge_pers_struct check name ps)
+      Perf_timer.time "cmi_components" (fun () ->
+          acknowledge_pers_struct check name ps))
 
 (* Emits a warning if there is no valid cmi for name *)
 let check_pers_struct name =

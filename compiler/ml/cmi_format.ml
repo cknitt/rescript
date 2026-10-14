@@ -56,6 +56,7 @@ let read_cmi_channel filename ic =
   with End_of_file | Failure _ -> raise (Error (Corrupted_interface filename))
 
 let read_cmi filename =
+  Perf_timer.time "read_cmi" @@ fun () ->
   let ic = open_in_bin (Compiler_request_state.resolve_path filename) in
   Fun.protect
     (fun () -> read_cmi_channel filename ic)
@@ -76,6 +77,7 @@ let output_cmi filename oc cmi =
        cmt_format, so dont close the channel yet
 *)
 let create_cmi ?check_exists filename (cmi : cmi_infos) =
+  Perf_timer.time "save_cmi" @@ fun () ->
   (* beware: the provided signature must have been substituted for saving *)
   let content =
     Config.cmi_magic_number ^ Marshal.to_string (cmi.cmi_name, cmi.cmi_sign) []

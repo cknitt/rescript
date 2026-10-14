@@ -375,6 +375,7 @@ let run_with_warning_state ~poll ~warning_state ~request ~no_timing ~verbosity
         in
         (preparation.prepared, preparation.cycle)
     in
+    Perf_timer.lap ~now:(Unix.gettimeofday ()) "wall4:module_graph";
     (match request with
     | Full_watch_attempt (Some previous) ->
       carry_forward_compile_dirtiness previous attempt.session
@@ -400,6 +401,7 @@ let run_with_warning_state ~poll ~warning_state ~request ~no_timing ~verbosity
     Package_build.prepare_tree ~seen:visited ~package:root_package ~prepared
       ~watch ~attempt;
     Build_session.mark_freshness_initialized attempt.session;
+    Perf_timer.lap ~now:(Unix.gettimeofday ()) "wall5:prepare_tree";
     let parse_messages = parse_messages () in
     let parse_output = parse_output parse_messages in
     if parse_failed parse_messages then raise (Parse_failure parse_output);
@@ -418,6 +420,7 @@ let run_with_warning_state ~poll ~warning_state ~request ~no_timing ~verbosity
     flush stdout;
     prerr_string parse_output;
     flush stderr;
+    Perf_timer.lap ~now:(Unix.gettimeofday ()) "wall6:namespaces";
     let compile_started = Unix.gettimeofday () in
     let compile_failure =
       try
@@ -425,6 +428,7 @@ let run_with_warning_state ~poll ~warning_state ~request ~no_timing ~verbosity
         None
       with Build_failure output -> Some output
     in
+    Perf_timer.lap ~now:(Unix.gettimeofday ()) "wall7:compile";
     Output.Progress.finish progress;
     let compile_seconds =
       phase_seconds (Unix.gettimeofday () -. compile_started)
@@ -456,6 +460,7 @@ let run_with_warning_state ~poll ~warning_state ~request ~no_timing ~verbosity
       if one_shot then Build_report.report_completion report diagnostics;
       Build_attempt.cleanup_artifacts attempt;
       write_build_ninja ();
+      Perf_timer.lap ~now:(Unix.gettimeofday ()) "wall8:finish";
       release_build_lock ();
       Option.iter
         (fun command -> After_build.run ?poll:process_poll ~root command)

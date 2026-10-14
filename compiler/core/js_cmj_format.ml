@@ -85,6 +85,7 @@ let make ~(values : cmj_value Map_string.t) ~hoisted_exports ~effect_
 (* Channels are closed also when decoding fails: the compiler can run inside a
    long-lived build process, which would otherwise keep the file open. *)
 let from_file name : t =
+  Perf_timer.time "read_cmj" @@ fun () ->
   let ic = open_in_bin (Compiler_request_state.resolve_path name) in
   Fun.protect
     ~finally:(fun () -> close_in_noerr ic)
@@ -107,6 +108,7 @@ let for_sure_not_changed (name : string) (header : string) =
    maybe should not be turned on by default
 *)
 let to_file name ~check_exists (v : t) =
+  Perf_timer.time "save_cmj" @@ fun () ->
   let s = Marshal.to_string v [] in
   let cur_digest = Digest.string s in
   let header = cur_digest in
