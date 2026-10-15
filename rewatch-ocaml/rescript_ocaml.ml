@@ -65,6 +65,8 @@ let run = function
     with_termination_handlers (fun ~poll -> run_command ~poll command)
 
 let main () =
+  if Sys.getenv_opt Compiler_process.worker_variable <> None then
+    Compiler_process.serve_worker ();
   Platform.configure_standard_streams ();
   try
     match Cli.eval Sys.argv with

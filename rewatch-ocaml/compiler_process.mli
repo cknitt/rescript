@@ -8,6 +8,13 @@ type request = {args: string list; cwd: string}
 val parse_request : build_dir:string -> config:Config.t -> string -> request
 val ast_dependencies : build_dir:string -> string -> string list
 val run : ?poll:(unit -> unit) -> request -> Process.result
+
+val worker_variable : string
+(** Set in the environment of a compiler worker process (prototype). *)
+
+val serve_worker : unit -> 'a
+(** Answer compiler requests on stdin until it is closed (prototype). *)
+
 val run_requests :
   ?poll:(unit -> unit) ->
   ?on_complete:(int -> unit) ->
